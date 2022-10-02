@@ -7,15 +7,14 @@ case class STxO[V <: Box.Value](utxoReference: Box.Id,
                                 contract: Contract,
                                 attestation: Attestation,
                                 value: V,
-                                datum: Option[SpentTransactionOutput.Datum],
-                                eval: (Contract, Attestation) => Boolean
-                               ) extends SpentTransactionOutput[V, (Contract, Attestation) => Boolean]
+                                datum: Option[SpentTransactionOutput.Datum]
+                               ) extends SpentTransactionOutput[V]
 
 object SpentTransactionOutput {
   case class Datum(data: Option[Metadata])
 
 
-  implicit val spendValidation: ValidateAlgebra[SpentTransactionOutput[_, (Contract, Attestation) => Boolean]] = ???
+  implicit val spendValidation: ValidateAlgebra[SpentTransactionOutput[_]] = ???
   // check that the typed evidence of the contract matches the evidence on the utxoReference
   // check that the contract is satisfied by the provided attestation
 

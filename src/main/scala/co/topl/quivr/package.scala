@@ -36,19 +36,19 @@ package object quivr {
   trait Verification[E] extends HasEval[E]
   trait Signatory[E] extends HasEval[E]
 
-  trait IoTransaction[I[V <: Box.Value,E], O[V <: Box.Value,E]] {
+  trait IoTransaction[I[V <: Box.Value,E], O[V <: Box.Value]] {
     val inputs: List[I]
     val outputs: List[O]
   }
 
-  trait SpentTransactionOutput[V <: Box.Value, E] extends HasEval[E] {
+  trait SpentTransactionOutput[V <: Box.Value] {
     val value: V
     val utxoReference: Box.Id
     val contract: Contract
     val attestation: Attestation
   }
 
-  trait UnspentTransactionOutput[V <: Box.Value, E] extends HasEval[E] {
+  trait UnspentTransactionOutput[V <: Box.Value] {
     val value: V
     val spendEvidence: TypedEvidence
   }
