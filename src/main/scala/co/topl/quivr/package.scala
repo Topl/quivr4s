@@ -36,7 +36,7 @@ package object quivr {
   trait Verification[E] extends HasEval[E]
   trait Signatory[E] extends HasEval[E]
 
-  trait IoTransaction[I[V <: Box.Value,E], O[V <: Box.Value]] {
+  trait IoTransaction[I[_], O[_]] {
     val inputs: List[I]
     val outputs: List[O]
   }
