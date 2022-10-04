@@ -1,6 +1,8 @@
 package co.topl
 
 package object quivr {
+  type Digest = Array[Byte]
+
   case class Box(evidence: Array[Byte], value: Box.Value)
 
   object Box {
@@ -18,6 +20,8 @@ package object quivr {
   case class VerificationKey(bytes: Array[Byte])
   case class KeyPair(sk: SecretKey, vk: VerificationKey)
   case class Signature(bytes: Array[Byte])
+
+  case class Accumulator()
 
   case class TypedEvidence(prefix: Array[Byte], bytes: Array[Byte])
 

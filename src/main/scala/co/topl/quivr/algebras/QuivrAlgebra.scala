@@ -1,7 +1,7 @@
 package co.topl.quivr.algebras
 
 import co.topl.quivr
-import co.topl.quivr.{Proof, Proposal, Signature, VerificationKey}
+import co.topl.quivr.{Digest, Proof, Proposal, Signature, VerificationKey}
 
 trait BooleanAlgebra[F[_]] {
   // primitive type
@@ -21,29 +21,22 @@ trait IntAlgebra[F[_]] {
   def lessThan(left: F[Int], right: F[Int]): F[Boolean]
 }
 
-trait DigestAlgebra[F[_]] {
-  def hash(digest: Array[Byte]): F[Array[Byte]]
-  def equal(left: F[Array[Byte]], right: F[Array[Byte]]): F[Boolean]
-  def reveal(preimage: F[Array[Byte]], digest: F[Array[Byte]]): F[Boolean]
-}
-
-trait AccumulatorAlgebra[F[_]] {
-  def root(digest: Array[Byte]): F[Array[Byte]]
-  def leaf(index:Int, digest: Array[Byte]): F[Array[Byte]]
-  def leafReveal(preimage: F[Array[Byte]], digest: F[Array[Byte]]): F[Boolean]
-  def includedIn(root: F[Array[Byte]], leaves: List[F[Array[Byte]]]): F[List[Option[_]]]
-}
-
-sealed abstract class QuivrAlgebra[F[_]] extends BooleanAlgebra[F] with IntAlgebra[F] with DigestAlgebra[F] with AccumulatorAlgebra[F]
+sealed abstract class QuivrAlgebra[F[_]] extends BooleanAlgebra[F] with IntAlgebra[F]
 
 trait ProposerAlgebra[F[_]] extends QuivrAlgebra[F] {
   def signature(vk: VerificationKey): F[VerificationKey]
+  def digest(digest: Digest): F[Digest]
+  def accumulator(root: Digest): F[Digest]
 }
 
 trait ProverAlgebra[F[_]] extends QuivrAlgebra[F] {
   def signature(sk: quivr.SecretKey, msg: Array[Byte]): F[quivr.Signature]
+  def digest(preimage: Array[Byte]): F[Digest]
+  def accumulator(tree: quivr.Accumulator, leaf: Digest): F[List[Digest]]
 }
 
 trait VerifierAlgebra[F[_]] extends QuivrAlgebra[F] {
   def signature(vk: Proposal[VerificationKey], msg: Array[Byte], sig: Proof[Signature]): F[Boolean]
+  def digest(left: F[Digest], right: F[Digest]): F[Boolean]
+  def merkle(vk: Proposal[VerificationKey], leaf: F[Digest], witness: Proof[List[Digest]]): F[Boolean]
 }
