@@ -14,7 +14,7 @@ object SpentTransactionOutput {
   case class Datum(data: Option[Metadata])
 
 
-  implicit val spendValidation: ValidateAlgebra[SpentTransactionOutput[_]] = ???
+ // implicit val spendValidation: ValidateAlgebra[SpentTransactionOutput[_]] = ???
   // check that the typed evidence of the contract matches the evidence on the utxoReference
   // check that the contract is satisfied by the provided attestation
 

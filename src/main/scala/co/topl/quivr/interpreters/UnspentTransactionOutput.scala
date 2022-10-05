@@ -13,9 +13,9 @@ object UnspentTransactionOutput {
 
   trait SomeContext //this would provide the env for computation, inputs would need to be available here for some checks
 
-  val lvlValidation: SomeContext => Boolean = ???
+  //val lvlValidation: SomeContext => Boolean = ???
 
   // this will need to apply the constraints for specific values
-  implicit def utxoValidate(implicit context: SomeContext): ValidateAlgebra[UnspentTransactionOutput[_]] = ???
+ // implicit def utxoValidate(implicit context: SomeContext): ValidateAlgebra[UnspentTransactionOutput[_]] = ???
 
 }

@@ -42,7 +42,7 @@ object Verifiers {
   implicit val simpleExprAlg: VerifierAlgebra[Verification] = new VerifierAlgebra[Verification] {
     override def bool(boolean: Boolean): Verifiers.Bool = Verifiers.Bool(boolean)
     override def num(int: Int): Verifiers.Num = Verifiers.Num(int)
-    override def signature(vk: Proposal[quivr.VerificationKey], msg: Array[Byte], sig: Proof[quivr.Signature]): Verifiers.Bool =
+    override def signature(vk: Proposal[quivr.VerificationKey], msg: Array[Byte], sig: Proof[quivr.Signature]): Verification[Boolean] =
       Verifiers.Bool(Signers.signingAlgebra.verify(vk.eval, msg, sig.eval).eval)
 
     override def or(left: Verification[Boolean], right: Verification[Boolean]): Verification[Boolean] = Verifiers.Bool(left.eval || right.eval)

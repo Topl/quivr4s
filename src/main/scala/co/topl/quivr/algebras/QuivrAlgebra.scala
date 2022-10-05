@@ -25,18 +25,18 @@ sealed abstract class QuivrAlgebra[F[_]] extends BooleanAlgebra[F] with IntAlgeb
 
 trait ProposerAlgebra[F[_]] extends QuivrAlgebra[F] {
   def signature(vk: VerificationKey): F[VerificationKey]
-  def digest(digest: Digest): F[Digest]
-  def accumulator(root: Digest): F[Digest]
+//  def digest(digest: Digest): F[Digest]
+//  def accumulator(root: Digest): F[Digest]
 }
 
 trait ProverAlgebra[F[_]] extends QuivrAlgebra[F] {
-  def signature(sk: quivr.SecretKey, msg: Array[Byte]): F[quivr.Signature]
-  def digest(preimage: Array[Byte]): F[Digest]
-  def accumulator(tree: quivr.Accumulator, leaf: Digest): F[List[Digest]]
+  def signature(sk: quivr.SecretKey): F[quivr.Signature]
+//  def digest(preimage: Array[Byte]): F[Digest]
+//  def accumulator(tree: quivr.Accumulator, leaf: Digest): F[List[Digest]]
 }
 
 trait VerifierAlgebra[F[_]] extends QuivrAlgebra[F] {
-  def signature(vk: Proposal[VerificationKey], msg: Array[Byte], sig: Proof[Signature]): F[Boolean]
-  def digest(left: F[Digest], right: F[Digest]): F[Boolean]
-  def merkle(vk: Proposal[VerificationKey], leaf: F[Digest], witness: Proof[List[Digest]]): F[Boolean]
+  def signature(vk: Proposal[VerificationKey], sig: Proof[Signature]): F[Boolean]
+//  def digest(left: F[Digest], right: F[Digest]): F[Boolean]
+//  def merkle(vk: Proposal[VerificationKey], leaf: F[Digest], witness: Proof[List[Digest]]): F[Boolean]
 }

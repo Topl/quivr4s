@@ -18,7 +18,7 @@ object NativeTransaction {
 
   case class Datum(schedule: Schedule, data: Option[Metadata])
 
-  implicit def transactionValidate[V]: ValidateAlgebra[NativeIoTransaction[_]] = ???
+ // implicit def transactionValidate[V]: ValidateAlgebra[NativeIoTransaction[_]] = ???
   // check all inputs are authorized to be spent
   // check that all outputs are valid transformations
 
