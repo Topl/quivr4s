@@ -31,7 +31,7 @@ package object quivr {
 
   case class Attestation(proofs: Set[Proof[_]])
 
-  sealed abstract class HasEval[E] {
+  abstract class HasEval[E] {
     val eval: E
   }
 
@@ -41,18 +41,18 @@ package object quivr {
   trait Signatory[E] extends HasEval[E]
 
   trait IoTransaction[I[_], O[_]] {
-    val inputs: List[I]
-    val outputs: List[O]
+    val inputs: List[I[_]]
+    val outputs: List[O[_]]
   }
 
-  trait SpentTransactionOutput[V <: Box.Value] {
+  trait SpentTransactionOutput[V] {
     val value: V
     val utxoReference: Box.Id
     val contract: Contract
     val attestation: Attestation
   }
 
-  trait UnspentTransactionOutput[V <: Box.Value] {
+  trait UnspentTransactionOutput[V] {
     val value: V
     val spendEvidence: TypedEvidence
   }

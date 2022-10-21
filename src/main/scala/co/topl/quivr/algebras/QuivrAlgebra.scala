@@ -21,7 +21,7 @@ trait IntAlgebra[F[_]] {
   def lessThan(left: F[Int], right: F[Int]): F[Boolean]
 }
 
-sealed abstract class QuivrAlgebra[F[_]] extends BooleanAlgebra[F] with IntAlgebra[F]
+abstract class QuivrAlgebra[F[_]] extends BooleanAlgebra[F] with IntAlgebra[F]
 
 trait ProposerAlgebra[F[_]] extends QuivrAlgebra[F] {
   def signature(vk: VerificationKey): F[VerificationKey]
@@ -36,7 +36,10 @@ trait ProverAlgebra[F[_]] extends QuivrAlgebra[F] {
 }
 
 trait VerifierAlgebra[F[_]] extends QuivrAlgebra[F] {
-  def signature(vk: Proposal[VerificationKey], sig: Proof[Signature]): F[Boolean]
+  def signature(
+      vk: Proposal[VerificationKey],
+      sig: Proof[Signature]
+  )(implicit msg: Array[Byte]): F[Boolean]
 //  def digest(left: F[Digest], right: F[Digest]): F[Boolean]
 //  def merkle(vk: Proposal[VerificationKey], leaf: F[Digest], witness: Proof[List[Digest]]): F[Boolean]
 }
