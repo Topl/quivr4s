@@ -1,5 +1,8 @@
 package co.topl
 
+import co.topl.quivr.algebras.QuivrContractExpr
+import co.topl.quivr.algebras.SignatureProposition
+
 package object quivr {
   type Digest = Array[Byte]
 
@@ -27,22 +30,23 @@ package object quivr {
 
   case class Metadata(prefix: Array[Byte], value: Array[Byte])
 
-  case class Contract(propositions: Set[Proposal[_]], threshold: Int)
+  case class Contract(propositions: Set[Proposal], threshold: Int)
 
-  case class Attestation(proofs: Set[Proof[_]])
+  case class Attestation(proofs: Set[Proof])
 
   abstract class HasEval[E] {
     val eval: E
   }
 
-  trait Proposal[E] extends HasEval[E]
-  trait Proof[E] extends HasEval[E]
+  type Proposal = QuivrContractExpr[SignatureProposition]
+  type Proof = QuivrContractExpr[SignatureProposition]
   trait Verification[E] extends HasEval[E]
   trait Signatory[E] extends HasEval[E]
 
   trait IoTransaction[I[_], O[_]] {
     val inputs: List[I[_]]
     val outputs: List[O[_]]
+    lazy val signableBytes: Array[Byte] = "test".getBytes
   }
 
   trait SpentTransactionOutput[V] {
