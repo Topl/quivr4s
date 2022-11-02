@@ -1,0 +1,1 @@
+val g = Models.Digest.propose(Array(1: Byte))
