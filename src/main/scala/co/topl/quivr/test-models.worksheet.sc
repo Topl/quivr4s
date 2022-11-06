@@ -1,4 +1,5 @@
-import example0._
+import co.topl.quivr.Quivr
+
 import java.security.SecureRandom
 
 val hashF = (x: Array[Byte]) => co.topl.crypto.hash.blake2b256.hash(x)
@@ -17,6 +18,6 @@ val pi_0 = hashF(img_0)
 val C_0 = Models.Primitive.Digest.Proposition(pi_0.value)
 val R_0 = Models.Primitive.Digest.Proof(
   img_0,
-  Quivr.Prover.bind(Quivr.Operations.Digest.token, txBytes)
+  Quivr.Prover.bind(Models.Primitive.Digest.token, txBytes)
 )
 val eval_0 = Quivr.Verifier.digestVerifier[Option].verify(C_0, R_0)(ctx)

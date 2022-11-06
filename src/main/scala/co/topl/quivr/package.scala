@@ -1,63 +1,127 @@
 package co.topl
 
-import co.topl.quivr.algebras.QuivrContractExpr
-import co.topl.quivr.algebras.SignatureProposition
-
 package object quivr {
-  type Digest = Array[Byte]
 
-  case class Box(evidence: Array[Byte], value: Box.Value)
+  // Propositions represent challenges that must be satisfied
+  sealed abstract class Proposition
 
-  object Box {
-    case class Id(bytes: Array[Byte])
-    case class Datum(data: Option[Metadata])
+  // For each Proposition there is a corresponding Proof that can be constructed to satisfy the given Proposition
+  sealed abstract class Proof(bindToTransaction: Array[Byte])
 
-    sealed abstract class Value
-    object Values {
-      case class Lvl(quantity: Int, datum: Box.Datum) extends Value
-      case class Topl(quantity: Int, datum: Box.Datum) extends Value
+  object Operations {
+    trait Locked
+
+    trait Digest
+
+    trait DigitalSignature
+
+    trait HeightRange
+
+    trait SlotRange
+
+    trait ExactMatch
+
+    trait Threshold
+
+    trait Not
+  }
+
+  object Models {
+
+    object Primitive {
+
+      object Locked {
+        val token: Byte = 0: Byte
+
+        final case class Proposition(data: Array[Byte]) extends quivr.Proposition with quivr.Operations.Locked
+
+        final case class Proof(transactionBind: Array[Byte]) extends quivr.Proof(transactionBind) with quivr.Operations.Locked
+      }
+
+      object Digest {
+        val token: Byte = 1: Byte
+
+        final case class Proposition(digest: Array[Byte]) extends quivr.Proposition with quivr.Operations.Digest
+
+        final case class Proof(preimage: Array[Byte], transactionBind: Array[Byte])
+          extends quivr.Proof(transactionBind)
+            with quivr.Operations.Digest
+      }
+
+      object DigitalSignature {
+        val token: Byte = 2: Byte
+
+        final case class Proposition(vk: Array[Byte]) extends quivr.Proposition with quivr.Operations.DigitalSignature
+
+        final case class Proof(transactionBind: Array[Byte])
+          extends quivr.Proof(transactionBind)
+            with quivr.Operations.DigitalSignature
+      }
     }
-  }
 
-  case class SecretKey(bytes: Array[Byte])
-  case class VerificationKey(bytes: Array[Byte])
-  case class KeyPair(sk: SecretKey, vk: VerificationKey)
-  case class Signature(bytes: Array[Byte])
+    object Contextual {
 
-  case class Accumulator()
+      object Height {
+        val token: Byte = -1: Byte
 
-  case class TypedEvidence(prefix: Array[Byte], bytes: Array[Byte])
+        final case class Proposition(min: Long, max: Long) extends quivr.Proposition with quivr.Operations.HeightRange
 
-  case class Metadata(prefix: Array[Byte], value: Array[Byte])
+        final case class Proof(transactionBind: Array[Byte])
+          extends quivr.Proof(transactionBind)
+            with quivr.Operations.HeightRange
+      }
 
-  case class Contract(propositions: Set[Proposal], threshold: Int)
+      object Slot {
+        val token: Byte = -2: Byte
 
-  case class Attestation(proofs: Set[Proof])
+        final case class Proposition(min: Long, max: Long) extends quivr.Proposition with quivr.Operations.HeightRange
 
-  abstract class HasEval[E] {
-    val eval: E
-  }
+        final case class Proof(transactionBind: Array[Byte])
+          extends quivr.Proof(transactionBind)
+            with quivr.Operations.HeightRange
+      }
 
-  type Proposal = QuivrContractExpr[SignatureProposition]
-  type Proof = QuivrContractExpr[SignatureProposition]
-  trait Verification[E] extends HasEval[E]
-  trait Signatory[E] extends HasEval[E]
+      object ExactMatch {
+        val token: Byte = -3: Byte
+      }
 
-  trait IoTransaction[I[_], O[_]] {
-    val inputs: List[I[_]]
-    val outputs: List[O[_]]
-    lazy val signableBytes: Array[Byte] = "test".getBytes
-  }
+    }
 
-  trait SpentTransactionOutput[V] {
-    val value: V
-    val utxoReference: Box.Id
-    val contract: Contract
-    val attestation: Attestation
-  }
+    object Compositional {
 
-  trait UnspentTransactionOutput[V] {
-    val value: V
-    val spendEvidence: TypedEvidence
+      object Not {
+        val token: Byte = 126: Byte
+
+        final case class Proposition(proposition: quivr.Proposition) extends quivr.Proposition with quivr.Operations.Not
+
+        final case class Proof(transactionBind: Array[Byte]) extends quivr.Proof(transactionBind) with quivr.Operations.Not
+      }
+
+      object Threshold {
+        sealed abstract class BooleanOp
+
+        case object And extends BooleanOp
+
+        case object Or extends BooleanOp
+
+        val token: Byte = 127: Byte
+
+        final case class Proposition(
+                                challenges: Array[quivr.Proposition],
+                                threshold: Int,
+                                connector: BooleanOp
+                              ) extends quivr.Proposition
+          with quivr.Operations.Threshold
+
+        final case class Proof(
+                          responses: Array[Option[quivr.Proof]],
+                          transactionBind: Array[Byte]
+                        ) extends quivr.Proof(transactionBind)
+          with quivr.Operations.Threshold
+      }
+    }
+
   }
 }
+
+
