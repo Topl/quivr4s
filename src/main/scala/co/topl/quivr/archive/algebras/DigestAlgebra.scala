@@ -1,4 +1,4 @@
-package co.topl.quivr.algebras
+package co.topl.quivr.archive.algebras
 
 trait DigestAlgebra[F[_]] {
 

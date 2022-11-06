@@ -1,4 +1,4 @@
-package co.topl.quivr.v1
+package co.topl.quivr.archive.v1
 
 import cats._
 import cats.data.OptionT

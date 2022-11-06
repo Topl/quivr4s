@@ -1,7 +1,7 @@
-package co.topl.quivr.interpreters
+package co.topl.quivr.archive.interpreters
 
-import co.topl.quivr.algebras.SignerAlgebra
-import co.topl.quivr._
+import co.topl.quivr.archive.algebras.SignerAlgebra
+import co.topl.quivr.archive.{KeyPair, SecretKey, Signatory, Signature, VerificationKey}
 
 object Signers {
   case class Create(seed: Array[Byte]) extends Signatory[KeyPair] {

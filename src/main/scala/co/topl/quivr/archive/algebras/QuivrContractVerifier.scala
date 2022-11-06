@@ -1,14 +1,8 @@
-package co.topl.quivr.algebras
+package co.topl.quivr.archive.algebras
 
-import scorex.crypto.signatures.PublicKey
-import cats.data.Reader
-import scorex.crypto.signatures.Curve25519
-import co.topl.quivr.interpreters.NativeTransaction
-import co.topl.quivr.Box
-
-import cats.free.Free.foldMap
-import cats.arrow.FunctionK
-import cats.Id
+import co.topl.quivr.archive.Box
+import co.topl.quivr.archive.interpreters.NativeTransaction
+import scorex.crypto.signatures.{Curve25519, PublicKey}
 
 case class VerifierContext(
     vks: List[PublicKey],

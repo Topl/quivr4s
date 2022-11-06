@@ -1,13 +1,6 @@
-package co.topl.quivr.interpreters
+package co.topl.quivr.archive.interpreters
 
-import co.topl.quivr.algebras.ValidateAlgebra
-import co.topl.quivr.{
-  Attestation,
-  Box,
-  Contract,
-  Metadata,
-  SpentTransactionOutput
-}
+import co.topl.quivr.archive.{Attestation, Box, Contract, Metadata, SpentTransactionOutput}
 
 case class STxO[V](
     utxoReference: Box.Id,

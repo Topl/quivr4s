@@ -1,6 +1,6 @@
-package co.topl.quivr.algebras
+package co.topl.quivr.archive.algebras
 
-import co.topl.quivr._
+import co.topl.quivr.archive.{KeyPair, SecretKey, Signature, VerificationKey}
 
 trait SignerAlgebra[F[_]] {
   def create(seed: Array[Byte]): F[KeyPair]

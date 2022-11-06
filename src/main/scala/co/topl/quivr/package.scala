@@ -1,12 +1,17 @@
 package co.topl
 
+import co.topl.Crypto.{VerificationKey, Witness}
+
 package object quivr {
+
+  type SignableTxBytes = Array[Byte]
+  type TxBind = Array[Byte]
 
   // Propositions represent challenges that must be satisfied
   sealed abstract class Proposition
 
   // For each Proposition there is a corresponding Proof that can be constructed to satisfy the given Proposition
-  sealed abstract class Proof(bindToTransaction: Array[Byte])
+  sealed abstract class Proof(bindToTransaction: TxBind)
 
   object Operations {
     trait Locked
@@ -17,13 +22,42 @@ package object quivr {
 
     trait HeightRange
 
-    trait SlotRange
+    trait TickRange
 
     trait ExactMatch
 
     trait Threshold
 
     trait Not
+  }
+
+  object Evaluation {
+    trait Datum
+    trait IncludesHeight extends Datum {
+      def height: Long
+    }
+    trait SignatureVerifier {
+      def verify(vk: VerificationKey, sig: Witness, msg: Array[Byte]): Boolean
+    }
+
+    trait DynamicContext[F[_]] {
+      def datums: Map[String, Datum]
+      def signingRoutines: Map[String, SignatureVerifier]
+
+      def useDatum[B](label: String)(f: Datum => B): F[B]
+
+      def heightOf(label: String): Option[Long] =
+        datums.get(label).map {
+          case v: IncludesHeight => v.height
+        }
+
+      def signatureVerify(routine: String)(vk: VerificationKey, sig: Witness, msg: Array[Byte]): Boolean =
+        signingRoutines.get(routine).fold(false)(_.verify(vk, sig, msg))
+
+      def signableBytes: F[SignableTxBytes]
+
+      def currentTick: F[Long]
+    }
   }
 
   object Models {
@@ -33,52 +67,80 @@ package object quivr {
       object Locked {
         val token: Byte = 0: Byte
 
-        final case class Proposition(data: Array[Byte]) extends quivr.Proposition with quivr.Operations.Locked
+        final case class Proposition(
+          data: Option[Array[Byte]]
+        ) extends quivr.Proposition
+            with quivr.Operations.Locked
 
-        final case class Proof(transactionBind: Array[Byte]) extends quivr.Proof(transactionBind) with quivr.Operations.Locked
+        final case class Proof(
+          transactionBind: TxBind
+        ) extends quivr.Proof(transactionBind)
+            with quivr.Operations.Locked
       }
 
       object Digest {
         val token: Byte = 1: Byte
 
-        final case class Proposition(digest: Array[Byte]) extends quivr.Proposition with quivr.Operations.Digest
+        final case class Proposition(
+          digest: Array[Byte]
+        ) extends quivr.Proposition
+            with quivr.Operations.Digest
 
-        final case class Proof(preimage: Array[Byte], transactionBind: Array[Byte])
-          extends quivr.Proof(transactionBind)
+        final case class Proof(
+          preimage:        Array[Byte],
+          transactionBind: TxBind
+        ) extends quivr.Proof(transactionBind)
             with quivr.Operations.Digest
       }
 
       object DigitalSignature {
         val token: Byte = 2: Byte
 
-        final case class Proposition(vk: Array[Byte]) extends quivr.Proposition with quivr.Operations.DigitalSignature
+        final case class Proposition(
+          routine: String,
+          vk: VerificationKey
+        ) extends quivr.Proposition
+            with quivr.Operations.DigitalSignature
 
-        final case class Proof(transactionBind: Array[Byte])
-          extends quivr.Proof(transactionBind)
+        final case class Proof(
+          witness:         Witness,
+          transactionBind: TxBind
+        ) extends quivr.Proof(transactionBind)
             with quivr.Operations.DigitalSignature
       }
     }
 
     object Contextual {
 
-      object Height {
+      object HeightRange {
         val token: Byte = -1: Byte
 
-        final case class Proposition(min: Long, max: Long) extends quivr.Proposition with quivr.Operations.HeightRange
+        final case class Proposition(
+          location: String,
+          min: Long,
+          max: Long
+        ) extends quivr.Proposition
+            with quivr.Operations.HeightRange
 
-        final case class Proof(transactionBind: Array[Byte])
-          extends quivr.Proof(transactionBind)
+        final case class Proof(
+          transactionBind: TxBind
+        ) extends quivr.Proof(transactionBind)
             with quivr.Operations.HeightRange
       }
 
-      object Slot {
+      object TickRange {
         val token: Byte = -2: Byte
 
-        final case class Proposition(min: Long, max: Long) extends quivr.Proposition with quivr.Operations.HeightRange
+        final case class Proposition(
+          min: Long,
+          max: Long
+        ) extends quivr.Proposition
+            with quivr.Operations.TickRange
 
-        final case class Proof(transactionBind: Array[Byte])
-          extends quivr.Proof(transactionBind)
-            with quivr.Operations.HeightRange
+        final case class Proof(
+          transactionBind: TxBind
+        ) extends quivr.Proof(transactionBind)
+            with quivr.Operations.TickRange
       }
 
       object ExactMatch {
@@ -92,36 +154,39 @@ package object quivr {
       object Not {
         val token: Byte = 126: Byte
 
-        final case class Proposition(proposition: quivr.Proposition) extends quivr.Proposition with quivr.Operations.Not
+        final case class Proposition(
+          proposition: quivr.Proposition
+        ) extends quivr.Proposition
+            with quivr.Operations.Not
 
-        final case class Proof(transactionBind: Array[Byte]) extends quivr.Proof(transactionBind) with quivr.Operations.Not
+        final case class Proof(
+          proof:           quivr.Proof,
+          transactionBind: TxBind
+        ) extends quivr.Proof(transactionBind)
+            with quivr.Operations.Not
       }
 
       object Threshold {
         sealed abstract class BooleanOp
-
         case object And extends BooleanOp
-
         case object Or extends BooleanOp
 
         val token: Byte = 127: Byte
 
         final case class Proposition(
-                                challenges: Array[quivr.Proposition],
-                                threshold: Int,
-                                connector: BooleanOp
-                              ) extends quivr.Proposition
-          with quivr.Operations.Threshold
+          challenges: Array[quivr.Proposition],
+          threshold:  Int,
+          connector:  BooleanOp
+        ) extends quivr.Proposition
+            with quivr.Operations.Threshold
 
         final case class Proof(
-                          responses: Array[Option[quivr.Proof]],
-                          transactionBind: Array[Byte]
-                        ) extends quivr.Proof(transactionBind)
-          with quivr.Operations.Threshold
+          responses:       Array[Option[quivr.Proof]],
+          transactionBind: TxBind
+        ) extends quivr.Proof(transactionBind)
+            with quivr.Operations.Threshold
       }
     }
 
   }
 }
-
-

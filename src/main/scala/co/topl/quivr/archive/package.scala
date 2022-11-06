@@ -1,4 +1,8 @@
-package co.topl.quivr.archive;package object quivr {
+package co.topl.quivr
+
+import co.topl.quivr.archive.algebras.{QuivrContractExpr, SignatureProposition}
+
+package object archive {
         type Digest = Array[Byte]
 
         case class Box(evidence: Array[Byte], value: Box.Value)
@@ -35,6 +39,7 @@ package co.topl.quivr.archive;package object quivr {
 
         type Proposal = QuivrContractExpr[SignatureProposition]
         type Proof = QuivrContractExpr[SignatureProposition]
+
         trait Verification[E] extends HasEval[E]
         trait Signatory[E] extends HasEval[E]
 

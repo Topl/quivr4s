@@ -1,7 +1,6 @@
-package co.topl.quivr.algebras
+package co.topl.quivr.archive.algebras
 
-import co.topl.quivr
-import co.topl.quivr.{Digest, Proof, Proposal, Signature, VerificationKey}
+import co.topl.quivr.archive.{SecretKey, Signature, VerificationKey}
 
 trait BooleanAlgebra[F[_]] {
   // primitive type
@@ -30,7 +29,7 @@ trait ProposerAlgebra[F[_]] extends QuivrAlgebra[F] {
 }
 
 trait ProverAlgebra[F[_]] extends QuivrAlgebra[F] {
-  def signature(sk: quivr.SecretKey): F[quivr.Signature]
+  def signature(sk: SecretKey): F[Signature]
 //  def digest(preimage: Array[Byte]): F[Digest]
 //  def accumulator(tree: quivr.Accumulator, leaf: Digest): F[List[Digest]]
 }

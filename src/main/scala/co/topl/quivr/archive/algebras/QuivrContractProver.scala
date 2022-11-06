@@ -1,12 +1,8 @@
-package co.topl.quivr.algebras
+package co.topl.quivr.archive.algebras
 
-import cats.data.Reader
-import scorex.crypto.signatures.PublicKey
-import scorex.crypto.signatures.PrivateKey
-import co.topl.quivr.interpreters.NativeTransaction
-import co.topl.quivr.Box
-import scorex.crypto.signatures.Curve25519
-import scorex.crypto.signatures.Signature
+import co.topl.quivr.archive.Box
+import co.topl.quivr.archive.interpreters.NativeTransaction
+import scorex.crypto.signatures.{Curve25519, PrivateKey, PublicKey, Signature}
 
 case class ProverContext(
     vks: List[PublicKey],

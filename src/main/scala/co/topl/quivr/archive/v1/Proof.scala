@@ -1,5 +1,4 @@
-package co.topl.quivr.v1
-
+package co.topl.quivr.archive.v1
 
 sealed abstract class Proof
 

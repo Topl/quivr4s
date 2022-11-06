@@ -1,4 +1,4 @@
-package co.topl.quivr
+package co.topl.quivr.archive
 
 import cats.free.Free
 

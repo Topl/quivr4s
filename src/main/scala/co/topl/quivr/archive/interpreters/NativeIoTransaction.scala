@@ -1,7 +1,6 @@
-package co.topl.quivr.interpreters
+package co.topl.quivr.archive.interpreters
 
-import co.topl.quivr.algebras.ValidateAlgebra
-import co.topl.quivr.{Box, IoTransaction, Metadata}
+import co.topl.quivr.archive.{Box, IoTransaction, Metadata}
 
 trait NativeIoTransaction extends IoTransaction[STxO, UTxO] {
   val inputs: List[STxO[_]]

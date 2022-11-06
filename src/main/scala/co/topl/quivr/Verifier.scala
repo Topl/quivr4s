@@ -1,370 +1,202 @@
 package co.topl.quivr
 
-import cats.Applicative
+import cats._
 import cats.implicits._
-import co.topl.Tetra
 import co.topl.crypto.hash.blake2b256
-
-import scala.language.implicitConversions
-
+import co.topl.crypto.signatures.Ed25519
 
 /**
  * A Verifier evaluates whether a given Proof satisfies a certain Proposition
  */
-trait Verifier[F[_], C <: Proposition, R <: Proof] {
+trait Verifier[F[_]] {
 
   /**
    * Does the given `proof` satisfy the given `proposition` using the given `data`?
    */
-  def evaluate(proposition: C, proof: R, context: Tetra.Evaluation.DynamicContext[F]): F[Boolean]
+  def evaluate[C <: Proposition, R <: Proof](
+    proposition: C,
+    proof:       R,
+    context:     Evaluation.DynamicContext[F]
+  ): F[Boolean]
 }
 
 object Verifier {
 
+  trait Implicits {
+
+    implicit class PropositionOps(proposition: Proposition) {
+
+      def isSatisfiedBy[F[_]](
+        proof:            Proof
+      )(implicit context: Evaluation.DynamicContext[F], ev: Verifier[F]): F[Boolean] =
+        ev.evaluate(proposition, proof, context)
+    }
+
+    implicit class ProofOps(proof: Proof) {
+
+      def satisfies[F[_]](
+        proposition: Proposition
+      )(implicit ev: Verifier[F], context: Evaluation.DynamicContext[F]): F[Boolean] =
+        ev.evaluate(proposition, proof, context)
+    }
+  }
+
+  object implicits extends Implicits
+
   trait Instances {
 
+    private def lockedVerifier[F[_]: Monad](
+      proposition: Models.Primitive.Locked.Proposition,
+      proof:       Models.Primitive.Locked.Proof,
+      context:     Evaluation.DynamicContext[F]
+    ): F[Boolean] =
+      // todo: consider optimizing by skipping the txBind verification? Perhaps we still want to know if the
+      // prover bound to this value correctly though? I am unsure if this data will be recorded so not sure it
+      // worth keeping around
+      for {
+        sb <- context.signableBytes
+        verifierTxBind = Prover.bind(Models.Primitive.Locked.token, sb)
+        msgAuth = verifierTxBind sameElements proof.transactionBind
+        evalAuth = false // should always fail, the Locked Proposition is unsatisfiable
+        res = msgAuth && evalAuth
+      } yield res
+
     // todo: how to pass which of these failed back up?
-    def digestVerifier[F[_] : Applicative]: Verifier[
-      F,
-      Models.Primitive.Digest.Proposition,
-      Models.Primitive.Digest.Proof
-    ] =
-      new Verifier[
-        F,
-        Models.Primitive.Digest.Proposition,
-        Models.Primitive.Digest.Proof
-      ] {
+    private def digestVerifier[F[_]: Monad](
+      proposition: Models.Primitive.Digest.Proposition,
+      proof:       Models.Primitive.Digest.Proof,
+      context:     Evaluation.DynamicContext[F]
+    ): F[Boolean] = for {
+      sb <- context.signableBytes
+      verifierTxBind = Prover.bind(Models.Primitive.Digest.token, sb)
+      msgAuth = verifierTxBind sameElements proof.transactionBind
+      verifierDigest = blake2b256.hash(proof.preimage)
+      evalAuth = verifierDigest.value sameElements proposition.digest
+      res = msgAuth && evalAuth
+    } yield res
 
-        def evaluate(proposition: Models.Primitive.Digest.Proposition,
-                     proof: Models.Primitive.Digest.Proof,
-                     context: Tetra.Evaluation.DynamicContext[F]): F[Boolean] = {
-          val msgAuth =
-            Prover.bind(
-              Models.Primitive.Digest.token,
-              context.datums.iotx.signableBytes
-            ) sameElements proof.transactionBind
+    private def signatureVerifier[F[_]: Monad](
+      proposition: Models.Primitive.DigitalSignature.Proposition,
+      proof:       Models.Primitive.DigitalSignature.Proof,
+      context:     Evaluation.DynamicContext[F]
+    ): F[Boolean] = for {
+      sb <- context.signableBytes
+      verifierTxBind = Prover.bind(Models.Primitive.DigitalSignature.token, sb)
+      msgAuth = verifierTxBind sameElements proof.transactionBind
+      evalAuth = context.signatureVerify(proposition.routine)(proposition.vk, proof.witness, sb)
+      res = msgAuth && evalAuth
+    } yield res
 
-          val evalAuth = (blake2b256
-            .hash(proof.preimage)
-            .value sameElements proposition.digest)
+    private def heightVerifier[F[_]: Monad](
+      proposition: Models.Contextual.HeightRange.Proposition,
+      proof:       Models.Contextual.HeightRange.Proof,
+      context:     Evaluation.DynamicContext[F]
+    ): F[Boolean] = for {
+      sb <- context.signableBytes
+      verifierTxBind = Prover.bind(Models.Contextual.HeightRange.token, sb)
+      msgAuth = verifierTxBind sameElements proof.transactionBind
+      height = context.heightOf(proposition.location).fold(-1L)(identity)
+      evalAuth = proposition.min <= height && height <= proposition.max
+      res = msgAuth && evalAuth
+    } yield res
 
-          (msgAuth && evalAuth).pure[F]
-        }
-      }
+    private def tickVerifier[F[_]: Monad](
+      proposition: Models.Contextual.TickRange.Proposition,
+      proof:       Models.Contextual.TickRange.Proof,
+      context:     Evaluation.DynamicContext[F]
+    ): F[Boolean] = for {
+      sb <- context.signableBytes
+      verifierTxBind = Prover.bind(Models.Contextual.TickRange.token, sb)
+      msgAuth = verifierTxBind sameElements proof.transactionBind
+      currentTick <- context.currentTick
+      evalAuth = proposition.min <= currentTick && currentTick <= proposition.max
+      res = msgAuth && evalAuth
+    } yield res
 
-    def heightVerifier[F[_] : Applicative]: Verifier[
-      F,
-      Models.Contextual.Height.Proposition,
-      Models.Contextual.Height.Proof
-    ] =
-      new Verifier[
-        F,
-        Models.Contextual.Height.Proposition,
-        Models.Contextual.Height.Proof
-      ] {
+    //    def exactMatchVerifier[F[_] : Applicative]: Verifier[
+    //      F,
+    //      Models.Contextual.ExactMatch.Proposition,
+    //      Models.Contextual.ExactMatch.Proof
+    //    ] = ???
 
-        override def evaluate(proposition: Models.Contextual.Height.Proposition,
-                              proof: Models.Contextual.Height.Proof, context: Tetra.Evaluation.DynamicContext[F]): F[Boolean] = {
-          val msgAuth =
-            Prover.bind(
-              Models.Contextual.Height.token,
-              context.datums.iotx.signableBytes
-            ) sameElements proof.transactionBind
+    private def thresholdVerifier[F[_]: Monad](
+      proposition:       Models.Compositional.Threshold.Proposition,
+      proof:             Models.Compositional.Threshold.Proof,
+      context:           Evaluation.DynamicContext[F]
+    )(implicit verifier: Verifier[F]): F[Boolean] =
+      for {
+        sb <- context.signableBytes
+        verifierTxBind = Prover.bind(Models.Compositional.Threshold.token, sb)
+        msgAuth = verifierTxBind sameElements proof.transactionBind
+        evalAuth <-
+          if (proposition.threshold === 0) true.pure[F]
+          else if (proposition.threshold >= proposition.challenges.size) false.pure[F]
+          else if (proof.responses.isEmpty) false.pure[F]
+          // We assume a one-to-one pairing of sub-proposition to sub-proof with the assumption that some of the proofs
+          // may be Proofs.False
+          else if (proof.responses.size =!= proposition.challenges.size) false.pure[F]
+          else {
+            proposition.challenges.toList
+              .zip(proof.responses)
+              .foldLeftM(0L) {
+                case (successCount, _) if successCount >= proposition.threshold =>
+                  successCount.pure[F]
+                case (successCount, (_, None)) =>
+                  successCount.pure[F]
+                case (successCount, (prop: Proposition, Some(proof: Proof))) =>
+                  verifier.evaluate(prop, proof, context).map {
+                    case true => successCount + 1
+                    case _    => successCount
+                  }
+              }
+              .map(_ >= proposition.threshold)
+          }
+        res = msgAuth && evalAuth
+      } yield res
 
-          val evalAuth =
-            proposition.min <= context.datums.header.height && context.datums.header.height <= proposition.max
+    private def notVerifier[F[_]: Monad](
+      proposition: Models.Compositional.Not.Proposition,
+      proof:       Models.Compositional.Not.Proof,
+      context:     Evaluation.DynamicContext[F]
+    )(implicit
+      verifier: Verifier[F]
+    ): F[Boolean] =
+      verifier
+        .evaluate(proposition.proposition, proof.proof, context)
+        .map(!_)
 
-          (msgAuth && evalAuth).pure[F]
-        }
+    implicit def verifierInstance[F[_]: Monad](implicit
+      ed25519: Ed25519
+    ): Verifier[F] =
+      new Verifier[F] {
+
+        override def evaluate[C <: Proposition, R <: Proof](
+          proposition: C,
+          proof:       R,
+          context:     Evaluation.DynamicContext[F]
+        ): F[Boolean] =
+          (proposition, proof) match {
+            case (c: Models.Primitive.Locked.Proposition, r: Models.Primitive.Locked.Proof) =>
+              lockedVerifier(c, r, context)
+            case (c: Models.Primitive.Digest.Proposition, r: Models.Primitive.Digest.Proof) =>
+              digestVerifier(c, r, context)
+            case (c: Models.Primitive.DigitalSignature.Proposition, r: Models.Primitive.DigitalSignature.Proof) =>
+              signatureVerifier(c, r, context)
+            case (c: Models.Contextual.HeightRange.Proposition, r: Models.Contextual.HeightRange.Proof) =>
+              heightVerifier(c, r, context)
+            case (c: Models.Contextual.TickRange.Proposition, r: Models.Contextual.TickRange.Proof) =>
+              tickVerifier(c, r, context)
+            case (c: Models.Compositional.Threshold.Proposition, r: Models.Compositional.Threshold.Proof) =>
+              implicit def v: Verifier[F] = verifierInstance[F]
+              thresholdVerifier(c, r, context)
+            case (c: Models.Compositional.Not.Proposition, r: Models.Compositional.Not.Proof) =>
+              implicit def v: Verifier[F] = verifierInstance[F]
+              notVerifier(c, r, context)
+            case _ =>
+              false.pure[F]
+          }
       }
   }
+
+  object Instances extends Instances
 }
-
-//object Verifier {
-//
-//  trait Implicits {
-//
-//    implicit class ProofOps(proof: Proof) {
-//
-//      def satisfies[F[_]](proposition: Proposition)(implicit ev: Verifier[F], context: VerificationContext[F]): F[Boolean] =
-//        ev.evaluate(proposition, proof, context)
-//    }
-//
-//    implicit class PropositionOps(proposition: Proposition) {
-//
-//      def isSatisfiedBy[F[_]](
-//                               proof: Proof
-//                             )(context: VerificationContext[F], ev: Verifier[F]): F[Boolean] =
-//        ev.evaluate(proposition, proof, context)
-//    }
-//  }
-//
-//  object ops extends Implicits
-//
-//  trait Instances {
-//    private val curve25519 = new Curve25519()
-//
-//    private def publicKeyCurve25519Verifier[F[_] : Applicative](
-//                                                                 proposition: Propositions.Knowledge.Curve25519,
-//                                                                 proof: Proofs.Knowledge.Curve25519,
-//                                                                 context: VerificationContext[F]
-//                                                               ): F[Boolean] =
-//      curve25519
-//        .verify(
-//          proof,
-//          context.currentTransaction.signableBytes,
-//          proposition.key
-//        )
-//        .pure[F]
-//
-//    implicit def publicKeyEd25519Verifier[F[_] : Applicative](
-//                                                               proposition: Propositions.Knowledge.Ed25519,
-//                                                               proof: Proofs.Knowledge.Ed25519,
-//                                                               context: VerificationContext[F]
-//                                                             )(implicit
-//                                                               ed25519: Ed25519
-//                                                             ): F[Boolean] =
-//      ed25519
-//        .verify(
-//          proof,
-//          context.currentTransaction.signableBytes,
-//          proposition.key
-//        )
-//        .pure[F]
-//
-//    private def publicKeyExtendedEd25519Verifier[F[_] : Applicative](
-//                                                                      proposition: Propositions.Knowledge.ExtendedEd25519,
-//                                                                      proof: Proofs.Knowledge.Ed25519,
-//                                                                      context: VerificationContext[F]
-//                                                                    )(implicit
-//                                                                      extendedEd25519: ExtendedEd25519
-//                                                                    ): F[Boolean] =
-//      extendedEd25519
-//        .verify(
-//          proof,
-//          context.currentTransaction.signableBytes,
-//          proposition.key
-//        )
-//        .pure[F]
-//
-//    private def heightLockVerifier[F[_] : Applicative](
-//                                                        proposition: Propositions.Contextual.HeightLock,
-//                                                        context: VerificationContext[F]
-//                                                      ): F[Boolean] = (context.currentHeight >= proposition.height).pure[F]
-//
-//    //    private def requiredOutputVerifier[F[_]: Applicative](
-//    //      proposition: Propositions.Contextual.RequiredDionOutput,
-//    //      context:     VerificationContext[F]
-//    //    ): F[Boolean] =
-//    //      (context.currentTransaction.coinOutputs
-//    //        .toList(proposition.index)
-//    //        .dionAddress(NetworkPrefix(0)) == proposition.address).pure[F]
-//
-//    private def enumeratedOutputVerifier[F[_] : Applicative](
-//                                                              proposition: Propositions.Example.EnumeratedInput,
-//                                                              proof: Proofs.Example.EnumeratedInput
-//                                                            ): F[Boolean] = proposition.values.contains(proof.value).pure[F]
-//
-//    private def hashLockVerifier[F[_] : Applicative](
-//                                                      proposition: Propositions.Knowledge.HashLock,
-//                                                      proof: Proofs.Knowledge.HashLock
-//                                                    ): F[Boolean] =
-//      (blake2b256.hash(proof.salt.data.toArray :+ proof.value).value sameElements proposition.digest.data.toArray)
-//        .pure[F]
-//
-//    private def requiredBoxVerifier[F[_] : Applicative](
-//                                                         proposition: Propositions.Contextual.RequiredBoxState,
-//                                                         context: VerificationContext[F]
-//                                                       ): F[Boolean] = {
-//      def compareBoxes(propositionBox: Box[_])(sourceBox: Box[_]): Boolean = propositionBox match {
-//        case Box(TypedEvidence.empty, 0, Box.Values.Empty, 0) =>
-//          false
-//        case Box(TypedEvidence.empty, 0, Box.Values.Empty, data) =>
-//          data == sourceBox.data
-//        case Box(TypedEvidence.empty, 0, value, 0) =>
-//          value == sourceBox.value
-//        case Box(TypedEvidence.empty, 0, value, data) =>
-//          value == sourceBox.value && data == sourceBox.data
-//        case Box(TypedEvidence.empty, nonce, Box.Values.Empty, 0) =>
-//          nonce == sourceBox.nonce
-//        case Box(TypedEvidence.empty, nonce, Box.Values.Empty, data) =>
-//          nonce == sourceBox.nonce && data == sourceBox.data
-//        case Box(TypedEvidence.empty, nonce, value, 0) =>
-//          nonce == sourceBox.nonce && value == sourceBox.value
-//        case Box(TypedEvidence.empty, nonce, value, data) =>
-//          nonce == sourceBox.nonce && value == sourceBox.value && data == sourceBox.data
-//        case Box(typedEvidence, 0, Box.Values.Empty, 0) =>
-//          typedEvidence == sourceBox.evidence
-//        case Box(typedEvidence, 0, Box.Values.Empty, data) =>
-//          typedEvidence == sourceBox.evidence && data == sourceBox.data
-//        case Box(typedEvidence, 0, value, 0) =>
-//          typedEvidence == sourceBox.evidence && value == sourceBox.value
-//        case Box(typedEvidence, 0, value, data) =>
-//          typedEvidence == sourceBox.evidence && value == sourceBox.value && data == sourceBox.data
-//        case Box(typedEvidence, nonce, Box.Values.Empty, 0) =>
-//          typedEvidence == sourceBox.evidence && nonce == sourceBox.nonce
-//        case Box(typedEvidence, nonce, Box.Values.Empty, data) =>
-//          typedEvidence == sourceBox.evidence && nonce == sourceBox.nonce && data == sourceBox.data
-//        case Box(typedEvidence, nonce, value, 0) =>
-//          typedEvidence == sourceBox.evidence && nonce == sourceBox.nonce && value == sourceBox.value
-//        case Box(typedEvidence, nonce, value, data) =>
-//          typedEvidence == sourceBox.evidence && nonce == sourceBox.nonce && value == sourceBox.value && data == sourceBox.data
-//        case _ => false
-//      }
-//
-//      proposition.boxes
-//        .forall { case (index, box) =>
-//          proposition.location match {
-//            case BoxLocations.Input => compareBoxes(box)(context.inputBoxes(index))
-//            case BoxLocations.Output => compareBoxes(box)(Box(context.currentTransaction.coinOutputs.toList(index)))
-//          }
-//        }
-//        .pure[F]
-//    }
-//
-//    private def thresholdVerifier[F[_] : Monad](
-//                                                 proposition: Propositions.Compositional.Threshold,
-//                                                 proof: Proofs.Compositional.Threshold,
-//                                                 context: VerificationContext[F]
-//                                               )(implicit
-//                                                 proofVerifier: Verifier[F]
-//                                               ): F[Boolean] =
-//      if (proposition.threshold === 0) true.pure[F]
-//      else if (proposition.threshold >= proposition.propositions.size) false.pure[F]
-//      else if (proof.proofs.isEmpty) false.pure[F]
-//      // We assume a one-to-one pairing of sub-proposition to sub-proof with the assumption that some of the proofs
-//      // may be Proofs.False
-//      else if (proof.proofs.size =!= proposition.propositions.size) false.pure[F]
-//      else {
-//        proposition.propositions.toList
-//          .zip(proof.proofs)
-//          .foldLeftM(0L) {
-//            case (successCount, _) if successCount >= proposition.threshold =>
-//              successCount.pure[F]
-//            case (successCount, (prop, proof)) =>
-//              proofVerifier.verifyWith(prop, proof, context).map {
-//                case true => successCount + 1
-//                case _ => successCount
-//              }
-//          }
-//          .map(_ >= proposition.threshold)
-//      }
-//
-//    private def andVerifier[F[_] : Monad](
-//                                           proposition: Propositions.Compositional.And,
-//                                           proof: Proofs.Compositional.And,
-//                                           context: VerificationContext[F]
-//                                         )(implicit
-//                                           proofVerifier: Verifier[F]
-//                                         ): F[Boolean] =
-//      proofVerifier
-//        .verifyWith(proposition.a, proof.a, context)
-//        .flatMap {
-//          case true => proofVerifier.verifyWith(proposition.b, proof.b, context)
-//          case _ => false.pure[F]
-//        }
-//
-//    private def orVerifier[F[_] : Monad](
-//                                          proposition: Propositions.Compositional.Or,
-//                                          proof: Proofs.Compositional.Or,
-//                                          context: VerificationContext[F]
-//                                        )(implicit
-//                                          proofVerifier: Verifier[F]
-//                                        ): F[Boolean] =
-//      proofVerifier
-//        .verifyWith(proposition.a, proof.a, context)
-//        .flatMap {
-//          case false => proofVerifier.verifyWith(proposition.b, proof.b, context)
-//          case _ => true.pure[F]
-//        }
-//
-//    private def notVerifier[F[_] : Monad](
-//                                           proposition: Propositions.Compositional.Not,
-//                                           proof: Proofs.Compositional.Not,
-//                                           context: VerificationContext[F]
-//                                         )(implicit
-//                                           proofVerifier: Verifier[F]
-//                                         ): F[Boolean] =
-//      proofVerifier
-//        .verifyWith(proposition.a, proof.a, context)
-//        .map(!_)
-//
-//    private def jsScriptVerifier[F[_] : Monad](
-//                                                proposition: Propositions.Script.JS,
-//                                                proof: Proofs.Script.JS,
-//                                                context: VerificationContext[F],
-//                                                jsExecutor: Propositions.Script.JS.JSScript => F[(Json, Json) => F[Boolean]]
-//                                              ): F[Boolean] =
-//      OptionT
-//        .fromOption[F](io.circe.parser.parse(proof.serializedArgs).toOption)
-//        .semiflatMap { argsJson =>
-//          val contextJson =
-//            Json.obj(
-//              "currentTransaction" -> context.currentTransaction.asJson,
-//              "currentHeight" -> context.currentHeight.asJson,
-//              "currentSlot" -> context.currentSlot.asJson
-//            )
-//          jsExecutor(proposition.script)
-//            .flatMap(f => f(contextJson, argsJson))
-//        }
-//        .getOrElse(false)
-//
-//    implicit def proofVerifier[F[_] : Monad](implicit
-//                                             ed25519: Ed25519,
-//                                             extendedEd25519: ExtendedEd25519,
-//                                             jsExecutor: Propositions.Script.JS.JSScript => F[(Json, Json) => F[Boolean]]
-//                                            ): Verifier[F] =
-//      (proposition, proof, context) =>
-//        (proposition, proof) match {
-//          case (Propositions.PermanentlyLocked, _) =>
-//            false.pure[F]
-//          case (prop: Propositions.Knowledge.Curve25519, proof: Proofs.Knowledge.Curve25519) =>
-//            publicKeyCurve25519Verifier[F](prop, proof, context)
-//          case (prop: Propositions.Knowledge.Ed25519, proof: Proofs.Knowledge.Ed25519) =>
-//            publicKeyEd25519Verifier[F](prop, proof, context)
-//          case (prop: Propositions.Knowledge.ExtendedEd25519, proof: Proofs.Knowledge.Ed25519) =>
-//            publicKeyExtendedEd25519Verifier[F](prop, proof, context)
-//          case (prop: Propositions.Compositional.Threshold, proof: Proofs.Compositional.Threshold) =>
-//            implicit def v: Verifier[F] = proofVerifier[F]
-//
-//            thresholdVerifier[F](prop, proof, context)
-//          case (prop: Propositions.Compositional.And, proof: Proofs.Compositional.And) =>
-//            implicit def v: Verifier[F] = proofVerifier[F]
-//
-//            andVerifier[F](prop, proof, context)
-//          case (prop: Propositions.Compositional.Or, proof: Proofs.Compositional.Or) =>
-//            implicit def v: Verifier[F] = proofVerifier[F]
-//
-//            orVerifier[F](prop, proof, context)
-//          case (prop: Propositions.Compositional.Not, proof: Proofs.Compositional.Not) =>
-//            implicit def v: Verifier[F] = proofVerifier[F]
-//
-//            notVerifier[F](prop, proof, context)
-//          case (prop: Propositions.Contextual.HeightLock, _: Proofs.Contextual.HeightLock) =>
-//            heightLockVerifier[F](prop, context)
-//          case (prop: Propositions.Contextual.RequiredBoxState, proof: Proofs.Contextual.RequiredBoxState) =>
-//            requiredBoxVerifier[F](prop, context)
-//          case (prop: Propositions.Knowledge.HashLock, proof: Proofs.Knowledge.HashLock) =>
-//            hashLockVerifier[F](prop, proof)
-//          case (prop: Propositions.Example.EnumeratedInput, proof: Proofs.Example.EnumeratedInput) =>
-//            enumeratedOutputVerifier[F](prop, proof)
-//          case (prop: Propositions.Script.JS, proof: Proofs.Script.JS) =>
-//            jsScriptVerifier[F](prop, proof, context, jsExecutor)
-//          case _ =>
-//            false.pure[F]
-//        }
-//  }
-//
-//  object Instances extends Instances
-//}
-//
-//trait VerificationContext[F[_]] {
-//  def currentTransaction: Transaction
-//
-//  def currentHeight: Long
-//
-//  def inputBoxes: List[Box[Box.Value]]
-//
-//  def currentSlot: Slot
-//}
-

@@ -1,7 +1,6 @@
-package co.topl.quivr.interpreters
+package co.topl.quivr.archive.interpreters
 
-import co.topl.quivr.algebras.ValidateAlgebra
-import co.topl.quivr.{Box, Metadata, TypedEvidence, UnspentTransactionOutput}
+import co.topl.quivr.archive.{Metadata, TypedEvidence, UnspentTransactionOutput}
 
 case class UTxO[V](
     spendEvidence: TypedEvidence,

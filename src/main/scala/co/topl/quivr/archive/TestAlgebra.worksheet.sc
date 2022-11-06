@@ -1,12 +1,8 @@
-import co.topl.quivr.Contract
-import co.topl.quivr.interpreters.UTxO
-import co.topl.quivr.Attestation
-import co.topl.quivr.interpreters.STxO
-import co.topl.quivr.Box
-import co.topl.quivr.interpreters.NativeTransaction
+import co.topl.quivr.archive.Box
+import co.topl.quivr.archive.algebras.QuivrContractAlgebraSyntax._
+import co.topl.quivr.archive.algebras._
+import co.topl.quivr.archive.interpreters.NativeTransaction
 import scorex.crypto.signatures.Curve25519
-import co.topl.quivr.algebras.QuivrContractAlgebraSyntax._
-import co.topl.quivr.algebras._
 
 val keyPair1 = Curve25519.createKeyPair("test0".getBytes())
 

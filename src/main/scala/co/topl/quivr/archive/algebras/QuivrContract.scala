@@ -1,8 +1,6 @@
-package co.topl.quivr.algebras
+package co.topl.quivr.archive.algebras
 
-import cats.data.Reader
 import cats.Functor
-import cats.free.Free.liftF
 
 sealed trait QuivrContractExpr[+A] extends Functor[QuivrContractExpr] {
 

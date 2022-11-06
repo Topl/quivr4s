@@ -1,6 +1,5 @@
-package co.topl.quivr.algebras
+package co.topl.quivr.archive.algebras
 
-import cats.data.Reader
 import scorex.crypto.signatures.PublicKey
 
 case class ProposerContext(vks: List[PublicKey])
