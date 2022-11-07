@@ -2,8 +2,6 @@ package co.topl.quivr
 
 import cats._
 import cats.implicits._
-import co.topl.crypto.hash.blake2b256
-import co.topl.crypto.signatures.Ed25519
 
 /**
  * A Verifier evaluates whether a given Proof satisfies a certain Proposition
@@ -70,8 +68,7 @@ object Verifier {
       sb <- context.signableBytes
       verifierTxBind = Prover.bind(Models.Primitive.Digest.token, sb)
       msgAuth = verifierTxBind sameElements proof.transactionBind
-      verifierDigest = blake2b256.hash(proof.preimage)
-      evalAuth = verifierDigest.value sameElements proposition.digest
+      evalAuth = context.digestVerify(proposition.routine)(proof.preimage, proposition.digest)
       res = msgAuth && evalAuth
     } yield res
 
@@ -95,7 +92,7 @@ object Verifier {
       sb <- context.signableBytes
       verifierTxBind = Prover.bind(Models.Contextual.HeightRange.token, sb)
       msgAuth = verifierTxBind sameElements proof.transactionBind
-      height = context.heightOf(proposition.location).fold(-1L)(identity)
+      height = context.heightOf(proposition.chain).fold(-1L)(identity)
       evalAuth = proposition.min <= height && height <= proposition.max
       res = msgAuth && evalAuth
     } yield res
@@ -113,11 +110,53 @@ object Verifier {
       res = msgAuth && evalAuth
     } yield res
 
-    //    def exactMatchVerifier[F[_] : Applicative]: Verifier[
-    //      F,
-    //      Models.Contextual.ExactMatch.Proposition,
-    //      Models.Contextual.ExactMatch.Proof
-    //    ] = ???
+    private def exactMatchVerifier[F[_]: Monad](
+      proposition: Models.Contextual.ExactMatch.Proposition,
+      proof:       Models.Contextual.ExactMatch.Proof,
+      context:     Evaluation.DynamicContext[F]
+    ): F[Boolean] = for {
+      sb <- context.signableBytes
+      verifierTxBind = Prover.bind(Models.Contextual.TickRange.token, sb)
+      msgAuth = verifierTxBind sameElements proof.transactionBind
+      evalAuth = context.exactMatch(proposition.label, proposition.compareTo)
+      res = msgAuth && evalAuth
+    } yield res
+
+    private def lessThanVerifier[F[_]: Monad](
+      proposition: Models.Contextual.LessThan.Proposition,
+      proof:       Models.Contextual.LessThan.Proof,
+      context:     Evaluation.DynamicContext[F]
+    ): F[Boolean] = for {
+      sb <- context.signableBytes
+      verifierTxBind = Prover.bind(Models.Contextual.TickRange.token, sb)
+      msgAuth = verifierTxBind sameElements proof.transactionBind
+      evalAuth = context.lessThan(proposition.label, proposition.compareTo)
+      res = msgAuth && evalAuth
+    } yield res
+
+    private def greaterThanVerifier[F[_]: Monad](
+      proposition: Models.Contextual.GreaterThan.Proposition,
+      proof:       Models.Contextual.GreaterThan.Proof,
+      context:     Evaluation.DynamicContext[F]
+    ): F[Boolean] = for {
+      sb <- context.signableBytes
+      verifierTxBind = Prover.bind(Models.Contextual.TickRange.token, sb)
+      msgAuth = verifierTxBind sameElements proof.transactionBind
+      evalAuth = context.greaterThan(proposition.label, proposition.compareTo)
+      res = msgAuth && evalAuth
+    } yield res
+
+    private def equalToVerifier[F[_]: Monad](
+      proposition: Models.Contextual.EqualTo.Proposition,
+      proof:       Models.Contextual.EqualTo.Proof,
+      context:     Evaluation.DynamicContext[F]
+    ): F[Boolean] = for {
+      sb <- context.signableBytes
+      verifierTxBind = Prover.bind(Models.Contextual.TickRange.token, sb)
+      msgAuth = verifierTxBind sameElements proof.transactionBind
+      evalAuth = context.equalTo(proposition.label, proposition.compareTo)
+      res = msgAuth && evalAuth
+    } yield res
 
     private def thresholdVerifier[F[_]: Monad](
       proposition:       Models.Compositional.Threshold.Proposition,
@@ -165,9 +204,35 @@ object Verifier {
         .evaluate(proposition.proposition, proof.proof, context)
         .map(!_)
 
-    implicit def verifierInstance[F[_]: Monad](implicit
-      ed25519: Ed25519
-    ): Verifier[F] =
+    private def andVerifier[F[_]: Monad](
+      proposition: Models.Compositional.And.Proposition,
+      proof:       Models.Compositional.And.Proof,
+      context:     Evaluation.DynamicContext[F]
+    )(implicit
+      verifier: Verifier[F]
+    ): F[Boolean] =
+      verifier
+        .evaluate(proposition.left, proof.left, context)
+        .flatMap {
+          case true => verifier.evaluate(proposition.right, proof.right, context)
+          case _    => false.pure[F]
+        }
+
+    private def orVerifier[F[_]: Monad](
+      proposition: Models.Compositional.Or.Proposition,
+      proof:       Models.Compositional.Or.Proof,
+      context:     Evaluation.DynamicContext[F]
+    )(implicit
+      verifier: Verifier[F]
+    ): F[Boolean] =
+      verifier
+        .evaluate(proposition.left, proof.left, context)
+        .flatMap {
+          case false => verifier.evaluate(proposition.right, proof.right, context)
+          case _     => true.pure[F]
+        }
+
+    implicit def verifierInstance[F[_]: Monad]: Verifier[F] =
       new Verifier[F] {
 
         override def evaluate[C <: Proposition, R <: Proof](
@@ -186,12 +251,26 @@ object Verifier {
               heightVerifier(c, r, context)
             case (c: Models.Contextual.TickRange.Proposition, r: Models.Contextual.TickRange.Proof) =>
               tickVerifier(c, r, context)
+            case (c: Models.Contextual.ExactMatch.Proposition, r: Models.Contextual.ExactMatch.Proof) =>
+              exactMatchVerifier(c, r, context)
+            case (c: Models.Contextual.LessThan.Proposition, r: Models.Contextual.LessThan.Proof) =>
+              lessThanVerifier(c, r, context)
+            case (c: Models.Contextual.GreaterThan.Proposition, r: Models.Contextual.GreaterThan.Proof) =>
+              greaterThanVerifier(c, r, context)
+            case (c: Models.Contextual.EqualTo.Proposition, r: Models.Contextual.EqualTo.Proof) =>
+              equalToVerifier(c, r, context)
             case (c: Models.Compositional.Threshold.Proposition, r: Models.Compositional.Threshold.Proof) =>
               implicit def v: Verifier[F] = verifierInstance[F]
               thresholdVerifier(c, r, context)
             case (c: Models.Compositional.Not.Proposition, r: Models.Compositional.Not.Proof) =>
               implicit def v: Verifier[F] = verifierInstance[F]
               notVerifier(c, r, context)
+            case (c: Models.Compositional.And.Proposition, r: Models.Compositional.And.Proof) =>
+              implicit def v: Verifier[F] = verifierInstance[F]
+              andVerifier(c, r, context)
+            case (c: Models.Compositional.Or.Proposition, r: Models.Compositional.Or.Proof) =>
+              implicit def v: Verifier[F] = verifierInstance[F]
+              orVerifier(c, r, context)
             case _ =>
               false.pure[F]
           }

@@ -26,13 +26,19 @@ package object quivr {
 
     trait ExactMatch
 
+    trait LessThan
+
     trait GreaterThan
 
-    trait LessThan
+    trait EqualTo
 
     trait Threshold
 
     trait Not
+
+    trait And
+
+    trait Or
   }
 
   object Evaluation {
@@ -42,41 +48,64 @@ package object quivr {
       def height: Long
     }
 
+    trait DigestVerifier {
+      def verify(preimage: Array[Byte], digest: Array[Byte]): Boolean
+    }
+
     trait SignatureVerifier {
       def verify(vk: VerificationKey, sig: Witness, msg: Array[Byte]): Boolean
     }
 
-    abstract class Output(val value: Array[Byte])
+    abstract class Data(val bytes: Array[Byte])
 
-    trait Ledger[F[_]] {
-      val ledgerValue: Output
-      def parseValue[T](f:    Output => T): T
-      def evaluate[A, B](arg: A)(f: Output => Boolean): Boolean
+    trait Interface {
+      val data: Data
+      def parse[T](f: Data => Option[T]): Option[T] = f(data)
     }
 
     trait DynamicContext[F[_]] {
       val datums: Map[String, Datum]
-      val signingRoutines: Map[String, SignatureVerifier]
-      val ledgers: Map[String, Ledger[F]]
+      val interfaces: Map[String, Interface]
 
-      def useDatum[T](label: String)(f: Datum => T): F[T]
+      val signingRoutines: Map[String, SignatureVerifier]
+      val hashingRoutines: Map[String, DigestVerifier]
+
+      def signableBytes: F[SignableTxBytes]
+
+      def currentTick: F[Long]
 
       def heightOf(label: String): Option[Long] =
         datums.get(label).map { case v: IncludesHeight =>
           v.height
         }
 
+      def digestVerify(routine: String)(preimage: Array[Byte], digest: Array[Byte]): Boolean =
+        hashingRoutines.get(routine).fold(false)(_.verify(preimage, digest))
+
       def signatureVerify(routine: String)(vk: VerificationKey, sig: Witness, msg: Array[Byte]): Boolean =
         signingRoutines.get(routine).fold(false)(_.verify(vk, sig, msg))
 
-      def useLedger[A](label: String, arg: A)(f: Output => Boolean): Boolean =
-        ledgers.get(label).fold(false) { l =>
-          l.evaluate(arg)(f)
-        }
+      def useInterface[T](label: String)(f: Data => Option[T])(ff: T => Boolean): Boolean =
+        interfaces
+          .get(label)
+          .flatMap { in =>
+            in.parse[T](f).map { value =>
+              ff(value)
+            }
+          }
+          .fold(false)(identity)
 
-      def signableBytes: F[SignableTxBytes]
+      def exactMatch(label: String, compareTo: Array[Byte]): Boolean =
+        useInterface(label)(d => Some(d.bytes))(b => b sameElements compareTo)
 
-      def currentTick: F[Long]
+      def lessThan(label: String, compareTo: Long): Boolean =
+        useInterface(label)(d => Some(BigInt(d.bytes)))(n => n.longValue < compareTo)
+
+      def greaterThan(label: String, compareTo: Long): Boolean =
+        useInterface(label)(d => Some(BigInt(d.bytes)))(n => n.longValue > compareTo)
+
+      def equalTo(label: String, compareTo: Long): Boolean =
+        useInterface(label)(d => Some(BigInt(d.bytes)))(n => n.longValue == compareTo)
     }
   }
 
@@ -102,7 +131,8 @@ package object quivr {
         val token: Byte = 1: Byte
 
         final case class Proposition(
-          digest: Array[Byte]
+          routine: String,
+          digest:  Array[Byte]
         ) extends quivr.Proposition
             with quivr.Operations.Digest
 
@@ -136,9 +166,9 @@ package object quivr {
         val token: Byte = -1: Byte
 
         final case class Proposition(
-          location: String,
-          min:      Long,
-          max:      Long
+          chain: String,
+          min:   Long,
+          max:   Long
         ) extends quivr.Proposition
             with quivr.Operations.HeightRange
 
@@ -165,11 +195,71 @@ package object quivr {
 
       object ExactMatch {
         val token: Byte = -3: Byte
+
+        final case class Proposition(label: String, compareTo: Array[Byte])
+            extends quivr.Proposition
+            with quivr.Operations.ExactMatch
+
+        final case class Proof(transactionBind: TxBind)
+            extends quivr.Proof(transactionBind)
+            with quivr.Operations.ExactMatch
+      }
+
+      object LessThan {
+        val token: Byte = -4: Byte
+
+        final case class Proposition(label: String, compareTo: Long)
+            extends quivr.Proposition
+            with quivr.Operations.LessThan
+
+        final case class Proof(transactionBind: TxBind)
+            extends quivr.Proof(transactionBind)
+            with quivr.Operations.LessThan
+      }
+
+      object GreaterThan {
+        val token: Byte = -5: Byte
+
+        final case class Proposition(label: String, compareTo: Long)
+            extends quivr.Proposition
+            with quivr.Operations.GreaterThan
+
+        final case class Proof(transactionBind: TxBind)
+            extends quivr.Proof(transactionBind)
+            with quivr.Operations.GreaterThan
+      }
+
+      object EqualTo {
+        val token: Byte = -6: Byte
+
+        final case class Proposition(label: String, compareTo: Long)
+            extends quivr.Proposition
+            with quivr.Operations.EqualTo
+
+        final case class Proof(transactionBind: TxBind)
+            extends quivr.Proof(transactionBind)
+            with quivr.Operations.EqualTo
       }
 
     }
 
     object Compositional {
+
+      object Threshold {
+        val token: Byte = 127: Byte
+
+        final case class Proposition(
+          challenges: Array[quivr.Proposition],
+          threshold:  Int
+        ) extends quivr.Proposition
+            with quivr.Operations.Threshold
+
+        final case class Proof(
+          responses:       Array[Option[quivr.Proof]],
+          transactionBind: TxBind
+        ) extends quivr.Proof(transactionBind)
+            with quivr.Operations.Threshold
+      }
 
       object Not {
         val token: Byte = 126: Byte
@@ -186,27 +276,39 @@ package object quivr {
             with quivr.Operations.Not
       }
 
-      object Threshold {
-        sealed abstract class BooleanOp
-        case object And extends BooleanOp
-        case object Or extends BooleanOp
-
-        val token: Byte = 127: Byte
+      object And {
+        val token: Byte = 125: Byte
 
         final case class Proposition(
-          challenges: Array[quivr.Proposition],
-          threshold:  Int,
-          connector:  BooleanOp
+          left:  quivr.Proposition,
+          right: quivr.Proposition
         ) extends quivr.Proposition
-            with quivr.Operations.Threshold
+            with quivr.Operations.And
 
         final case class Proof(
-          responses:       Array[Option[quivr.Proof]],
+          left:            quivr.Proof,
+          right:           quivr.Proof,
           transactionBind: TxBind
         ) extends quivr.Proof(transactionBind)
-            with quivr.Operations.Threshold
+            with quivr.Operations.And
+      }
+
+      object Or {
+        val token: Byte = 124: Byte
+
+        final case class Proposition(
+          left:  quivr.Proposition,
+          right: quivr.Proposition
+        ) extends quivr.Proposition
+            with quivr.Operations.Or
+
+        final case class Proof(
+          left:            quivr.Proof,
+          right:           quivr.Proof,
+          transactionBind: TxBind
+        ) extends quivr.Proof(transactionBind)
+            with quivr.Operations.Or
       }
     }
-
   }
 }

@@ -69,8 +69,37 @@ object Prover {
       .pure[F]
       .widen
 
-  // def exactMatchProver[F[_]: Applicative]: Prover[F, Unit] =
-  //   new Prover[F, Unit] {}
+  def exactMatchProver[F[_] : Applicative]: Prover[F, Unit] =
+    (_: Unit, message: SignableTxBytes) => Models.Contextual.ExactMatch
+      .Proof(
+        bind(Models.Contextual.ExactMatch.token, message)
+      )
+      .pure[F]
+      .widen
+
+  def lessThanProver[F[_] : Applicative]: Prover[F, Unit] =
+    (_: Unit, message: SignableTxBytes) => Models.Contextual.LessThan
+      .Proof(
+        bind(Models.Contextual.LessThan.token, message)
+      )
+      .pure[F]
+      .widen
+
+  def greaterThanProver[F[_] : Applicative]: Prover[F, Unit] =
+    (_: Unit, message: SignableTxBytes) => Models.Contextual.GreaterThan
+      .Proof(
+        bind(Models.Contextual.GreaterThan.token, message)
+      )
+      .pure[F]
+      .widen
+
+  def equalTo[F[_] : Applicative]: Prover[F, Unit] =
+    (_: Unit, message: SignableTxBytes) => Models.Contextual.EqualTo
+      .Proof(
+        bind(Models.Contextual.EqualTo.token, message)
+      )
+      .pure[F]
+      .widen
 
   def thresholdProver[F[_] : Applicative]: Prover[F, Array[Option[Proof]]] =
     (challenges: Array[Option[Proof]], message: SignableTxBytes) => Models.Compositional.Threshold
@@ -86,6 +115,26 @@ object Prover {
       .Proof(
         proof,
         bind(Models.Compositional.Not.token, message)
+      )
+      .pure[F]
+      .widen
+
+  def andProver[F[_] : Applicative]: Prover[F, (Proof, Proof)] =
+    (args: (Proof, Proof), message: SignableTxBytes) => Models.Compositional.And
+      .Proof(
+        args._1,
+        args._2,
+        bind(Models.Compositional.And.token, message)
+      )
+      .pure[F]
+      .widen
+
+  def orProver[F[_] : Applicative]: Prover[F, (Proof, Proof)] =
+    (args: (Proof, Proof), message: SignableTxBytes) => Models.Compositional.Or
+      .Proof(
+        args._1,
+        args._2,
+        bind(Models.Compositional.Or.token, message)
       )
       .pure[F]
       .widen
