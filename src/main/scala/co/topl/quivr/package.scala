@@ -11,7 +11,7 @@ package object quivr {
   sealed abstract class Proposition
 
   // For each Proposition there is a corresponding Proof that can be constructed to satisfy the given Proposition
-  sealed abstract class Proof(bindToTransaction: TxBind)
+  sealed abstract class Proof(val bindToTransaction: TxBind)
 
   object Operations {
     trait Locked
@@ -26,6 +26,10 @@ package object quivr {
 
     trait ExactMatch
 
+    trait GreaterThan
+
+    trait LessThan
+
     trait Threshold
 
     trait Not
@@ -33,26 +37,42 @@ package object quivr {
 
   object Evaluation {
     trait Datum
+
     trait IncludesHeight extends Datum {
       def height: Long
     }
+
     trait SignatureVerifier {
       def verify(vk: VerificationKey, sig: Witness, msg: Array[Byte]): Boolean
     }
 
-    trait DynamicContext[F[_]] {
-      def datums: Map[String, Datum]
-      def signingRoutines: Map[String, SignatureVerifier]
+    abstract class Output(val value: Array[Byte])
 
-      def useDatum[B](label: String)(f: Datum => B): F[B]
+    trait Ledger[F[_]] {
+      val ledgerValue: Output
+      def parseValue[T](f:    Output => T): T
+      def evaluate[A, B](arg: A)(f: Output => Boolean): Boolean
+    }
+
+    trait DynamicContext[F[_]] {
+      val datums: Map[String, Datum]
+      val signingRoutines: Map[String, SignatureVerifier]
+      val ledgers: Map[String, Ledger[F]]
+
+      def useDatum[T](label: String)(f: Datum => T): F[T]
 
       def heightOf(label: String): Option[Long] =
-        datums.get(label).map {
-          case v: IncludesHeight => v.height
+        datums.get(label).map { case v: IncludesHeight =>
+          v.height
         }
 
       def signatureVerify(routine: String)(vk: VerificationKey, sig: Witness, msg: Array[Byte]): Boolean =
         signingRoutines.get(routine).fold(false)(_.verify(vk, sig, msg))
+
+      def useLedger[A](label: String, arg: A)(f: Output => Boolean): Boolean =
+        ledgers.get(label).fold(false) { l =>
+          l.evaluate(arg)(f)
+        }
 
       def signableBytes: F[SignableTxBytes]
 
@@ -98,7 +118,7 @@ package object quivr {
 
         final case class Proposition(
           routine: String,
-          vk: VerificationKey
+          vk:      VerificationKey
         ) extends quivr.Proposition
             with quivr.Operations.DigitalSignature
 
@@ -117,8 +137,8 @@ package object quivr {
 
         final case class Proposition(
           location: String,
-          min: Long,
-          max: Long
+          min:      Long,
+          max:      Long
         ) extends quivr.Proposition
             with quivr.Operations.HeightRange
 

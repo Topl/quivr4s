@@ -63,9 +63,9 @@ object Tetra {
 
     case class Header(height: Long) extends Datum with IncludesHeight
 
-    case class Body(root: Array[Byte]) extends Datum
+    case class Body(root: Array[Byte], metadata: Array[Byte]) extends Datum
 
-    case class IoTx(signableBytes: Array[Byte]) extends Datum
+    case class IoTx(metadata: Array[Byte]) extends Datum
 
     case class Box(metadata: Array[Byte]) extends Datum
 
