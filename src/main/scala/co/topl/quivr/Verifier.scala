@@ -14,7 +14,7 @@ trait Verifier[F[_]] {
   def evaluate[C <: Proposition, R <: Proof](
     proposition: C,
     proof:       R,
-    context:     Evaluation.DynamicContext[F]
+    context:     Evaluation.DynamicContext[F, String]
   ): F[Boolean]
 }
 
@@ -26,7 +26,7 @@ object Verifier {
 
       def isSatisfiedBy[F[_]](
         proof:            Proof
-      )(implicit context: Evaluation.DynamicContext[F], ev: Verifier[F]): F[Boolean] =
+      )(implicit context: Evaluation.DynamicContext[F, String], ev: Verifier[F]): F[Boolean] =
         ev.evaluate(proposition, proof, context)
     }
 
@@ -34,7 +34,7 @@ object Verifier {
 
       def satisfies[F[_]](
         proposition: Proposition
-      )(implicit ev: Verifier[F], context: Evaluation.DynamicContext[F]): F[Boolean] =
+      )(implicit ev: Verifier[F], context: Evaluation.DynamicContext[F, String]): F[Boolean] =
         ev.evaluate(proposition, proof, context)
     }
   }
@@ -46,7 +46,7 @@ object Verifier {
     private def lockedVerifier[F[_]: Monad](
       proposition: Models.Primitive.Locked.Proposition,
       proof:       Models.Primitive.Locked.Proof,
-      context:     Evaluation.DynamicContext[F]
+      context:     Evaluation.DynamicContext[F, String]
     ): F[Boolean] =
       // todo: consider optimizing by skipping the txBind verification? Perhaps we still want to know if the
       // prover bound to this value correctly though? I am unsure if this data will be recorded so not sure it
@@ -63,7 +63,7 @@ object Verifier {
     private def digestVerifier[F[_]: Monad](
       proposition: Models.Primitive.Digest.Proposition,
       proof:       Models.Primitive.Digest.Proof,
-      context:     Evaluation.DynamicContext[F]
+      context:     Evaluation.DynamicContext[F, String]
     ): F[Boolean] = for {
       sb <- context.signableBytes
       verifierTxBind = Prover.bind(Models.Primitive.Digest.token, sb)
@@ -75,7 +75,7 @@ object Verifier {
     private def signatureVerifier[F[_]: Monad](
       proposition: Models.Primitive.DigitalSignature.Proposition,
       proof:       Models.Primitive.DigitalSignature.Proof,
-      context:     Evaluation.DynamicContext[F]
+      context:     Evaluation.DynamicContext[F, String]
     ): F[Boolean] = for {
       sb <- context.signableBytes
       verifierTxBind = Prover.bind(Models.Primitive.DigitalSignature.token, sb)
@@ -87,7 +87,7 @@ object Verifier {
     private def heightVerifier[F[_]: Monad](
       proposition: Models.Contextual.HeightRange.Proposition,
       proof:       Models.Contextual.HeightRange.Proof,
-      context:     Evaluation.DynamicContext[F]
+      context:     Evaluation.DynamicContext[F, String]
     ): F[Boolean] = for {
       sb <- context.signableBytes
       verifierTxBind = Prover.bind(Models.Contextual.HeightRange.token, sb)
@@ -100,7 +100,7 @@ object Verifier {
     private def tickVerifier[F[_]: Monad](
       proposition: Models.Contextual.TickRange.Proposition,
       proof:       Models.Contextual.TickRange.Proof,
-      context:     Evaluation.DynamicContext[F]
+      context:     Evaluation.DynamicContext[F, String]
     ): F[Boolean] = for {
       sb <- context.signableBytes
       verifierTxBind = Prover.bind(Models.Contextual.TickRange.token, sb)
@@ -113,7 +113,7 @@ object Verifier {
     private def exactMatchVerifier[F[_]: Monad](
       proposition: Models.Contextual.ExactMatch.Proposition,
       proof:       Models.Contextual.ExactMatch.Proof,
-      context:     Evaluation.DynamicContext[F]
+      context:     Evaluation.DynamicContext[F, String]
     ): F[Boolean] = for {
       sb <- context.signableBytes
       verifierTxBind = Prover.bind(Models.Contextual.TickRange.token, sb)
@@ -125,7 +125,7 @@ object Verifier {
     private def lessThanVerifier[F[_]: Monad](
       proposition: Models.Contextual.LessThan.Proposition,
       proof:       Models.Contextual.LessThan.Proof,
-      context:     Evaluation.DynamicContext[F]
+      context:     Evaluation.DynamicContext[F, String]
     ): F[Boolean] = for {
       sb <- context.signableBytes
       verifierTxBind = Prover.bind(Models.Contextual.TickRange.token, sb)
@@ -137,7 +137,7 @@ object Verifier {
     private def greaterThanVerifier[F[_]: Monad](
       proposition: Models.Contextual.GreaterThan.Proposition,
       proof:       Models.Contextual.GreaterThan.Proof,
-      context:     Evaluation.DynamicContext[F]
+      context:     Evaluation.DynamicContext[F, String]
     ): F[Boolean] = for {
       sb <- context.signableBytes
       verifierTxBind = Prover.bind(Models.Contextual.TickRange.token, sb)
@@ -149,7 +149,7 @@ object Verifier {
     private def equalToVerifier[F[_]: Monad](
       proposition: Models.Contextual.EqualTo.Proposition,
       proof:       Models.Contextual.EqualTo.Proof,
-      context:     Evaluation.DynamicContext[F]
+      context:     Evaluation.DynamicContext[F, String]
     ): F[Boolean] = for {
       sb <- context.signableBytes
       verifierTxBind = Prover.bind(Models.Contextual.TickRange.token, sb)
@@ -161,7 +161,7 @@ object Verifier {
     private def thresholdVerifier[F[_]: Monad](
       proposition:       Models.Compositional.Threshold.Proposition,
       proof:             Models.Compositional.Threshold.Proof,
-      context:           Evaluation.DynamicContext[F]
+      context:           Evaluation.DynamicContext[F, String]
     )(implicit verifier: Verifier[F]): F[Boolean] =
       for {
         sb <- context.signableBytes
@@ -196,7 +196,7 @@ object Verifier {
     private def notVerifier[F[_]: Monad](
       proposition: Models.Compositional.Not.Proposition,
       proof:       Models.Compositional.Not.Proof,
-      context:     Evaluation.DynamicContext[F]
+      context:     Evaluation.DynamicContext[F, String]
     )(implicit
       verifier: Verifier[F]
     ): F[Boolean] =
@@ -207,7 +207,7 @@ object Verifier {
     private def andVerifier[F[_]: Monad](
       proposition: Models.Compositional.And.Proposition,
       proof:       Models.Compositional.And.Proof,
-      context:     Evaluation.DynamicContext[F]
+      context:     Evaluation.DynamicContext[F, String]
     )(implicit
       verifier: Verifier[F]
     ): F[Boolean] =
@@ -221,7 +221,7 @@ object Verifier {
     private def orVerifier[F[_]: Monad](
       proposition: Models.Compositional.Or.Proposition,
       proof:       Models.Compositional.Or.Proof,
-      context:     Evaluation.DynamicContext[F]
+      context:     Evaluation.DynamicContext[F, String]
     )(implicit
       verifier: Verifier[F]
     ): F[Boolean] =
@@ -238,7 +238,7 @@ object Verifier {
         override def evaluate[C <: Proposition, R <: Proof](
           proposition: C,
           proof:       R,
-          context:     Evaluation.DynamicContext[F]
+          context:     Evaluation.DynamicContext[F, String]
         ): F[Boolean] =
           (proposition, proof) match {
             case (c: Models.Primitive.Locked.Proposition, r: Models.Primitive.Locked.Proof) =>

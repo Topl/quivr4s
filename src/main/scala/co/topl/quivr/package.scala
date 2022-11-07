@@ -63,29 +63,29 @@ package object quivr {
       def parse[T](f: Data => Option[T]): Option[T] = f(data)
     }
 
-    trait DynamicContext[F[_]] {
-      val datums: Map[String, Datum]
-      val interfaces: Map[String, Interface]
+    trait DynamicContext[F[_], Key] {
+      val datums: Map[Key, Datum]
+      val interfaces: Map[Key, Interface]
 
-      val signingRoutines: Map[String, SignatureVerifier]
-      val hashingRoutines: Map[String, DigestVerifier]
+      val signingRoutines: Map[Key, SignatureVerifier]
+      val hashingRoutines: Map[Key, DigestVerifier]
 
       def signableBytes: F[SignableTxBytes]
 
       def currentTick: F[Long]
 
-      def heightOf(label: String): Option[Long] =
+      def heightOf(label: Key): Option[Long] =
         datums.get(label).map { case v: IncludesHeight =>
           v.height
         }
 
-      def digestVerify(routine: String)(preimage: Array[Byte], digest: Array[Byte]): Boolean =
+      def digestVerify(routine: Key)(preimage: Array[Byte], digest: Array[Byte]): Boolean =
         hashingRoutines.get(routine).fold(false)(_.verify(preimage, digest))
 
-      def signatureVerify(routine: String)(vk: VerificationKey, sig: Witness, msg: Array[Byte]): Boolean =
+      def signatureVerify(routine: Key)(vk: VerificationKey, sig: Witness, msg: Array[Byte]): Boolean =
         signingRoutines.get(routine).fold(false)(_.verify(vk, sig, msg))
 
-      def useInterface[T](label: String)(f: Data => Option[T])(ff: T => Boolean): Boolean =
+      def useInterface[T](label: Key)(f: Data => Option[T])(ff: T => Boolean): Boolean =
         interfaces
           .get(label)
           .flatMap { in =>
@@ -95,16 +95,16 @@ package object quivr {
           }
           .fold(false)(identity)
 
-      def exactMatch(label: String, compareTo: Array[Byte]): Boolean =
+      def exactMatch(label: Key, compareTo: Array[Byte]): Boolean =
         useInterface(label)(d => Some(d.bytes))(b => b sameElements compareTo)
 
-      def lessThan(label: String, compareTo: Long): Boolean =
+      def lessThan(label: Key, compareTo: Long): Boolean =
         useInterface(label)(d => Some(BigInt(d.bytes)))(n => n.longValue < compareTo)
 
-      def greaterThan(label: String, compareTo: Long): Boolean =
+      def greaterThan(label: Key, compareTo: Long): Boolean =
         useInterface(label)(d => Some(BigInt(d.bytes)))(n => n.longValue > compareTo)
 
-      def equalTo(label: String, compareTo: Long): Boolean =
+      def equalTo(label: Key, compareTo: Long): Boolean =
         useInterface(label)(d => Some(BigInt(d.bytes)))(n => n.longValue == compareTo)
     }
   }
