@@ -24,6 +24,8 @@ package object quivr {
 
     trait TickRange
 
+    trait MustInclude
+
     trait ExactMatch
 
     trait LessThan
@@ -95,6 +97,8 @@ package object quivr {
           }
           .fold(false)(identity)
 
+      def MustInclude() = ???
+
       def exactMatch(label: Key, compareTo: Array[Byte]): Boolean =
         useInterface(label)(d => Some(d.bytes))(b => b sameElements compareTo)
 
@@ -121,9 +125,7 @@ package object quivr {
         ) extends quivr.Proposition
             with quivr.Operations.Locked
 
-        final case class Proof(
-          transactionBind: TxBind
-        ) extends quivr.Proof(transactionBind)
+        final case class Proof() extends quivr.Proof(Array.fill(1)(0: Byte))
             with quivr.Operations.Locked
       }
 

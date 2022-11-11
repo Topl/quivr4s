@@ -47,17 +47,7 @@ object Verifier {
       proposition: Models.Primitive.Locked.Proposition,
       proof:       Models.Primitive.Locked.Proof,
       context:     Evaluation.DynamicContext[F, String]
-    ): F[Boolean] =
-      // todo: consider optimizing by skipping the txBind verification? Perhaps we still want to know if the
-      // prover bound to this value correctly though? I am unsure if this data will be recorded so not sure it
-      // worth keeping around
-      for {
-        sb <- context.signableBytes
-        verifierTxBind = Prover.bind(Models.Primitive.Locked.token, sb)
-        msgAuth = verifierTxBind sameElements proof.transactionBind
-        evalAuth = false // should always fail, the Locked Proposition is unsatisfiable
-        res = msgAuth && evalAuth
-      } yield res
+    ): F[Boolean] = false.pure[F] // should always fail, the Locked Proposition is unsatisfiable
 
     // todo: how to pass which of these failed back up?
     private def digestVerifier[F[_]: Monad](
