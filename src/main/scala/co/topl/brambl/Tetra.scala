@@ -1,16 +1,17 @@
-package co.topl
+package co.topl.brambl
 
 import co.topl.crypto.hash.blake2b256
+import co.topl.quivr
 import co.topl.quivr.Evaluation.{Datum, IncludesHeight}
 
 object Tetra {
 
   case class IoTx(
-    inputs:   List[IoTx.SpentOutput],
-    outputs:  List[IoTx.UnspentOutput],
-    schedule: IoTx.Schedule,
-    metadata: Option[Array[Byte]]
-  )
+                   inputs: List[IoTx.SpentOutput],
+                   outputs: List[IoTx.UnspentOutput],
+                   schedule: IoTx.Schedule,
+                   metadata: Option[Array[Byte]]
+                 )
 
   object IoTx {
     case class Schedule(min: Long, max: Long, timestamp: Long)
@@ -40,16 +41,26 @@ object Tetra {
 
   object Predicate {
 
+    type TypedEvidence = Array[Byte]
+
     case class Image(
-      digest:    Array[Byte],
-      threshold: Int
-    ) // serialize Image and commit bits via hash, call this commit the Id
+                      digest: Array[TypedEvidence],
+                      threshold: Int
+                    ) // serialize Image and commit bits via hash, call this commit the Id
 
     case class Id(image: Image)
 
-    def idFromImage(image: Predicate.Image): Predicate.Id = Id(
-      Predicate.Image(blake2b256.hash(image.digest).value, image.threshold)
-    )
+//    case class Image(
+//                      digest: Array[Byte],
+//                      threshold: Int
+//                    ) // serialize Image and commit bits via hash, call this commit the Id
+//
+//    case class Id(image: Image)
+//
+//    def idFromImage(image: Predicate.Image): Predicate.Id = Id(
+//      Predicate.Image(blake2b256.hash(image.digest).value, image.threshold)
+//    )
+
   }
 
   case class Attestation(predicateImage: Predicate.Image, value: List[Option[(quivr.Proposition, quivr.Proof)]])
