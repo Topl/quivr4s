@@ -4,7 +4,6 @@ import co.topl.brambl.Credentials
 import co.topl.brambl.Tx
 import co.topl.brambl.Tetra.{Attestation, Box, Datums, Predicate}
 import co.topl.brambl.Tetra.Predicate.TypedEvidence
-import co.topl.quivr.Evaluation
 import co.topl.quivr.SignableTxBytes
 import co.topl.quivr.{Proof, Proposer, Proposition, Prover, Verifier}
 

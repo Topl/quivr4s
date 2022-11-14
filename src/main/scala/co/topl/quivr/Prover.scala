@@ -4,17 +4,17 @@ import cats.implicits._
 import cats.{Applicative, Monad}
 import co.topl.crypto.hash.blake2b256
 
-// Provers create proofs that are bound to the transactions which execute the proof.
+// Provers create proofs that are bound to the transaction which executes the proof.
 //
 // This provides a generic way to map all computations (single-step or sigma-protocol)
-// into a Fiat-Shamir hueristic if the bind that is used here is unique.
+// into a Fiat-Shamir heuristic if the bind that is used here is unique.
 // This seems like it would promote statelessness but I am unsure how.
 trait Prover[F[_], A] {
 
   /**
-   * @param args
-   * @param message
-   * @return
+   * @param args A is product type (tuple) of the inputs needed to satisfy a certain Proposition
+   * @param message The unique bytes of the message that the instance of the Proof will be bound to
+   * @return a Quivr proof that may be paired with a revealed Proposition in a Verification runtime
    */
   def prove(args: A, message: SignableTxBytes): F[Proof]
 }
@@ -24,7 +24,7 @@ object Prover {
   // The 'summoner' or 'materializer' method, when called with a property type returns a type class instance
   def apply[F[_], A](implicit ev: Prover[F, A]): Prover[F, A] = ev
 
-  def proofForMessage[F[_]: Monad, A](args: A)(message: SignableTxBytes): F[Proof] =
+  def proveAForMessage[F[_]: Monad, A](args: A)(message: SignableTxBytes): F[Proof] =
     instances.proverInstance[F, A].prove(args, message)
 
   /**
@@ -32,7 +32,7 @@ object Prover {
    * @param message unique bytes from a transaction that will be bound to the proof
    * @return an array of bytes that is similar to a "signature" for the proof
    */
-  private def bind(tag: Byte, message: SignableTxBytes)(f: Array[Byte] => TxBind): TxBind = f(message :+ tag)
+  private def bind(tag: Byte, message: SignableTxBytes)(f: Array[Byte] => TxBind): TxBind = f(tag +: message)
 
   trait Instances {
 
@@ -155,21 +155,26 @@ object Prover {
         .widen
 
     implicit def proverInstance[F[_]: Monad, A]: Prover[F, A] = {
+      // todo: change to sha3?
       val instanceBind = (x: Array[Byte]) => blake2b256.hash(x).value
 
       (args: A, message: SignableTxBytes) =>
         args match {
-          case t: Byte if t == Models.Primitive.Locked.token       => lockedProver[F]
-          case t: User.Preimage                                    => digestProver(t, message)(instanceBind)
-          case t: User.Witness                                     => signatureProver(t, message)(instanceBind)
+          case t: Byte if t == Models.Primitive.Locked.token => lockedProver[F]
+          case t: (Byte, User.Preimage) if t._1 == Models.Primitive.Digest.token =>
+            digestProver(t._2, message)(instanceBind)
+          case t: (Byte, User.Witness) if t._1 == Models.Primitive.DigitalSignature.token =>
+            signatureProver(t._2, message)(instanceBind)
           case t: Byte if t == Models.Contextual.HeightRange.token => heightProver(message)(instanceBind)
           case t: Byte if t == Models.Contextual.TickRange.token   => tickProver(message)(instanceBind)
           case t: Byte if t == Models.Contextual.ExactMatch.token  => exactMatchProver(message)(instanceBind)
           case t: Byte if t == Models.Contextual.LessThan.token    => lessThanProver(message)(instanceBind)
           case t: Byte if t == Models.Contextual.GreaterThan.token => greaterThanProver(message)(instanceBind)
           case t: Byte if t == Models.Contextual.EqualTo.token     => equalToProver(message)(instanceBind)
-          case t: Set[Option[Proof]]                               => thresholdProver(t, message)(instanceBind)
-          case t: Proof                                            => notProver(t, message)(instanceBind)
+          case t: (Byte, Set[Option[Proof]]) if t._1 == Models.Compositional.Threshold.token =>
+            thresholdProver(t._2, message)(instanceBind)
+          case t: (Byte, Proof) if t._1 == Models.Compositional.Not.token =>
+            notProver(t._2, message)(instanceBind)
           case t: (Byte, Proof, Proof) if t._1 == Models.Compositional.And.token =>
             andProver(t._2, t._3, message)(instanceBind)
           case t: (Byte, Proof, Proof) if t._1 == Models.Compositional.Or.token =>

@@ -2,7 +2,6 @@ package co.topl.node
 
 import co.topl.node.Models.{Metadata, Root, SignableBytes}
 import co.topl.quivr
-import co.topl.quivr.Evaluation.{Datum, IncludesHeight}
 
 object Tetra {
   case class IoTx(inputs:   List[IoTx.SpentOutput],
