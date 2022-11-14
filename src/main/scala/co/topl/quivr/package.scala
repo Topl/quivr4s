@@ -1,6 +1,7 @@
 package co.topl
 
-import co.topl.Crypto.{VerificationKey, Witness}
+import cats.{FlatMap, Monad}
+import cats.data.EitherT
 
 package object quivr {
 
@@ -11,7 +12,7 @@ package object quivr {
   sealed abstract class Proposition
 
   // For each Proposition there is a corresponding Proof that can be constructed to satisfy the given Proposition
-  sealed abstract class Proof(val bindToTransaction: TxBind)
+  sealed abstract class Proof(val tag: Byte, val bindToTransaction: TxBind)
 
   object Operations {
     trait Locked
@@ -44,6 +45,8 @@ package object quivr {
   }
 
   object Evaluation {
+    type Result = Either[Evaluation.Error, Evaluation.CostEstimate]
+
     trait Datum
 
     trait IncludesHeight extends Datum {
@@ -51,21 +54,19 @@ package object quivr {
     }
 
     trait DigestVerifier {
-      def verify(preimage: Array[Byte], digest: Array[Byte]): Boolean
+      def verify(preimage: User.Preimage, digest: User.Digest): Result
     }
 
     trait SignatureVerifier {
-      def verify(vk: VerificationKey, sig: Witness, msg: Array[Byte]): Boolean
+      def verify(vk: User.VerificationKey, sig: User.Witness, msg: SignableTxBytes): Result
     }
-
-    abstract class Data(val bytes: Array[Byte])
 
     trait Interface {
-      val data: Data
-      def parse[T](f: Data => Option[T]): Option[T] = f(data)
+      val data: User.Data
+      def parse[T](f: User.Data => Option[T]): Option[T] = f(data)
     }
 
-    trait DynamicContext[F[_], Key] {
+    trait DynamicContext[F[_]: Monad, Key] {
       val datums: Map[Key, Datum]
       val interfaces: Map[Key, Interface]
 
@@ -81,13 +82,16 @@ package object quivr {
           v.height
         }
 
-      def digestVerify(routine: Key)(preimage: Array[Byte], digest: Array[Byte]): Boolean =
-        hashingRoutines.get(routine).fold(false)(_.verify(preimage, digest))
+      def digestVerify(routine: Key)(preimage: User.Preimage, digest: User.Digest): F[Result] = for {
+        dVerifier <- EitherT.fromOptionF(hashingRoutines.get(routine), Errors.FailedToFindDigestVerifier)
+      } yield ???
 
-      def signatureVerify(routine: Key)(vk: VerificationKey, sig: Witness, msg: Array[Byte]): Boolean =
+      def signatureVerify(
+        routine: Key
+      )(vk:      User.VerificationKey, sig: User.Witness, msg: SignableTxBytes): Boolean =
         signingRoutines.get(routine).fold(false)(_.verify(vk, sig, msg))
 
-      def useInterface[T](label: Key)(f: Data => Option[T])(ff: T => Boolean): Boolean =
+      def useInterface[T](label: Key)(f: User.Data => Option[T])(ff: T => Boolean): Boolean =
         interfaces
           .get(label)
           .flatMap { in =>
@@ -111,6 +115,18 @@ package object quivr {
       def equalTo(label: Key, compareTo: Long): Boolean =
         useInterface(label)(d => Some(BigInt(d.bytes)))(n => n.longValue == compareTo)
     }
+
+    trait Error
+
+    object Errors {
+      case object MessageAuthorizationFailed extends Error
+      case object EvaluationAuthorizationFailed extends Error
+      case object FailedToFindDigestVerifier extends Error
+    }
+
+    trait CostEstimate {
+      def utility: Long
+    }
   }
 
   object Models {
@@ -121,12 +137,11 @@ package object quivr {
         val token: Byte = 0: Byte
 
         final case class Proposition(
-          data: Option[Array[Byte]]
+          data: Option[User.Data]
         ) extends quivr.Proposition
             with quivr.Operations.Locked
 
-        final case class Proof() extends quivr.Proof(Array.fill(1)(0: Byte))
-            with quivr.Operations.Locked
+        final case class Proof() extends quivr.Proof(token, Array(0: Byte)) with quivr.Operations.Locked
       }
 
       object Digest {
@@ -134,14 +149,14 @@ package object quivr {
 
         final case class Proposition(
           routine: String,
-          digest:  Array[Byte]
+          digest:  User.Digest
         ) extends quivr.Proposition
             with quivr.Operations.Digest
 
         final case class Proof(
-          preimage:        Array[Byte],
+          preimage:        User.Preimage,
           transactionBind: TxBind
-        ) extends quivr.Proof(transactionBind)
+        ) extends quivr.Proof(token, transactionBind)
             with quivr.Operations.Digest
       }
 
@@ -150,14 +165,14 @@ package object quivr {
 
         final case class Proposition(
           routine: String,
-          vk:      VerificationKey
+          vk:      User.VerificationKey
         ) extends quivr.Proposition
             with quivr.Operations.DigitalSignature
 
         final case class Proof(
-          witness:         Witness,
+          witness:         User.Witness,
           transactionBind: TxBind
-        ) extends quivr.Proof(transactionBind)
+        ) extends quivr.Proof(token, transactionBind)
             with quivr.Operations.DigitalSignature
       }
     }
@@ -176,7 +191,7 @@ package object quivr {
 
         final case class Proof(
           transactionBind: TxBind
-        ) extends quivr.Proof(transactionBind)
+        ) extends quivr.Proof(token, transactionBind)
             with quivr.Operations.HeightRange
       }
 
@@ -191,7 +206,7 @@ package object quivr {
 
         final case class Proof(
           transactionBind: TxBind
-        ) extends quivr.Proof(transactionBind)
+        ) extends quivr.Proof(token, transactionBind)
             with quivr.Operations.TickRange
       }
 
@@ -203,7 +218,7 @@ package object quivr {
             with quivr.Operations.ExactMatch
 
         final case class Proof(transactionBind: TxBind)
-            extends quivr.Proof(transactionBind)
+            extends quivr.Proof(token, transactionBind)
             with quivr.Operations.ExactMatch
       }
 
@@ -215,7 +230,7 @@ package object quivr {
             with quivr.Operations.LessThan
 
         final case class Proof(transactionBind: TxBind)
-            extends quivr.Proof(transactionBind)
+            extends quivr.Proof(token, transactionBind)
             with quivr.Operations.LessThan
       }
 
@@ -227,7 +242,7 @@ package object quivr {
             with quivr.Operations.GreaterThan
 
         final case class Proof(transactionBind: TxBind)
-            extends quivr.Proof(transactionBind)
+            extends quivr.Proof(token, transactionBind)
             with quivr.Operations.GreaterThan
       }
 
@@ -239,7 +254,7 @@ package object quivr {
             with quivr.Operations.EqualTo
 
         final case class Proof(transactionBind: TxBind)
-            extends quivr.Proof(transactionBind)
+            extends quivr.Proof(token, transactionBind)
             with quivr.Operations.EqualTo
       }
 
@@ -251,15 +266,15 @@ package object quivr {
         val token: Byte = 127: Byte
 
         final case class Proposition(
-          challenges: Array[quivr.Proposition],
+          challenges: Set[quivr.Proposition],
           threshold:  Int
         ) extends quivr.Proposition
             with quivr.Operations.Threshold
 
         final case class Proof(
-          responses:       Array[Option[quivr.Proof]],
+          responses:       Set[Option[quivr.Proof]],
           transactionBind: TxBind
-        ) extends quivr.Proof(transactionBind)
+        ) extends quivr.Proof(token, transactionBind)
             with quivr.Operations.Threshold
       }
 
@@ -274,7 +289,7 @@ package object quivr {
         final case class Proof(
           proof:           quivr.Proof,
           transactionBind: TxBind
-        ) extends quivr.Proof(transactionBind)
+        ) extends quivr.Proof(token, transactionBind)
             with quivr.Operations.Not
       }
 
@@ -291,7 +306,7 @@ package object quivr {
           left:            quivr.Proof,
           right:           quivr.Proof,
           transactionBind: TxBind
-        ) extends quivr.Proof(transactionBind)
+        ) extends quivr.Proof(token, transactionBind)
             with quivr.Operations.And
       }
 
@@ -308,7 +323,7 @@ package object quivr {
           left:            quivr.Proof,
           right:           quivr.Proof,
           transactionBind: TxBind
-        ) extends quivr.Proof(transactionBind)
+        ) extends quivr.Proof(token, transactionBind)
             with quivr.Operations.Or
       }
     }

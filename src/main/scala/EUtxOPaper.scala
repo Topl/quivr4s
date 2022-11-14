@@ -1,5 +1,3 @@
-package co.topl
-
 object EUtxOPaper {
 
     type Tick = Long

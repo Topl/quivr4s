@@ -1,21 +1,15 @@
-package co.topl
+package co.topl.node
 
-import co.topl.crypto.hash.blake2b256
+import co.topl.node.Models.{Metadata, Root, SignableBytes}
+import co.topl.quivr
 import co.topl.quivr.Evaluation.{Datum, IncludesHeight}
 
 object Tetra {
-
-  type Metadata = Option[Array[Byte]]
-  type Root = Array[Byte]
-  type SignableBytes = Array[Byte] // MUST NOT include proof bytes
-  type IdentifiableBytes = Array[Byte] // hash(SignableBytes)
-
-  case class IoTx(
-    inputs:   List[IoTx.SpentOutput],
-    outputs:  List[IoTx.UnspentOutput],
-    schedule: IoTx.Schedule,
-    metadata: Metadata
-  )
+  case class IoTx(inputs:   List[IoTx.SpentOutput],
+                   outputs:  List[IoTx.UnspentOutput],
+                   schedule: IoTx.Schedule,
+                   metadata: Metadata
+                 )
 
   object IoTx {
     case class Schedule(min: Long, max: Long, timestamp: Long)
@@ -50,11 +44,11 @@ object Tetra {
 
     case class Known(conditions: List[Option[quivr.Proposition]])
 
-    // use a Root here so we can provide a membership proof of 
+    // use a Root here so we can provide a membership proof of
     case class Image(root: Root, threshold: Int)
 
     def idFromImage(image: Predicate.Image): Predicate.Id = ???
-      //  Id(Predicate.Image(blake2b256.hash(image.root).value, image.threshold)
+    //  Id(Predicate.Image(blake2b256.hash(image.root).value, image.threshold)
     )
   }
 
