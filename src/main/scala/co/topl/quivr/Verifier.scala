@@ -1,11 +1,12 @@
 package co.topl.quivr
 
 import cats._
-import cats.implicits._
 import cats.data.EitherT
+import cats.implicits._
 import co.topl.crypto.hash.blake2b256
 import co.topl.quivr.runtime.DynamicContext
-import co.topl.quivr.runtime.errors.{AuthorizationErrors, SyntaxErrors}
+import co.topl.quivr.runtime.errors.AuthorizationErrors.{EvaluationAuthorizationFailed, LockedPropositionIsUnsatisfiable}
+import co.topl.quivr.runtime.errors.SyntaxErrors
 import co.topl.quivr.runtime.errors.SyntaxErrors.MessageAuthorizationFailed
 
 /**
@@ -65,28 +66,36 @@ object Verifier {
       proposition: Models.Primitive.Locked.Proposition,
       proof:       Models.Primitive.Locked.Proof,
       context:     DynamicContext[F, String]
-    ): F[Boolean] = false.pure[F] // should always fail, the Locked Proposition is unsatisfiable
+    ): F[Either[runtime.Error, Boolean]] = for {
+      msgResult   <- Verifier.evaluateBind(Models.Primitive.Digest.token, proof, context)(blake2b256.hash(_).value.pure[F])
+      res = Either.left[runtime.Error, Boolean](LockedPropositionIsUnsatisfiable)
+    } yield res // should always fail, the Locked Proposition is unsatisfiable
 
     private def digestVerifier2[F[_]: Monad](
       proposition: Models.Primitive.Digest.Proposition,
       proof:       Models.Primitive.Digest.Proof,
       context:     DynamicContext[F, String]
-    ): EitherT[F, runtime.Error, Boolean] = for {
-      msgRes <- Verifier.evaluateBind(Models.Primitive.Digest.token, proof, context)(blake2b256.hash(_).value.pure[F])
-      evalAuth = context.digestVerify(proposition.routine)(proof.preimage, proposition.digest).isRight
-      res = msgRes && evalAuth
+    ): F[Either[runtime.Error, (User.Preimage, User.Digest)]] = for {
+      msgResult   <- Verifier.evaluateBind(Models.Primitive.Digest.token, proof, context)(blake2b256.hash(_).value.pure[F])
+      evalResult <- context.digestVerify(proposition.routine)(proof.preimage, proposition.digest).value
+      res = Either
+        .cond(
+          msgResult.isRight && evalResult.isRight,
+          (proof.preimage, proposition.digest),
+          EvaluationAuthorizationFailed(proposition, proof)
+        )
     } yield res
 
-    // todo: how to pass which of these failed back up?
-    private def digestVerifier[F[_]: Monad](
-      proposition: Models.Primitive.Digest.Proposition,
-      proof:       Models.Primitive.Digest.Proof,
-      context:     DynamicContext[F, String]
-    ): F[Boolean] = for {
-      msgAuth <- Verifier.evaluateBind(Models.Primitive.Digest.token, proof, context)(blake2b256.hash(_).value.pure[F])
-      evalAuth = context.digestVerify(proposition.routine)(proof.preimage, proposition.digest)
-      res = msgAuth && evalAuth
-    } yield res
+//    // todo: how to pass which of these failed back up?
+//    private def digestVerifier[F[_]: Monad](
+//      proposition: Models.Primitive.Digest.Proposition,
+//      proof:       Models.Primitive.Digest.Proof,
+//      context:     DynamicContext[F, String]
+//    ): F[Boolean] = for {
+//      msgAuth <- Verifier.evaluateBind(Models.Primitive.Digest.token, proof, context)(blake2b256.hash(_).value.pure[F])
+//      evalAuth = context.digestVerify(proposition.routine)(proof.preimage, proposition.digest)
+//      res = msgAuth && evalAuth
+//    } yield res
 
     private def signatureVerifier[F[_]: Monad](
       proposition: Models.Primitive.DigitalSignature.Proposition,

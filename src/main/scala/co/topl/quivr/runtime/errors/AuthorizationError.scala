@@ -13,4 +13,5 @@ object AuthorizationErrors {
    * (i.e. height lock)
    */
   case class EvaluationAuthorizationFailed(proposition: Proposition, proof: Proof) extends AuthorizationError
+  case object LockedPropositionIsUnsatisfiable extends AuthorizationError
 }
