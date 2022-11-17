@@ -1,5 +1,4 @@
 package co.topl.brambl
-
 import co.topl.node.Tetra.Box
 import co.topl.node.Tetra.IoTx
 import co.topl.quivr.SignableTxBytes
