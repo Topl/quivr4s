@@ -2,13 +2,14 @@
 
 import co.topl.quivr.Models.Primitive._
 import co.topl.quivr.SignableTxBytes
-import co.topl.quivr.{Proof, Proposer, Proposition, Prover, User, Verifier}
+import co.topl.quivr.{Proof, Proposer, Proposition, Prover, Verifier}
 import co.topl.crypto.hash.blake2b256
 import co.topl.quivr.runtime.DynamicContext
 import co.topl.brambl.TransactionBuilder
 import co.topl.brambl.Indices
 import co.topl.node.Tetra.{Datums, Box, IoTx}
-import co.topl.node.Models.Metadata
+import co.topl.common.Digests
+
 
 type Trivial[T] = T
 // An Opinionated Verification Context
@@ -20,14 +21,14 @@ val ctx: DynamicContext[Trivial, String] = ???
 // Create Digest Proposition
 val preImage: Array[Byte] = "random_data".getBytes
 val digest: Array[Byte] = blake2b256.hash(preImage).value
-val preImageObj: User.Preimage = User.Digests.Preimage(preImage)
-val digestObj: User.Digest = User.Digests.Digest(preImage.length.toByte, digest) // not sure if first param is correct
-val proposition: Proposition = Proposer.digestProposer[Trivial, (String, User.Digest)].propose(("temp", digestObj))
+val preImageObj: Digests.Preimage = Digests.Preimage(preImage, 0)
+val digestObj: Digests.Digest = Digests.Digest(digest) // not sure if first param is correct
+val proposition: Proposition = Proposer.digestProposer[Trivial, (String, Digests.Digest)].propose(("temp", digestObj))
 
 // Create Digest Proof
 val message: SignableTxBytes = ???
 // Not sure if I instantiated the proof in the best way/as intended
-val prover: Prover[Trivial, (Byte, User.Preimage)] = Prover.instances.proverInstance
+val prover: Prover[Trivial, (Byte, Digests.Preimage)] = Prover.instances.proverInstance
 val proof: Proof = prover.prove((Digest.token, preImageObj), message)
 
 // Verify. Verifier does not need to know what kind of Proposition or Proof it's verifying.

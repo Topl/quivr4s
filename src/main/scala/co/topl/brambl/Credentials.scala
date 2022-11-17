@@ -13,8 +13,8 @@ import co.topl.quivr.SignableTxBytes
 import co.topl.node.Tetra.Box
 import co.topl.node.Tetra.Predicate
 import co.topl.node.Models.Root
-import co.topl.quivr.User.Digests
 import co.topl.crypto.hash.blake2b256
+import co.topl.common.Digests
 
 case class Indices(x: Int, y: Int, z: Int)
 
@@ -89,13 +89,12 @@ object Credentials {
   /**
    * Assuming that the proof associated to indices (x,y,z) is a digest proof, return it's preimage
    * */
-  def getDigestPreImage(idx: Indices): Digests.Preimage = Digests.Preimage(getPreImageBytes(idx))
+  def getDigestPreImage(idx: Indices): Digests.Preimage = Digests.Preimage(getPreImageBytes(idx), 0)
 
   /**
    * Assuming that the proof associated to indices (x,y,z) is a digest proof, return the digest
    * */
   def getDigest(idx: Indices): Digests.Digest = Digests.Digest(
-    1: Byte, // Arbitrary byte for now
     blake2b256.hash(getPreImageBytes(idx)).value
   )
 }
