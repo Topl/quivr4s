@@ -7,7 +7,7 @@ object Tetra {
   case class IoTx(inputs:   List[IoTx.SpentOutput],
                    outputs:  List[IoTx.UnspentOutput],
                    schedule: IoTx.Schedule,
-                   metadata: Metadata
+                   datum: Metadata
                  )
 
   object IoTx {
@@ -18,6 +18,8 @@ object Tetra {
     case class UnspentOutput(address: Address, value: Box.Value, datum: Datums.UnspentOutput)
 
     def signableBytes(tranasction: IoTx): SignableBytes = ???
+
+    
   }
 
   case class Address(network: Int, ledger: Int, evidence: Predicate.Id)
@@ -48,7 +50,6 @@ object Tetra {
 
     def idFromImage(image: Predicate.Image): Predicate.Id = ???
     //  Id(Predicate.Image(blake2b256.hash(image.root).value, image.threshold)
-    )
   }
 
   case class Attestation(image: Predicate.Image, known: Predicate.Known, responses: List[Option[quivr.Proof]])

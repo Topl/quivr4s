@@ -4,7 +4,6 @@ import cats.Monad
 import cats.data.EitherT
 
 package object quivr {
-
   type SignableTxBytes = Array[Byte]
   type TxBind = Array[Byte]
 
@@ -13,6 +12,39 @@ package object quivr {
 
   // For each Proposition there is a corresponding Proof that can be constructed to satisfy the given Proposition
   sealed abstract class Proof(val tag: Byte, val bindToTransaction: TxBind)
+
+  // The operations offered via the Quivr DSL
+  object Operations {
+  sealed abstract class Locked
+
+  sealed abstract class Digest
+
+  sealed abstract class DigitalSignature
+
+  sealed abstract class HeightRange
+
+  sealed abstract class TickRange
+
+  sealed abstract class MustInclude
+
+  sealed abstract class ExactMatch
+
+  sealed abstract class LessThan
+
+  sealed abstract class GreaterThan
+
+  sealed abstract class EqualTo
+
+  sealed abstract class Threshold
+
+  sealed abstract class Not
+
+  sealed abstract class And
+
+  sealed abstract class Or
+}
+
+
 
   object Models {
 

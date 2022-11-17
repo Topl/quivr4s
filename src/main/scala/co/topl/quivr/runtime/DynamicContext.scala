@@ -4,7 +4,7 @@ import cats.Monad
 import cats.data.EitherT
 import co.topl.quivr
 import co.topl.quivr.algebras.{DigestVerifier, SignatureVerifier}
-import co.topl.quivr.runtime.errors.ContextErrors
+import co.topl.quivr.runtime.Errors.ContextErrors
 import co.topl.quivr.{SignableTxBytes, User}
 
 trait DynamicContext[F[_], K] {
