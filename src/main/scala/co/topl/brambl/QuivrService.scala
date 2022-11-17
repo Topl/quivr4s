@@ -1,23 +1,18 @@
 package co.topl.brambl
 
+import co.topl.quivr.Models.Primitive.Digest
+import co.topl.quivr.{Proof, Proposer, Proposition, Prover, SignableTxBytes, User, Verifier}
 import co.topl.quivr.runtime.DynamicContext
 
 object QuivrService {
-//  type Trivial[T] = T
-//  // An Opinionated Verification Context
-//  case class ToplContext(tx: Tx) extends DynamicContext[Trivial, String] {
-//    override val datums = Map(
-//      // Dummy Data
-//      "eon" -> Datums.Eon(10, 2), // <- not sure what "beginSlot" is referring to. First slot of the eon?
-//      "era" -> Datums.Era(22, 4),
-//      "epoch" -> Datums.Epoch(34, 6),
-//      "block" -> Datums.Header(24) // chain is 24 blocks long
-//    )
-//    override val interfaces = ???
-//    override val signingRoutines = ???
-//    override val hashingRoutines = ???
-//
-//    override def signableBytes: SignableTxBytes = tx.getSignableBytes
-//    override def currentTick: Long = 250L // Arbitrary value
-//  }
+  // An Opinionated Verification Context
+  val ctx: DynamicContext[Option, String] = ???
+
+  def getDigestProposition(digest: User.Digests.Digest): Option[Proposition] =
+    Proposer.digestProposer[Option, (String, User.Digest)].propose(("temp", digest))
+
+  def getDigestProof(preImage: User.Digests.Preimage, message: SignableTxBytes): Option[Proof] = {
+    val prover: Prover[Option, (Byte, User.Preimage)] = Prover.instances.proverInstance
+    prover.prove((Digest.token, preImage), message)
+  }
 }

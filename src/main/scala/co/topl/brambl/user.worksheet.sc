@@ -5,7 +5,10 @@ import co.topl.quivr.SignableTxBytes
 import co.topl.quivr.{Proof, Proposer, Proposition, Prover, User, Verifier}
 import co.topl.crypto.hash.blake2b256
 import co.topl.quivr.runtime.DynamicContext
-import co.topl.node.Tetra.Predicate
+import co.topl.brambl.TransactionBuilder
+import co.topl.brambl.Indices
+import co.topl.node.Tetra.{Datums, Box, IoTx}
+import co.topl.node.Models.Metadata
 
 type Trivial[T] = T
 // An Opinionated Verification Context
@@ -32,24 +35,43 @@ val verifier: Verifier[Trivial] = Verifier.instances.verifierInstance
 val isVerified: Boolean = verifier.evaluate(proposition, proof, ctx)
 
 
+val i = 0 // Arbitrary x to refer to "Alice"
+val j = 0 // Arbitrary y to refer to 1 of 1 predicate
+val k1 = 0 // Arbitrary z to refer to the utxo in the first transaction
+val k2 = 1 // Arbitrary z to refer to the utxo in the second transaction
+val k3 = 2 // Arbitrary z to refer to the utxo in the third transaction
 
-// ==== The following is an example of how a Predicate can be create (if have access to all the data)
-val predicate: Predicate = Predicate(List(proposition), 1) // Simple 1 of 1 digest predicate
+val idx1 = Indices(i, j, k1)
+val idx2 = Indices(i, j, k2)
+val idx3 = Indices(i, j, k3)
 
+// arbitrary box value
+val value = Box.Values.Token(1)
+// arbitrary schedule
+val schedule = IoTx.Schedule(0, 0, 0)
+// Arbitrary meta
+val meta = None
 
+val unprovenT1 = TransactionBuilder.buildUnprovenTransaction(
+  idx1,
+  Datums.SpentOutput(meta),
+  idx2,
+  Datums.UnspentOutput(meta),
+  value,
+  schedule,
+  meta
+)
 
-// ==== The following is the beginning of thinking through how an Attestation can be created from a predicate
-// TODO: Need to work through 1) how to generate a predicate image 2) Predicate image + Predicate.Known + proofs => attestation
+val t1 = TransactionBuilder.proveTransaction(unprovenT1)
 
-val digest1: Array[TypedEvidence] = predicate.conditions.map(propositionDigest).toArray
-val challenges1: List[Proposition] = predicate.conditions
-val responses1: List[Proof] = predicate.conditions.map(???) // Challenge: How to get proofs without explicitly knowing the propositin type
+val unprovenT2 = TransactionBuilder.buildUnprovenTransaction(
+  idx2,
+  Datums.SpentOutput(meta),
+  idx3,
+  Datums.UnspentOutput(meta),
+  value,
+  schedule,
+  meta
+)
 
-// Alternative: Construct manually. Although will this be possible for unprovenTx => provenTx? Need to think through
-val digest2: Array[TypedEvidence] = Array(propositionDigest(proposition))
-
-val attestation: Attestation = Attestation(Predicate.Image(digest2, 1), List(Option(proposition, proof)))
-
-
-// Alternative 2: Construct via Predicate *Image*. This is necessary if we want functionality for "proving an unproven transaction"
-// See playground.worksheet.sc
+val t2 = TransactionBuilder.proveTransaction(unprovenT2)
