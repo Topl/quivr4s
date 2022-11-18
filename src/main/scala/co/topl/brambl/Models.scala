@@ -10,14 +10,26 @@ object Models {
 
   case class Indices(x: Int, y: Int, z: Int)
 
-  case class UnprovenSpentOutput(
+  case class UnprovenSpentOutputV1(
                                   reference: Tetra.Box.Id,
                                   knownPredicate: Tetra.Predicate.Known,
                                   value: Tetra.Box.Value,
                                   datum: Tetra.Datums.SpentOutput
                                 )
 
-  case class UnprovenIoTx(inputs:   List[UnprovenSpentOutput],
+  case class UnprovenSpentOutputV2(
+                                  reference: Tetra.Box.Id,
+                                  value: Tetra.Box.Value,
+                                  datum: Tetra.Datums.SpentOutput
+                                )
+
+  case class UnprovenIoTxV1(inputs:   List[UnprovenSpentOutputV1],
+                          outputs:  List[Tetra.IoTx.UnspentOutput],
+                          schedule: Tetra.IoTx.Schedule,
+                          metadata: Metadata
+                         )
+
+  case class UnprovenIoTxV2(inputs:   List[UnprovenSpentOutputV2],
                           outputs:  List[Tetra.IoTx.UnspentOutput],
                           schedule: Tetra.IoTx.Schedule,
                           metadata: Metadata
@@ -27,7 +39,8 @@ object Models {
 
   // Abstract away how the signable bytes are generated
   implicit class SignableBytesFromIoTx(iotx: Tetra.IoTx) extends Signable
-  implicit class SignableBytesFromUnprovenIoTx(iotx: UnprovenIoTx) extends Signable
+  implicit class SignableBytesFromUnprovenIoTxV1(iotx: UnprovenIoTxV1) extends Signable
+  implicit class SignableBytesFromUnprovenIoTxV2(iotx: UnprovenIoTxV2) extends Signable
 
   // Abstract away how an address is generated from a predicate image
   implicit class AddressFromPredicateImage(predicateImage: Tetra.Predicate.Image) {

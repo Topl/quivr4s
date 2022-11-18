@@ -9,6 +9,7 @@ import co.topl.brambl.{Credentials, TransactionBuilder}
 import co.topl.brambl.Models._
 import co.topl.node.Tetra.Box
 import co.topl.common.Digests
+import co.topl.genus.Models.Txo
 
 
 // ==== The following simply uses the building blocks that were already created
@@ -36,18 +37,36 @@ def quivrExample: Unit = {
 }
 
 
-// The following are examples for Transaction builder and Credentials
+// The following are examples for Transaction builder and Credentials.
+val value = Box.Values.Token(1) // Arbitrary data
+
+// indices version
 
 // Arbitrary data
 val idx1 = Indices(0, 0, 1)
 val idx2 = Indices(0, 0, 2)
 val idx3 = Indices(0, 0, 3)
-val value = Box.Values.Token(1)
 
 // Generate and prove t1
-val unprovenT1 = TransactionBuilder.buildUnprovenTransaction(idx1, idx2, value)
-val t1 = Credentials.proveTransaction(unprovenT1)
+val unprovenT1V1 = TransactionBuilder.buildUnprovenIoTxV1(idx1, idx2, value)
+val t1V1 = Credentials.proveIoTxV1(unprovenT1V1)
 
 // Generate and prove t2
-val unprovenT2 = TransactionBuilder.buildUnprovenTransaction(idx2,idx3,value)
-val t2 = Credentials.proveTransaction(unprovenT2)
+val unprovenT2V1 = TransactionBuilder.buildUnprovenIoTxV1(idx2,idx3,value)
+val t2V1 = Credentials.proveIoTxV1(unprovenT2V1)
+
+
+// txo version
+
+// Arbitrary data
+val txo1: Txo = ??? // A TXO should be retrieved from Genus
+
+val unprovenT1V2 = TransactionBuilder.buildUnprovenIoTxV2(txo1, value)
+val t1V2 = Credentials.proveIoTxV2(unprovenT1V2)
+
+// The t1V2 should be broadcast to the chain. After which Genus can inform us of a new Txo
+
+val txo2: Txo = ??? // The new TXO retrieved from Genus
+
+val unprovenT2V2 = TransactionBuilder.buildUnprovenIoTxV2(txo2, value)
+val t2V2 = Credentials.proveIoTxV2(unprovenT2V2)
