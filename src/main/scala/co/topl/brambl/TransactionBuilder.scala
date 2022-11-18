@@ -1,90 +1,47 @@
 package co.topl.brambl
 
-import co.topl.node.Models.{Metadata, SignableBytes}
+import co.topl.node.Models.Metadata
 import co.topl.node.Tetra
-import co.topl.brambl.QuivrService
 import co.topl.node.Tetra.Predicate
-
-case class UnprovenSpentOutput(
-                                reference: Tetra.Box.Id,
-                                knownPredicate: Tetra.Predicate.Known,
-                                value: Tetra.Box.Value,
-                                datum: Tetra.Datums.SpentOutput
-                              )
-
-case class UnprovenIoTx(inputs:   List[UnprovenSpentOutput],
-                outputs:  List[Tetra.IoTx.UnspentOutput],
-                schedule: Tetra.IoTx.Schedule,
-                metadata: Metadata
-               )
-
+import co.topl.brambl.Models._
+import co.topl.brambl.Credentials._
 
 // Functions related to Transaction Builder
-// These functions are based off of the Transaction Diagram in TSDK-173
 object TransactionBuilder {
-  // Create unproven transaction
-  // A simple 1 input 1 output transaction
-  // All propositions are digest propositions
-  def buildUnprovenTransaction(
-                                  input: Indices,
-                                  inputMeta: Tetra.Datums.SpentOutput,
-                                  output: Indices,
-                                  outputMeta: Tetra.Datums.UnspentOutput,
-                                  outputValue: Tetra.Box.Value,
-                                  schedule: Tetra.IoTx.Schedule,
-                                  metadata: Metadata
-                                ): UnprovenIoTx  = {
-    val unprovenInput = UnprovenSpentOutput(
-      Credentials.getBoxId(input),
-//      Credentials.getKnownPredicate(input),
-      Predicate.Known(
-        List(
-          QuivrService.getDigestProposition(Credentials.getDigest(input))
-        )
-      ),
-      Credentials.getBox(input).value,
-      inputMeta
-    )
-    val inputs = List(unprovenInput)
 
-    // Should go from indices => proposition => predicate => predicate Id
-    // Unclear how the propositions will map to the predicate id.
-    val outputAddress: Tetra.Address = ???
+  // 1 of 1 proposition input
+  def buildUnprovenInput(idx: Indices, meta: Tetra.Datums.SpentOutput): UnprovenSpentOutput = {
+    val proposition = Option(QuivrService.getDigestProposition(getDigest(idx)))
+    val knownPredicate = Predicate.Known(List(proposition))
 
-    val unspentOutput = Tetra.IoTx.UnspentOutput(
-      outputAddress,
-      outputValue,
-      outputMeta
-    )
-    val outputs = List(unspentOutput)
-    UnprovenIoTx(inputs, outputs, schedule, metadata)
+    UnprovenSpentOutput(getBoxId(idx), knownPredicate, getBox(idx).value, meta)
   }
 
-  // should not go here, I will move
-  def getSignableBytes(unprovenTx: UnprovenIoTx): SignableBytes = ???
+  // 1 of 1 proposition output
+  def buildOutput(idx: Indices, value: Tetra.Box.Value, meta: Tetra.Datums.UnspentOutput): Tetra.IoTx.UnspentOutput = {
+    val proposition = QuivrService.getDigestProposition(getDigest(idx))
+    val predicate = Tetra.Predicate(List(proposition), 1)
 
-  // Should not go here. I will move
-  def proveTransaction(unprovenTx: UnprovenIoTx): Tetra.IoTx = {
-    val message = getSignableBytes(unprovenTx)
-    val unprovenInput = unprovenTx.inputs.head
-    val attestation = Tetra.Attestation(
-      Storage.getBoxById(unprovenInput.reference).image,
-      unprovenInput.knownPredicate,
-      List(
-        QuivrService.getDigestProof(
-          Credentials.getDigestPreImage(
-            Storage.getIndicesByBoxId(unprovenInput.reference)
-          ),
-          message
-        )
-      )
-    )
-    val provenInput = Tetra.IoTx.SpentOutput(
-      unprovenInput.reference,
-      attestation,
-      value = unprovenInput.value,
-      datum = unprovenInput.datum
-    )
-    Tetra.IoTx(List(provenInput), unprovenTx.outputs, unprovenTx.schedule, unprovenTx.metadata)
+    Tetra.IoTx.UnspentOutput(predicate.image.generateAddress, value, meta)
+  }
+
+  /**
+   * Create unproven transaction
+   * A simple 1 input 1 output transaction
+   * All propositions are digest propositions
+   * */
+  def buildUnprovenTransaction(
+                                  input: Indices,
+                                  output: Indices,
+                                  outputValue: Tetra.Box.Value,
+                                  inputMeta: Tetra.Datums.SpentOutput = Tetra.Datums.SpentOutput(None),
+                                  outputMeta: Tetra.Datums.UnspentOutput = Tetra.Datums.UnspentOutput(None),
+                                  schedule: Tetra.IoTx.Schedule = Tetra.IoTx.Schedule(0, 0, 0),
+                                  metadata: Metadata = None
+                                ): UnprovenIoTx  = {
+    val inputs = List(buildUnprovenInput(input, inputMeta))
+    val outputs = List(buildOutput(output, outputValue, outputMeta))
+
+    UnprovenIoTx(inputs, outputs, schedule, metadata)
   }
 }

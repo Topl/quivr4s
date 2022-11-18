@@ -12,32 +12,11 @@ import co.topl.quivr.SignableTxBytes
 
 import co.topl.node.Tetra.Box
 import co.topl.node.Tetra.Predicate
-import co.topl.node.Models.Root
+import co.topl.node.Models.SignableBytes
 import co.topl.crypto.hash.blake2b256
 import co.topl.common.Digests
-
-case class Indices(x: Int, y: Int, z: Int)
-
-// CRUD functions related to wallet storage
-object Storage {
-  // get already existing utxo by Box Id.
-  def getBoxById(id: Box.Id): Box = ???
-
-  // get known predicate. Useful since address.evidence is a predicate's ID
-  // enables address => Predicate.Known
-  def getKnownPredicateById(id: Predicate.Id): Predicate.Known = ???
-
-  // get known predicate. Useful since a box has a predicate image and
-  // a predicate image has the root.
-  // enabled Box => Predicate.Known
-  def getKnownPredicateByRoot(root: Root): Predicate.Known = ???
-
-  // get the image of the predicate associated with a specific box
-  def getPredicateImageByBoxId(id: Box.Id): Predicate.Image = getBoxById(id).image
-
-  // Get the (x,y,z) indices that map to the utxo given by the Box Id
-  def getIndicesByBoxId(boxId: Box.Id): Indices = ???
-}
+import co.topl.brambl.Models._
+import co.topl.node.Tetra
 
 /***
  *
@@ -47,42 +26,24 @@ object Storage {
  * values from 2^31^ to 2^32^-1
  */
 object Credentials {
-  /**
-   * Credentials.proveTx(unprovenTx) => ProvenTx
-   *
-   * unprovenTx has
-   * - unproven inputs; boxId, boxValue, metadata, unproven***Attestation (i.e, SparsePredicate)
-   * - outputs; address, boxValue, metadata
-   * - schedule
-   * - metadata
-   *
-   * To get a proven transaction, we want to convert the unprovenAttestation (SparsePredicate) to a proven attestation
-   *
-   * A [proven] Attestation requires:
-   *  - predicate image
-   *  -
-   * A sparse predicate has:
-   *  -
-   *
-   * */
-//  def proveTx(unproven tx): Models.ProvenTx = ???
+  // get already existing utxo by Box Id.
+  def getBoxById(id: Box.Id): Box = ???
+
+  // Get the (x,y,z) indices that map to the utxo given by the Box Id
+  def getIndicesByBoxId(boxId: Box.Id): Indices = {
+    val idxArr = new String(boxId.bytes).split(',')
+    Indices(idxArr(0).toInt, idxArr(1).toInt, idxArr(2).toInt)
+  }
 
   /**
    * Get the ID of the box whose associated UTxO maps to the indices (x, y, z)
   * */
-  def getBoxId(idx: Indices): Box.Id = Box.Id(s"box${idx.x}${idx.y}${idx.z}".getBytes)
+  def getBoxId(idx: Indices): Box.Id = Box.Id(s"${idx.x},${idx.y},${idx.z}".getBytes)
 
   /**
    * Get the box whose associated UTxO maps to the indices (x, y, z)
    * */
-  def getBox(idx: Indices): Box = Storage.getBoxById(getBoxId(idx))
-
-  /**
-   * Get a proposition s
-   * */
-  def getKnownPredicate(idx: Indices): Predicate.Known = Storage.getKnownPredicateByRoot(
-    getBox(idx).image.root
-   )
+  def getBox(idx: Indices): Box = getBoxById(getBoxId(idx))
 
   private def getPreImageBytes(idx: Indices): Array[Byte] = s"x${idx.x}.y${idx.y}.z${idx.z}".getBytes
 
@@ -94,7 +55,32 @@ object Credentials {
   /**
    * Assuming that the proof associated to indices (x,y,z) is a digest proof, return the digest
    * */
-  def getDigest(idx: Indices): Digests.Digest = Digests.Digest(
-    blake2b256.hash(getPreImageBytes(idx)).value
-  )
+  def getDigest(idx: Indices): Digests.Digest =
+    Digests.Digest(blake2b256.hash(getPreImageBytes(idx)).value)
+
+
+  // prove an unproven input (digest proof)
+  def proveInput(unprovenInput: UnprovenSpentOutput, message: SignableBytes): Tetra.IoTx.SpentOutput = {
+    val predicateImage = getBoxById(unprovenInput.reference).image
+    val preImage = getDigestPreImage(getIndicesByBoxId(unprovenInput.reference))
+    val proof = Option(QuivrService.getDigestProof(preImage, message))
+    val attestation = Tetra.Attestation(predicateImage, unprovenInput.knownPredicate, List(proof))
+
+    Tetra.IoTx.SpentOutput(
+      unprovenInput.reference,
+      attestation,
+      unprovenInput.value,
+      unprovenInput.datum
+    )
+  }
+
+  // Prove an unproven transaction
+  def proveTransaction(unprovenTx: UnprovenIoTx): Tetra.IoTx = {
+    val message = unprovenTx.getSignableBytes
+
+    val unprovenInput = unprovenTx.inputs.head
+    val provenInput = proveInput(unprovenInput, message)
+
+    Tetra.IoTx(List(provenInput), unprovenTx.outputs, unprovenTx.schedule, unprovenTx.metadata)
+  }
 }
