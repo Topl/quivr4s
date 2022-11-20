@@ -34,10 +34,10 @@ trait DynamicContext[F[_], K] {
 
   def signatureVerify(routine: K)(verification: SignatureVerification)(implicit
     monad:                     Monad[F]
-  ): F[Either[quivr.runtime.Error, SignatureVerification]] = for {
+  ): EitherT[F, quivr.runtime.Error, SignatureVerification] = for {
     verifier <- EitherT.fromOption[F](signingRoutines.get(routine), ContextErrors.FailedToFindSignatureVerifier)
     res      <- EitherT(verifier.validate(verification))
-  } yield res.value
+  } yield res
 
 //   def useInterface[E, T](label: K)(f: common.Data => Either[E, T])(ff: T => Boolean)(implicit
 //     monad:                     Monad[F]

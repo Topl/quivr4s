@@ -114,32 +114,32 @@ object Verifier {
     ): F[Either[runtime.Error, Long]] = for {
       msgResult <- Verifier.evaluateBind(Models.Contextual.HeightRange.token, proof, context)(Verifier.bindFunc[F])
       height <- context.heightOf(proposition.chain)
-      evalResult <- Either
-        .cond(
-          proposition.min <= height && height <= proposition.max,
-          height,
-          EvaluationAut.horizationFailed(proposition, proof)
-        )
-      res = Either
-        .cond(
-          msgResult.isRight && evalResult.isRight
-          verification,
-          EvaluationAuthorizationFailed(proposition, proof)
-        )
+      // evalResult <- Either
+      //   .cond(
+      //     proposition.min <= height && height <= proposition.max,
+      //     height,
+      //     EvaluationAut.horizationFailed(proposition, proof)
+      //   )
+      // res = Either
+      //   .cond(
+      //     msgResult.isRight && evalResult.isRight
+      //     verification,
+      //     EvaluationAuthorizationFailed(proposition, proof)
+      //   )
     } yield res
 
-    private def tickVerifier[F[_]: Monad](
-      proposition: Models.Contextual.TickRange.Proposition,
-      proof:       Models.Contextual.TickRange.Proof,
-      context:     DynamicContext[F, String]
-    ): F[Either[runtime.Error, Long]] = for {
-      msgAuth <- Verifier.evaluateBind(Models.Contextual.TickRange.token, proof, context)(
-        blake2b256.hash(_).value.pure[F]
-      )
-      currentTick <- context.currentTick
-      evalAuth = proposition.min <= currentTick && currentTick <= proposition.max
-      res = msgAuth && evalAuth
-    } yield res
+    // private def tickVerifier[F[_]: Monad](
+    //   proposition: Models.Contextual.TickRange.Proposition,
+    //   proof:       Models.Contextual.TickRange.Proof,
+    //   context:     DynamicContext[F, String]
+    // ): F[Either[runtime.Error, Long]] = for {
+    //   msgAuth <- Verifier.evaluateBind(Models.Contextual.TickRange.token, proof, context)(
+    //     blake2b256.hash(_).value.pure[F]
+    //   )
+    //   currentTick <- context.currentTick
+    //   evalAuth = proposition.min <= currentTick && currentTick <= proposition.max
+    //   res = msgAuth && evalAuth
+    // } yield res
 
     // private def exactMatchVerifier[F[_]: Monad](
     //   proposition: Models.Contextual.ExactMatch.Proposition,
@@ -285,7 +285,7 @@ object Verifier {
             case (c: Models.Primitive.Locked.Proposition, r: Models.Primitive.Locked.Proof) =>
               lockedVerifier(c, r, context)
             case (c: Models.Primitive.Digest.Proposition, r: Models.Primitive.Digest.Proof) =>
-              digestVerifier(c, r, context).map(_.isRight)
+              digestVerifier(c, r, context).map(_.)
             case (c: Models.Primitive.DigitalSignature.Proposition, r: Models.Primitive.DigitalSignature.Proof) =>
               signatureVerifier(c, r, context)
             case (c: Models.Contextual.HeightRange.Proposition, r: Models.Contextual.HeightRange.Proof) =>
