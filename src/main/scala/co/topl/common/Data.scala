@@ -1,5 +1,5 @@
 package co.topl.common
 
-trait  Data {
+trait Data {
     val bytes: Array[Byte]
 }

@@ -1,7 +1,6 @@
 package co.topl.quivr.algebras
 
 import co.topl.quivr.{runtime}
+import co.topl.common.DigestVerification
 
-case class Digest
-
-trait DigestVerifier[F[_]] extends ContextlessValidation[F, runtime.Error, (User.Preimage, User.Digest)]
+trait DigestVerifier[F[_]] extends ContextlessValidation[F, runtime.Error, DigestVerification]

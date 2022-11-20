@@ -5,9 +5,10 @@ import cats.data.EitherT
 import cats.implicits._
 import co.topl.crypto.hash.blake2b256
 import co.topl.quivr.runtime.DynamicContext
-import co.topl.quivr.runtime.errors.AuthorizationErrors.{EvaluationAuthorizationFailed, LockedPropositionIsUnsatisfiable}
-import co.topl.quivr.runtime.errors.SyntaxErrors
-import co.topl.quivr.runtime.errors.SyntaxErrors.MessageAuthorizationFailed
+import co.topl.quivr.runtime.Errors.AuthorizationErrors.{EvaluationAuthorizationFailed, LockedPropositionIsUnsatisfiable}
+import co.topl.quivr.runtime.Errors.SyntaxErrors
+import co.topl.quivr.runtime.Errors.SyntaxErrors.MessageAuthorizationFailed
+import co.topl.common.{DigestVerification, SignatureVerification}
 
 /**
  * A Verifier evaluates whether a given Proof satisfies a certain Proposition
@@ -75,7 +76,7 @@ object Verifier {
       proposition: Models.Primitive.Digest.Proposition,
       proof:       Models.Primitive.Digest.Proof,
       context:     DynamicContext[F, String]
-    ): F[Either[runtime.Error, (User.Preimage, User.Digest)]] = for {
+    ): F[Either[runtime.Error, DigestVerification]] = for {
       msgResult   <- Verifier.evaluateBind(Models.Primitive.Digest.token, proof, context)(blake2b256.hash(_).value.pure[F])
       evalResult <- context.digestVerify(proposition.routine)(proof.preimage, proposition.digest).value
       res = Either
@@ -102,12 +103,15 @@ object Verifier {
       proof:       Models.Primitive.DigitalSignature.Proof,
       context:     DynamicContext[F, String]
     ): F[Boolean] = for {
-      msgAuth <- Verifier.evaluateBind(Models.Primitive.DigitalSignature.token, proof, context)(
-        blake2b256.hash(_).value.pure[F]
-      )
+      msgResult   <- Verifier.evaluateBind(Models.Primitive.DigitalSignature.token, proof, context)(blake2b256.hash(_).value.pure[F])
       signedMessage <- context.signableBytes
-      evalAuth = context.signatureVerify(proposition.routine)(proposition.vk, proof.witness, signedMessage)
-      res = msgAuth && evalAuth
+            evalResult <- context.signatureVerify(proposition.routine)(proposition.vk, proof.witness, signedMessage)
+      res = Either
+        .cond(
+          msgResult.isRight && evalResult.isRight,
+          (proof.preimage, proposition.digest),
+          EvaluationAuthorizationFailed(proposition, proof)
+        )
     } yield res
 
     private def heightVerifier[F[_]: Monad](

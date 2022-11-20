@@ -4,7 +4,8 @@ import co.topl.node.Models.{Metadata, Root, SignableBytes}
 import co.topl.quivr
 
 object Tetra {
-  case class IoTx(inputs:   List[IoTx.SpentOutput],
+  case class IoTx(
+    inputs:   List[IoTx.SpentOutput],
                    outputs:  List[IoTx.UnspentOutput],
                    schedule: IoTx.Schedule,
                    datum: Metadata

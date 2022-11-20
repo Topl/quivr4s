@@ -3,6 +3,7 @@ package co.topl.quivr
 import cats.implicits._
 import cats.{Applicative, Monad}
 import co.topl.crypto.hash.blake2b256
+import co.topl.common
 
 // Provers create proofs that are bound to the transaction which executes the proof.
 //
@@ -38,7 +39,7 @@ object Prover {
 
     private def lockedProver[F[_]: Applicative]: F[Proof] = Models.Primitive.Locked.Proof().pure[F].widen
 
-    private def digestProver[F[_]: Applicative](preimage: User.Preimage, message: SignableTxBytes)(
+    private def digestProver[F[_]: Applicative](preimage: common.Preimage, message: SignableTxBytes)(
       f:                                                  Array[Byte] => TxBind
     ): F[Proof] =
       Models.Primitive.Digest
@@ -49,7 +50,7 @@ object Prover {
         .pure[F]
         .widen
 
-    private def signatureProver[F[_]: Applicative](witness: User.Witness, message: SignableTxBytes)(
+    private def signatureProver[F[_]: Applicative](witness: common.Witness, message: SignableTxBytes)(
       f:                                                    Array[Byte] => TxBind
     ): F[Proof] =
       Models.Primitive.DigitalSignature
@@ -161,9 +162,9 @@ object Prover {
       (args: A, message: SignableTxBytes) =>
         args match {
           case t: Byte if t == Models.Primitive.Locked.token => lockedProver[F]
-          case t: (Byte, User.Preimage) if t._1 == Models.Primitive.Digest.token =>
+          case t: (Byte, common.Preimage) if t._1 == Models.Primitive.Digest.token =>
             digestProver(t._2, message)(instanceBind)
-          case t: (Byte, User.Witness) if t._1 == Models.Primitive.DigitalSignature.token =>
+          case t: (Byte, common.Witness) if t._1 == Models.Primitive.DigitalSignature.token =>
             signatureProver(t._2, message)(instanceBind)
           case t: Byte if t == Models.Contextual.HeightRange.token => heightProver(message)(instanceBind)
           case t: Byte if t == Models.Contextual.TickRange.token   => tickProver(message)(instanceBind)
