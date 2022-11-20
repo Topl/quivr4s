@@ -15,33 +15,33 @@ package object quivr {
 
   // The operations offered via the Quivr DSL
   object Operations {
-  sealed abstract class Locked
+  trait Locked
 
-  sealed abstract class Digest
+  trait Digest
 
-  sealed abstract class DigitalSignature
+  trait DigitalSignature
 
-  sealed abstract class HeightRange
+  trait HeightRange
 
-  sealed abstract class TickRange
+  trait TickRange
 
-  sealed abstract class MustInclude
+  trait MustInclude
 
-  sealed abstract class ExactMatch
+  trait ExactMatch
 
-  sealed abstract class LessThan
+  trait LessThan
 
-  sealed abstract class GreaterThan
+  trait GreaterThan
 
-  sealed abstract class EqualTo
+  trait EqualTo
 
-  sealed abstract class Threshold
+  trait Threshold
 
-  sealed abstract class Not
+  trait Not
 
-  sealed abstract class And
+  trait And
 
-  sealed abstract class Or
+  trait Or
 }
 
 
@@ -54,7 +54,7 @@ package object quivr {
         val token: Byte = 0: Byte
 
         final case class Proposition(
-          data: Option[User.Data]
+          data: Option[common.Data]
         ) extends quivr.Proposition
             with quivr.Operations.Locked
 
@@ -66,12 +66,13 @@ package object quivr {
 
         final case class Proposition(
           routine: String,
-          digest:  User.Digest
+          digest:  common.Digest
         ) extends quivr.Proposition
             with quivr.Operations.Digest
 
         final case class Proof(
-          preimage:        User.Preimage,
+          preimage:        common.Preimage,
+          salt: Long,
           transactionBind: TxBind
         ) extends quivr.Proof(token, transactionBind)
             with quivr.Operations.Digest
@@ -82,12 +83,12 @@ package object quivr {
 
         final case class Proposition(
           routine: String,
-          vk:      User.VerificationKey
+          vk:      common.VerificationKey
         ) extends quivr.Proposition
             with quivr.Operations.DigitalSignature
 
         final case class Proof(
-          witness:         User.Witness,
+          witness:         common.Witness,
           transactionBind: TxBind
         ) extends quivr.Proof(token, transactionBind)
             with quivr.Operations.DigitalSignature

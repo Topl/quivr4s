@@ -1,8 +1,8 @@
 package co.topl.quivr.runtime
 
-import co.topl.quivr.User
+import co.topl.common
 
-trait Interface {
-  val data: User.Data
-  def parse[T](f: User.Data => Option[T]): Option[T] = f(data)
+trait Interface[F[_]] {
+  val data: common.Data
+  def parse[E, T](f: common.Data => Either[E, T]): Either[E, T] = f(data)
 }

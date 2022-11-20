@@ -1,6 +1,7 @@
 package co.topl.node
 
 import co.topl.node.Models.{Metadata, Root, SignableBytes}
+import co.topl.quivr.runtime.{Datum, IncludesHeight}
 import co.topl.quivr
 
 object Tetra {

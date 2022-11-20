@@ -8,7 +8,7 @@ import co.topl.quivr.runtime.DynamicContext
 import co.topl.quivr.runtime.Errors.AuthorizationErrors.{EvaluationAuthorizationFailed, LockedPropositionIsUnsatisfiable}
 import co.topl.quivr.runtime.Errors.SyntaxErrors
 import co.topl.quivr.runtime.Errors.SyntaxErrors.MessageAuthorizationFailed
-import co.topl.common.{DigestVerification, SignatureVerification}
+import co.topl.common.{DigestVerification, SignatureVerification, Message}
 
 /**
  * A Verifier evaluates whether a given Proof satisfies a certain Proposition
@@ -40,6 +40,8 @@ object Verifier {
     msgAuth = Either.cond(verifierTxBind.sameElements(proof.bindToTransaction), sb, MessageAuthorizationFailed)
   } yield msgAuth
 
+  protected def bindFunc[F[_]: Applicative](m: Array[Byte]): F[Array[Byte]] = blake2b256.hash(m).value.pure[F]
+
   trait Implicits {
 
     implicit class PropositionOps(proposition: Proposition) {
@@ -68,48 +70,39 @@ object Verifier {
       proof:       Models.Primitive.Locked.Proof,
       context:     DynamicContext[F, String]
     ): F[Either[runtime.Error, Boolean]] = for {
-      msgResult   <- Verifier.evaluateBind(Models.Primitive.Digest.token, proof, context)(blake2b256.hash(_).value.pure[F])
+      msgResult   <- Verifier.evaluateBind(Models.Primitive.Digest.token, proof, context)(Verifier.bindFunc[F])
       res = Either.left[runtime.Error, Boolean](LockedPropositionIsUnsatisfiable)
     } yield res // should always fail, the Locked Proposition is unsatisfiable
 
-    private def digestVerifier2[F[_]: Monad](
+    private def digestVerifier[F[_]: Monad](
       proposition: Models.Primitive.Digest.Proposition,
       proof:       Models.Primitive.Digest.Proof,
       context:     DynamicContext[F, String]
     ): F[Either[runtime.Error, DigestVerification]] = for {
-      msgResult   <- Verifier.evaluateBind(Models.Primitive.Digest.token, proof, context)(blake2b256.hash(_).value.pure[F])
-      evalResult <- context.digestVerify(proposition.routine)(proof.preimage, proposition.digest).value
+      msgResult   <- Verifier.evaluateBind(Models.Primitive.Digest.token, proof, context)(Verifier.bindFunc[F])
+      verification = DigestVerification(proposition.digest, proof.preimage, proof.salt)
+      evalResult <- context.digestVerify(proposition.routine)(verification).value
       res = Either
         .cond(
           msgResult.isRight && evalResult.isRight,
-          (proof.preimage, proposition.digest),
+          verification,
           EvaluationAuthorizationFailed(proposition, proof)
         )
     } yield res
-
-//    // todo: how to pass which of these failed back up?
-//    private def digestVerifier[F[_]: Monad](
-//      proposition: Models.Primitive.Digest.Proposition,
-//      proof:       Models.Primitive.Digest.Proof,
-//      context:     DynamicContext[F, String]
-//    ): F[Boolean] = for {
-//      msgAuth <- Verifier.evaluateBind(Models.Primitive.Digest.token, proof, context)(blake2b256.hash(_).value.pure[F])
-//      evalAuth = context.digestVerify(proposition.routine)(proof.preimage, proposition.digest)
-//      res = msgAuth && evalAuth
-//    } yield res
 
     private def signatureVerifier[F[_]: Monad](
       proposition: Models.Primitive.DigitalSignature.Proposition,
       proof:       Models.Primitive.DigitalSignature.Proof,
       context:     DynamicContext[F, String]
-    ): F[Boolean] = for {
-      msgResult   <- Verifier.evaluateBind(Models.Primitive.DigitalSignature.token, proof, context)(blake2b256.hash(_).value.pure[F])
+    ): F[Either[runtime.Error, SignatureVerification]] = for {
+      msgResult   <- Verifier.evaluateBind(Models.Primitive.DigitalSignature.token, proof, context)(Verifier.bindFunc[F])
       signedMessage <- context.signableBytes
-            evalResult <- context.signatureVerify(proposition.routine)(proposition.vk, proof.witness, signedMessage)
+      verification = SignatureVerification(proposition.vk, proof.witness, Message(signedMessage))
+      evalResult <- context.signatureVerify(proposition.routine)(verification).value
       res = Either
         .cond(
           msgResult.isRight && evalResult.isRight,
-          (proof.preimage, proposition.digest),
+          verification,
           EvaluationAuthorizationFailed(proposition, proof)
         )
     } yield res
@@ -118,20 +111,28 @@ object Verifier {
       proposition: Models.Contextual.HeightRange.Proposition,
       proof:       Models.Contextual.HeightRange.Proof,
       context:     DynamicContext[F, String]
-    ): F[Boolean] = for {
-      msgAuth <- Verifier.evaluateBind(Models.Contextual.HeightRange.token, proof, context)(
-        blake2b256.hash(_).value.pure[F]
-      )
-      height = context.heightOf(proposition.chain).fold(-1L)(identity)
-      evalAuth = proposition.min <= height && height <= proposition.max
-      res = msgAuth && evalAuth
+    ): F[Either[runtime.Error, Long]] = for {
+      msgResult <- Verifier.evaluateBind(Models.Contextual.HeightRange.token, proof, context)(Verifier.bindFunc[F])
+      height <- context.heightOf(proposition.chain)
+      evalResult <- Either
+        .cond(
+          proposition.min <= height && height <= proposition.max,
+          height,
+          EvaluationAut.horizationFailed(proposition, proof)
+        )
+      res = Either
+        .cond(
+          msgResult.isRight && evalResult.isRight
+          verification,
+          EvaluationAuthorizationFailed(proposition, proof)
+        )
     } yield res
 
     private def tickVerifier[F[_]: Monad](
       proposition: Models.Contextual.TickRange.Proposition,
       proof:       Models.Contextual.TickRange.Proof,
       context:     DynamicContext[F, String]
-    ): F[Boolean] = for {
+    ): F[Either[runtime.Error, Long]] = for {
       msgAuth <- Verifier.evaluateBind(Models.Contextual.TickRange.token, proof, context)(
         blake2b256.hash(_).value.pure[F]
       )
@@ -140,59 +141,59 @@ object Verifier {
       res = msgAuth && evalAuth
     } yield res
 
-    private def exactMatchVerifier[F[_]: Monad](
-      proposition: Models.Contextual.ExactMatch.Proposition,
-      proof:       Models.Contextual.ExactMatch.Proof,
-      context:     DynamicContext[F, String]
-    ): F[Boolean] = for {
-      msgAuth <- Verifier.evaluateBind(Models.Contextual.ExactMatch.token, proof, context)(
-        blake2b256.hash(_).value.pure[F]
-      )
-      evalAuth = context.exactMatch(proposition.label, proposition.compareTo)
-      res = msgAuth && evalAuth
-    } yield res
+    // private def exactMatchVerifier[F[_]: Monad](
+    //   proposition: Models.Contextual.ExactMatch.Proposition,
+    //   proof:       Models.Contextual.ExactMatch.Proof,
+    //   context:     DynamicContext[F, String]
+    // ): F[Either[runtime.Error, Array[Byte]]] = for {
+    //   msgAuth <- Verifier.evaluateBind(Models.Contextual.ExactMatch.token, proof, context)(
+    //     blake2b256.hash(_).value.pure[F]
+    //   )
+    //   evalAuth = context.exactMatch(proposition.label, proposition.compareTo)
+    //   res = msgAuth && evalAuth
+    // } yield res
 
-    private def lessThanVerifier[F[_]: Monad](
-      proposition: Models.Contextual.LessThan.Proposition,
-      proof:       Models.Contextual.LessThan.Proof,
-      context:     DynamicContext[F, String]
-    ): F[Boolean] = for {
-      msgAuth <- Verifier.evaluateBind(Models.Contextual.LessThan.token, proof, context)(
-        blake2b256.hash(_).value.pure[F]
-      )
-      evalAuth = context.lessThan(proposition.label, proposition.compareTo)
-      res = msgAuth && evalAuth
-    } yield res
+    // private def lessThanVerifier[F[_]: Monad](
+    //   proposition: Models.Contextual.LessThan.Proposition,
+    //   proof:       Models.Contextual.LessThan.Proof,
+    //   context:     DynamicContext[F, String]
+    // ): F[Either[runtime.Error, Long]] = for {
+    //   msgAuth <- Verifier.evaluateBind(Models.Contextual.LessThan.token, proof, context)(
+    //     blake2b256.hash(_).value.pure[F]
+    //   )
+    //   evalAuth = context.lessThan(proposition.label, proposition.compareTo)
+    //   res = msgAuth && evalAuth
+    // } yield res
 
-    private def greaterThanVerifier[F[_]: Monad](
-      proposition: Models.Contextual.GreaterThan.Proposition,
-      proof:       Models.Contextual.GreaterThan.Proof,
-      context:     DynamicContext[F, String]
-    ): F[Boolean] = for {
-      msgAuth <- Verifier.evaluateBind(Models.Contextual.GreaterThan.token, proof, context)(
-        blake2b256.hash(_).value.pure[F]
-      )
-      evalAuth = context.greaterThan(proposition.label, proposition.compareTo)
-      res = msgAuth && evalAuth
-    } yield res
+    // private def greaterThanVerifier[F[_]: Monad](
+    //   proposition: Models.Contextual.GreaterThan.Proposition,
+    //   proof:       Models.Contextual.GreaterThan.Proof,
+    //   context:     DynamicContext[F, String]
+    // ): F[Either[runtime.Error, Long]] = for {
+    //   msgAuth <- Verifier.evaluateBind(Models.Contextual.GreaterThan.token, proof, context)(
+    //     blake2b256.hash(_).value.pure[F]
+    //   )
+    //   evalAuth = context.greaterThan(proposition.label, proposition.compareTo)
+    //   res = msgAuth && evalAuth
+    // } yield res
 
-    private def equalToVerifier[F[_]: Monad](
-      proposition: Models.Contextual.EqualTo.Proposition,
-      proof:       Models.Contextual.EqualTo.Proof,
-      context:     DynamicContext[F, String]
-    ): F[Boolean] = for {
-      msgAuth <- Verifier.evaluateBind(Models.Contextual.EqualTo.token, proof, context)(
-        blake2b256.hash(_).value.pure[F]
-      )
-      evalAuth = context.equalTo(proposition.label, proposition.compareTo)
-      res = msgAuth && evalAuth
-    } yield res
+    // private def equalToVerifier[F[_]: Monad](
+    //   proposition: Models.Contextual.EqualTo.Proposition,
+    //   proof:       Models.Contextual.EqualTo.Proof,
+    //   context:     DynamicContext[F, String]
+    // ): F[Either[runtime.Error, Long]] = for {
+    //   msgAuth <- Verifier.evaluateBind(Models.Contextual.EqualTo.token, proof, context)(
+    //     blake2b256.hash(_).value.pure[F]
+    //   )
+    //   evalAuth = context.equalTo(proposition.label, proposition.compareTo)
+    //   res = msgAuth && evalAuth
+    // } yield res
 
     private def thresholdVerifier[F[_]: Monad](
       proposition:       Models.Compositional.Threshold.Proposition,
       proof:             Models.Compositional.Threshold.Proof,
       context:           DynamicContext[F, String]
-    )(implicit verifier: Verifier[F]): F[Boolean] =
+    )(implicit verifier: Verifier[F]): F[Either[runtime.Error, Boolean]] =
       for {
         msgAuth <- Verifier.evaluateBind(Models.Compositional.Threshold.token, proof, context)(
           blake2b256.hash(_).value.pure[F]
@@ -229,8 +230,8 @@ object Verifier {
       context:     DynamicContext[F, String]
     )(implicit
       verifier: Verifier[F]
-    ): F[Boolean] = for {
-      msgAuth <- Verifier.evaluateBind(Models.Compositional.Not.token, proof, context)(blake2b256.hash(_).value.pure[F])
+    ): F[Either[runtime.Error, Boolean]] = for {
+      msgAuth <- Verifier.evaluateBind(Models.Compositional.Not.token, proof, context)(Verifier.bindFunc[F])
       internalAuth <- verifier.evaluate(proposition.proposition, proof.proof, context)
       evalAuth = !internalAuth
       res = msgAuth && evalAuth
@@ -242,8 +243,8 @@ object Verifier {
       context:     DynamicContext[F, String]
     )(implicit
       verifier: Verifier[F]
-    ): F[Boolean] = for {
-      msgAuth <- Verifier.evaluateBind(Models.Compositional.And.token, proof, context)(blake2b256.hash(_).value.pure[F])
+    ): F[Either[runtime.Error, Boolean]] = for {
+      msgAuth <- Verifier.evaluateBind(Models.Compositional.And.token, proof, context)(Verifier.bindFunc[F])
       internalAuth <- verifier.evaluate(proposition.left, proof.left, context)
       evalAuth <-
         if (internalAuth) {
@@ -260,8 +261,8 @@ object Verifier {
       context:     DynamicContext[F, String]
     )(implicit
       verifier: Verifier[F]
-    ): F[Boolean] = for {
-      msgAuth <- Verifier.evaluateBind(Models.Compositional.Or.token, proof, context)(blake2b256.hash(_).value.pure[F])
+    ): F[Either[runtime.Error, Boolean]] = for {
+      msgAuth <- Verifier.evaluateBind(Models.Compositional.Or.token, proof, context)(Verifier.bindFunc[F])
       internalAuth <- verifier.evaluate(proposition.left, proof.left, context)
       evalAuth <-
         if (internalAuth) {
@@ -279,26 +280,26 @@ object Verifier {
           proposition: C,
           proof:       R,
           context:     DynamicContext[F, String]
-        ): F[Boolean] =
+        ): F[Either[runtime.Error, Boolean]] =
           (proposition, proof) match {
             case (c: Models.Primitive.Locked.Proposition, r: Models.Primitive.Locked.Proof) =>
               lockedVerifier(c, r, context)
             case (c: Models.Primitive.Digest.Proposition, r: Models.Primitive.Digest.Proof) =>
-              digestVerifier(c, r, context)
+              digestVerifier(c, r, context).map(_.isRight)
             case (c: Models.Primitive.DigitalSignature.Proposition, r: Models.Primitive.DigitalSignature.Proof) =>
               signatureVerifier(c, r, context)
             case (c: Models.Contextual.HeightRange.Proposition, r: Models.Contextual.HeightRange.Proof) =>
               heightVerifier(c, r, context)
             case (c: Models.Contextual.TickRange.Proposition, r: Models.Contextual.TickRange.Proof) =>
               tickVerifier(c, r, context)
-            case (c: Models.Contextual.ExactMatch.Proposition, r: Models.Contextual.ExactMatch.Proof) =>
-              exactMatchVerifier(c, r, context)
-            case (c: Models.Contextual.LessThan.Proposition, r: Models.Contextual.LessThan.Proof) =>
-              lessThanVerifier(c, r, context)
-            case (c: Models.Contextual.GreaterThan.Proposition, r: Models.Contextual.GreaterThan.Proof) =>
-              greaterThanVerifier(c, r, context)
-            case (c: Models.Contextual.EqualTo.Proposition, r: Models.Contextual.EqualTo.Proof) =>
-              equalToVerifier(c, r, context)
+            // case (c: Models.Contextual.ExactMatch.Proposition, r: Models.Contextual.ExactMatch.Proof) =>
+            //   exactMatchVerifier(c, r, context)
+            // case (c: Models.Contextual.LessThan.Proposition, r: Models.Contextual.LessThan.Proof) =>
+            //   lessThanVerifier(c, r, context)
+            // case (c: Models.Contextual.GreaterThan.Proposition, r: Models.Contextual.GreaterThan.Proof) =>
+            //   greaterThanVerifier(c, r, context)
+            // case (c: Models.Contextual.EqualTo.Proposition, r: Models.Contextual.EqualTo.Proof) =>
+            //   equalToVerifier(c, r, context)
             case (c: Models.Compositional.Threshold.Proposition, r: Models.Compositional.Threshold.Proof) =>
               implicit def v: Verifier[F] = verifierInstance[F]
               thresholdVerifier(c, r, context)

@@ -29,6 +29,7 @@ object ContextErrors {
   case object FailedToFindDigestVerifier extends ContextError
   case object FailedToFindSignatureVerifier extends ContextError
   case object FailedToFindDatum extends ContextError
+  case object FailedToFindInterface extends ContextError
 }
 
 object SyntaxErrors {

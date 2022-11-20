@@ -39,12 +39,13 @@ object Prover {
 
     private def lockedProver[F[_]: Applicative]: F[Proof] = Models.Primitive.Locked.Proof().pure[F].widen
 
-    private def digestProver[F[_]: Applicative](preimage: common.Preimage, message: SignableTxBytes)(
+    private def digestProver[F[_]: Applicative](preimage: common.Preimage, salt: Long, message: SignableTxBytes)(
       f:                                                  Array[Byte] => TxBind
     ): F[Proof] =
       Models.Primitive.Digest
         .Proof(
           preimage,
+          salt,
           bind(Models.Primitive.Digest.token, message)(f)
         )
         .pure[F]
@@ -162,16 +163,16 @@ object Prover {
       (args: A, message: SignableTxBytes) =>
         args match {
           case t: Byte if t == Models.Primitive.Locked.token => lockedProver[F]
-          case t: (Byte, common.Preimage) if t._1 == Models.Primitive.Digest.token =>
+          case t: (Byte, common.Preimage, Long) if t._1 == Models.Primitive.Digest.token =>
             digestProver(t._2, message)(instanceBind)
           case t: (Byte, common.Witness) if t._1 == Models.Primitive.DigitalSignature.token =>
             signatureProver(t._2, message)(instanceBind)
           case t: Byte if t == Models.Contextual.HeightRange.token => heightProver(message)(instanceBind)
           case t: Byte if t == Models.Contextual.TickRange.token   => tickProver(message)(instanceBind)
-          case t: Byte if t == Models.Contextual.ExactMatch.token  => exactMatchProver(message)(instanceBind)
-          case t: Byte if t == Models.Contextual.LessThan.token    => lessThanProver(message)(instanceBind)
-          case t: Byte if t == Models.Contextual.GreaterThan.token => greaterThanProver(message)(instanceBind)
-          case t: Byte if t == Models.Contextual.EqualTo.token     => equalToProver(message)(instanceBind)
+          // case t: Byte if t == Models.Contextual.ExactMatch.token  => exactMatchProver(message)(instanceBind)
+          // case t: Byte if t == Models.Contextual.LessThan.token    => lessThanProver(message)(instanceBind)
+          // case t: Byte if t == Models.Contextual.GreaterThan.token => greaterThanProver(message)(instanceBind)
+          // case t: Byte if t == Models.Contextual.EqualTo.token     => equalToProver(message)(instanceBind)
           case t: (Byte, Set[Option[Proof]]) if t._1 == Models.Compositional.Threshold.token =>
             thresholdProver(t._2, message)(instanceBind)
           case t: (Byte, Proof) if t._1 == Models.Compositional.Not.token =>
