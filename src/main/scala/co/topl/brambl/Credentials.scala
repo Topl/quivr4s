@@ -2,7 +2,7 @@ package co.topl.brambl
 
 import co.topl.node.Tetra.Box
 import co.topl.node.Models.SignableBytes
-import co.topl.crypto.hash.blake2b256
+import co.topl.crypto.hash.{blake2b256, blake2b512}
 import co.topl.common.{Digest, Preimage}
 import co.topl.brambl.Models._
 import co.topl.node.Tetra
@@ -24,12 +24,12 @@ import co.topl.genus.Models.Txo
  */
 object Credentials {
   // get already existing utxo by Box Id.
-  def getBoxById(id: Box.Id): Box = ???
+  private def getBoxById(id: Box.Id): Box = ???
 
-  def getTxoByBoxId(id: Box.Id): Txo = ???
+  private  def getTxoByBoxId(id: Box.Id): Txo = ???
 
   // Get the (x,y,z) indices that map to the utxo given by the Box Id
-  def getIndicesByBoxId(boxId: Box.Id): Indices = {
+  private def getIndicesByBoxId(boxId: Box.Id): Indices = {
     val idxArr = new String(boxId.bytes).split(',')
     Indices(idxArr(0).toInt, idxArr(1).toInt, idxArr(2).toInt)
   }
@@ -37,10 +37,13 @@ object Credentials {
   /**
    * Get the ID of the box whose associated UTxO maps to the indices (x, y, z)
   * */
-  def getBoxId(idx: Indices): Box.Id = Box.Id(s"${idx.x},${idx.y},${idx.z}".getBytes)
+  private def getBoxId(idx: Indices): Box.Id = Box.Id(s"${idx.x},${idx.y},${idx.z}".getBytes)
 
   /**
    * Get the Txo whose associated UTxO maps to the indices (x, y, z)
+   *
+   * perhaps in a Storage or Interface module?
+   *
    * */
   def getTxo(idx: Indices): Txo = getTxoByBoxId(getBoxId(idx))
 
@@ -49,17 +52,18 @@ object Credentials {
   /**
    * Assuming that the proof associated to indices (x,y,z) is a digest proof, return it's preimage
    * */
-  def getDigestPreImage(idx: Indices): Preimage = Preimage(getPreImageBytes(idx), Array(0: Byte))
+  private def getDigestPreImage(idx: Indices): Preimage = Preimage(getPreImageBytes(idx), Array(0: Byte))
 
   /**
    * Assuming that the proof associated to indices (x,y,z) is a digest proof, return the digest
+   *
+   * perhaps in a Storage or Interface module?
    * */
   def getDigest(idx: Indices): Digest =
     Digest(blake2b256.hash(getPreImageBytes(idx)).value)
 
-
   // prove an unproven input (digest proof). indices version
-  def proveSpentOutputV1(unprovenInput: UnprovenSpentOutputV1, message: SignableBytes): Tetra.IoTx.SpentOutput = {
+  private def proveSpentOutputV1(unprovenInput: UnprovenSpentOutputV1, message: SignableBytes): Tetra.IoTx.SpentOutput = {
     val predicateImage = getBoxById(unprovenInput.reference).image
     val preImage = getDigestPreImage(getIndicesByBoxId(unprovenInput.reference))
     val proof = Option(QuivrService.getDigestProof(preImage, message))
@@ -84,7 +88,7 @@ object Credentials {
   }
 
   // prove an unproven input (digest proof). txo version
-  def proveSpentOutputV2(unprovenInput: UnprovenSpentOutputV2, message: SignableBytes): Tetra.IoTx.SpentOutput = {
+  private def proveSpentOutputV2(unprovenInput: UnprovenSpentOutputV2, message: SignableBytes): Tetra.IoTx.SpentOutput = {
     val predicateImage = getBoxById(unprovenInput.reference).image
     val idx = getIndicesByBoxId(unprovenInput.reference)
     val preImage = getDigestPreImage(idx)
@@ -110,7 +114,11 @@ object Credentials {
     Tetra.IoTx(List(provenInput), unprovenTx.outputs, unprovenTx.schedule, unprovenTx.metadata)
   }
 
-  // Get the next set of usable (x,y,z) indices.
+  /**
+   * Get the next set of usable (x,y,z) indices.
+   *
+   * perhaps in a Storage or Interface module?
+   * */
   def getNextIndices: Indices = ???
 
 }
