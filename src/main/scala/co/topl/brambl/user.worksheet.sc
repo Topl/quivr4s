@@ -1,6 +1,4 @@
-// Examples of how *Brambl* Quivr and Credentials will be called by a user of the SDK
-
-import co.topl.quivr.Models.Primitive._
+import co.topl.quivr.Models.Primitive
 import co.topl.quivr.SignableTxBytes
 import co.topl.quivr.{Proof, Proposer, Proposition, Prover, Verifier}
 import co.topl.crypto.hash.blake2b256
@@ -8,9 +6,10 @@ import co.topl.quivr.runtime.DynamicContext
 import co.topl.brambl.{Credentials, TransactionBuilder}
 import co.topl.brambl.Models._
 import co.topl.node.Tetra.Box
-import co.topl.common.Digests
+import co.topl.common.{Digest, Preimage}
 import co.topl.genus.Models.Txo
 
+// Examples of how *Brambl* Quivr and Credentials will be called by a user of the SDK
 
 // ==== The following simply uses the building blocks that were already created
 def quivrExample: Unit = {
@@ -21,15 +20,15 @@ def quivrExample: Unit = {
   // Create Digest Proposition
   val preImage: Array[Byte] = "random_data".getBytes
   val digest: Array[Byte] = blake2b256.hash(preImage).value
-  val preImageObj: Digests.Preimage = Digests.Preimage(preImage, 0)
-  val digestObj: Digests.Digest = Digests.Digest(digest) // not sure if first param is correct
-  val proposition: Proposition = Proposer.digestProposer[Trivial, (String, Digests.Digest)].propose(("temp", digestObj))
+  val preImageObj: Preimage = Preimage(preImage, Array(0: Byte))
+  val digestObj: Digest = Digest(digest) // not sure if first param is correct
+  val proposition: Proposition = Proposer.digestProposer[Trivial, (String, Digest)].propose(("temp", digestObj))
 
   // Create Digest Proof
   val message: SignableTxBytes = ???
   // Not sure if I instantiated the proof in the best way/as intended
-  val prover: Prover[Trivial, (Byte, Digests.Preimage)] = Prover.instances.proverInstance
-  val proof: Proof = prover.prove((Digest.token, preImageObj), message)
+  val prover: Prover[Trivial, (Byte, Preimage)] = Prover.instances.proverInstance
+  val proof: Proof = prover.prove((Primitive.Digest.token, preImageObj), message)
 
   // Verify. Verifier does not need to know what kind of Proposition or Proof it's verifying.
   val verifier: Verifier[Trivial] = Verifier.instances.verifierInstance

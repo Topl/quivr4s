@@ -1,22 +1,19 @@
 package co.topl.brambl
+
 import co.topl.node.Tetra.Box
-import co.topl.node.Tetra.IoTx
-import co.topl.quivr.SignableTxBytes
+import co.topl.node.Models.SignableBytes
+import co.topl.crypto.hash.blake2b256
+import co.topl.common.{Digest, Preimage}
+import co.topl.brambl.Models._
+import co.topl.node.Tetra
+import co.topl.genus.Models.Txo
 
 // Meant to emulate what Credentials will be in the SDK
 // Credentials knows secret information and state
 // Will return toy data (secrets, utxo states, etc)
 
+
 // JAA - Credentials should have the single job of taking an unproven transaction and converting it to a proven one. Nothing else should be exposed I think
-
-
-import co.topl.node.Tetra.Box
-import co.topl.node.Models.SignableBytes
-import co.topl.crypto.hash.blake2b256
-import co.topl.common.Digests
-import co.topl.brambl.Models._
-import co.topl.node.Tetra
-import co.topl.genus.Models.Txo
 
 /***
  *
@@ -52,13 +49,13 @@ object Credentials {
   /**
    * Assuming that the proof associated to indices (x,y,z) is a digest proof, return it's preimage
    * */
-  def getDigestPreImage(idx: Indices): Digests.Preimage = Digests.Preimage(getPreImageBytes(idx), 0)
+  def getDigestPreImage(idx: Indices): Preimage = Preimage(getPreImageBytes(idx), Array(0: Byte))
 
   /**
    * Assuming that the proof associated to indices (x,y,z) is a digest proof, return the digest
    * */
-  def getDigest(idx: Indices): Digests.Digest =
-    Digests.Digest(blake2b256.hash(getPreImageBytes(idx)).value)
+  def getDigest(idx: Indices): Digest =
+    Digest(blake2b256.hash(getPreImageBytes(idx)).value)
 
 
   // prove an unproven input (digest proof). indices version
