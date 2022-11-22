@@ -54,7 +54,7 @@ object Storage {
   /**
    * Get an already existing box by its ID
    * */
-  def getBoxById(id: Box.Id): Box = boxes.getOrElse(id, None)
+  def getBoxById(id: Box.Id): Box = boxes(id)
 
   /**
    * Get an already existing genus TXO by its box ID

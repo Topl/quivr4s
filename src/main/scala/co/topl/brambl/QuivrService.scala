@@ -1,8 +1,9 @@
 package co.topl.brambl
 
 import co.topl.quivr.Models.Primitive
-import co.topl.quivr.{Proof, Proposer, Proposition, Prover, SignableBytes, Verifier, runtime}
-import co.topl.quivr.runtime.{Datum, DynamicContext}
+import co.topl.quivr.{Proof, Proposition, SignableBytes}
+import co.topl.quivr.api.{Proposer, Prover, Verifier}
+import co.topl.quivr.runtime.{Datum, DynamicContext, Errors}
 import co.topl.common.{Digest, DigestVerification, Preimage}
 import co.topl.brambl.Models.{Signable, intFromBoolean}
 import co.topl.node.Tetra.Datums
@@ -10,18 +11,16 @@ import co.topl.quivr.algebras.DigestVerifier
 import co.topl.crypto.hash.blake2b256
 import co.topl.node.Tetra
 
-case class DigestError() extends runtime.Error
-
 object QuivrService {
   type Trivial[T] = T
 
-  private case class DigestValidator() extends DigestVerifier[Trivial] {
-    override def validate(v: DigestVerification): Either[DigestError, DigestVerification] = {
+  case class DigestValidator() extends DigestVerifier[Trivial] {
+    override def validate(v: DigestVerification): Either[Errors.AuthorizationErrors.LockedPropositionIsUnsatisfiable.type, DigestVerification] = {
       val test = blake2b256.hash(v.preimage.input ++ v.preimage.salt).value
       val expected = v.digest.value
 
       if (expected sameElements test) Right(v)
-      else Left(DigestError())
+      else Left(Errors.AuthorizationErrors.LockedPropositionIsUnsatisfiable)
     }
   }
 
@@ -32,8 +31,8 @@ object QuivrService {
       "eon" -> Datums.Eon(10, 2), // <- not sure what "beginSlot" is referring to. First slot of the eon?
       "era" -> Datums.Era(22, 4),
       "epoch" -> Datums.Epoch(34, 6),
-      "header" -> Datums.Header(24, None),
-      "body" -> Datums.Body(Array(0: Byte), None)
+      "header" -> Datums.Header(24, Array()),
+      "body" -> Datums.Body(Array(0: Byte), Array())
     )
     override val hashingRoutines = Map("blake2b256" -> DigestValidator())
     override def signableBytes: SignableBytes = tx.getSignableBytes
@@ -93,10 +92,9 @@ object QuivrService {
    * @return Boolean
    */
   def verify(proposition: Option[Proposition], proof: Option[Proof], tx: Signable): Trivial[Boolean] = {
-    val verifier: Verifier[Trivial] = Verifier.instances.verifierInstance
-
+    val verifier: Verifier[Trivial] = Verifier.instances.verifierInstance // <= this function is commented out & the digest specific version is private
     if(proposition.isEmpty || proof.isEmpty) false
-    else verifier.evaluate(proposition, proof, ctx(tx))
+    else verifier.evaluate(proposition.get, proof.get, ctx(tx))
   }
 
   // I'm not sure where the following 2 functions should go.
@@ -108,7 +106,7 @@ object QuivrService {
    * @param tx: The transaction the attestation belongs to.
    * @return Boolean
    */
-  private def verifyAttestation(attestation: Tetra.Attestation)(implicit tx: Tetra.IoTx): Boolean = {
+  private def verifyAttestation(attestation: Tetra.Attestation)(implicit tx: Tetra.IoTransaction): Boolean = {
     val threshold = attestation.image.threshold
     val numSatisfied = (attestation.known.conditions zip attestation.responses)
       .map(challenges => verify(challenges._1, challenges._2, tx): Int)
@@ -122,7 +120,7 @@ object QuivrService {
    * @param tx: The transaction to verify
    * @return Boolean
    */
-  def verifyIoTx(implicit tx: Tetra.IoTx): Boolean =
+  def verifyIoTx(implicit tx: Tetra.IoTransaction): Boolean =
     tx.inputs.map(_.attestation)
       .map(verifyAttestation)
       .reduce(_ && _) // Only true iff all attestations are true

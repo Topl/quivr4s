@@ -1,6 +1,5 @@
 package co.topl.brambl
 
-import co.topl.node.Models.Metadata
 import co.topl.node.Tetra
 import co.topl.node.Tetra.Predicate
 import co.topl.brambl.Models._
@@ -40,11 +39,11 @@ object TransactionBuilder {
    * In addition to the indices being used to generate the digest secret, the indices will be used to
    * store the created proposition
    * */
-  private def buildUnspentOutput(idx: Indices, value: Tetra.Box.Value, meta: Tetra.Datums.UnspentOutput): Tetra.IoTx.UnspentOutput = {
+  private def buildUnspentOutput(idx: Indices, value: Tetra.Box.Value, meta: Tetra.Datums.UnspentOutput): Tetra.IoTransaction.UnspentOutput = {
     val proposition = QuivrService.getDigestProposition(getDigest(idx)) // or could be done with preimage
     val predicate = Tetra.Predicate(List(proposition), 1)
 
-    Tetra.IoTx.UnspentOutput(predicate.image.generateAddress, value, meta)
+    Tetra.IoTransaction.UnspentOutput(predicate.image.generateAddress, value, meta)
   }
 
   /**
@@ -57,15 +56,19 @@ object TransactionBuilder {
                                   input: Indices,
                                   output: Indices,
                                   outputValue: Tetra.Box.Value,
-                                  inputMeta: Tetra.Datums.SpentOutput = Tetra.Datums.SpentOutput(None),
-                                  outputMeta: Tetra.Datums.UnspentOutput = Tetra.Datums.UnspentOutput(None),
-                                  schedule: Tetra.IoTx.Schedule = Tetra.IoTx.Schedule(0, 0, 0),
-                                  metadata: Metadata = None
-                                ): UnprovenIoTx[UnprovenSpentOutputV1]  = {
+                                  inputMeta: Tetra.Datums.SpentOutput = Tetra.Datums.SpentOutput(Array()),
+                                  outputMeta: Tetra.Datums.UnspentOutput = Tetra.Datums.UnspentOutput(Array()),
+                                  datum: Tetra.Datums.IoTx = Tetra.Datums.IoTx(
+                                    Tetra.IoTransaction.Schedule(0, 0, 0),
+                                    Tetra.Blob.Id(Array()),
+                                    Array()
+                                  ),
+                                  metadata: Option[Tetra.Blob] = None
+                                ): UnprovenIoTransaction[UnprovenSpentOutputV1]  = {
     val inputs = List(buildUnprovenSpentOutputV1(input, inputMeta))
     val outputs = List(buildUnspentOutput(output, outputValue, outputMeta))
 
-    UnprovenIoTx[UnprovenSpentOutputV1](inputs, outputs, schedule, metadata)
+    UnprovenIoTransaction[UnprovenSpentOutputV1](inputs, outputs, datum, metadata)
   }
 
   /**
@@ -77,15 +80,19 @@ object TransactionBuilder {
   def buildUnprovenIoTxV2(
                            input: Txo,
                            outputValue: Tetra.Box.Value,
-                           inputMeta: Tetra.Datums.SpentOutput = Tetra.Datums.SpentOutput(None),
-                           outputMeta: Tetra.Datums.UnspentOutput = Tetra.Datums.UnspentOutput(None),
-                           schedule: Tetra.IoTx.Schedule = Tetra.IoTx.Schedule(0, 0, 0),
-                           metadata: Metadata = None
-                         ): UnprovenIoTx[UnprovenSpentOutputV2]  = {
+                           inputMeta: Tetra.Datums.SpentOutput = Tetra.Datums.SpentOutput(Array()),
+                           outputMeta: Tetra.Datums.UnspentOutput = Tetra.Datums.UnspentOutput(Array()),
+                           datum: Tetra.Datums.IoTx = Tetra.Datums.IoTx(
+                             Tetra.IoTransaction.Schedule(0, 0, 0),
+                             Tetra.Blob.Id(Array()),
+                             Array()
+                           ),
+                           metadata: Option[Tetra.Blob] = None
+                         ): UnprovenIoTransaction[UnprovenSpentOutputV2]  = {
     val inputs = List(buildUnprovenSpentOutputV2(input, inputMeta))
     val outputs = List(buildUnspentOutput(getNextIndices, outputValue, outputMeta))
 
-    UnprovenIoTx[UnprovenSpentOutputV2](inputs, outputs, schedule, metadata)
+    UnprovenIoTransaction[UnprovenSpentOutputV2](inputs, outputs, datum, metadata)
   }
 
 }

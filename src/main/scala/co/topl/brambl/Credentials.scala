@@ -56,7 +56,7 @@ object Credentials {
    * @param unprovenTx
    * @return
    */
-  def proveIoTx[T](unprovenTx: UnprovenIoTx[T]): Tetra.IoTransaction = {
+  def proveIoTx[T <: Signable](unprovenTx: UnprovenIoTransaction[T]): Tetra.IoTransaction = {
     val message = unprovenTx.getSignableBytes
 
     val unprovenInput = unprovenTx.inputs.head
@@ -66,7 +66,7 @@ object Credentials {
       case v2: UnprovenSpentOutputV2 => proveSpentOutputV2(v2, message)
     }
 
-    Tetra.IoTransaction(List(provenInput), unprovenTx.outputs, unprovenTx.schedule, unprovenTx.metadata)
+    Tetra.IoTransaction(List(provenInput), unprovenTx.outputs, unprovenTx.datum, unprovenTx.metadata)
   }
 
 }
