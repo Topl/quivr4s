@@ -1,6 +1,6 @@
 package co.topl.quivr.algebras
 
-import co.topl.quivr.{runtime}
 import co.topl.common.SignatureVerification
+import co.topl.quivr.runtime.QuivrError
 
-trait SignatureVerifier[F[_]] extends ContextlessValidation[F, runtime.Error, SignatureVerification]
+trait SignatureVerifier[F[_]] extends ContextlessValidation[F, QuivrError, SignatureVerification]

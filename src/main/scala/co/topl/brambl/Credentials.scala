@@ -1,7 +1,7 @@
 package co.topl.brambl
 
 import co.topl.node.Tetra.Box
-import co.topl.node.Tetra.IoTx
+import co.topl.node.Tetra.IoTransaction
 import co.topl.quivr.SignableTxBytes
 
 
@@ -13,9 +13,9 @@ import co.topl.quivr.SignableTxBytes
 object Credentials {
 
   // Get Utxo by Box ID
-  def getUnspentOutput(id: Box.Id): IoTx.UnspentOutput = ???
+  def getUnspentOutput(id: Box.Id): IoTransaction.UnspentOutput = ???
 
   // get Transaction by Box Id.
   // Should also add functions to search by Transaction Id and cartesian indices
-  def getIoTxByBox(id: Box.Id): IoTx = ???
+  def getIoTxByBox(id: Box.Id): IoTransaction = ???
 }

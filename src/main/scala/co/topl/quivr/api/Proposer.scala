@@ -1,8 +1,9 @@
-package co.topl.quivr
+package co.topl.quivr.api
 
 import cats.Applicative
 import cats.implicits._
 import co.topl.common
+import co.topl.quivr.{Models, Proposition}
 
 // Proposers create Propositions from a tuple of arguments (or single argument) of type A.
 trait Proposer[F[_], A] {

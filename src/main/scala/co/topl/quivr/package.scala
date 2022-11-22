@@ -1,10 +1,7 @@
 package co.topl
 
-import cats.Monad
-import cats.data.EitherT
-
 package object quivr {
-  type SignableTxBytes = Array[Byte]
+  type SignableTxBytes = Array[Byte] // MUST NOT include proof bytes
   type TxBind = Array[Byte]
 
   // Propositions represent challenges that must be satisfied
@@ -72,7 +69,6 @@ package object quivr {
 
         final case class Proof(
           preimage:        common.Preimage,
-          salt: Long,
           transactionBind: TxBind
         ) extends quivr.Proof(token, transactionBind)
             with quivr.Operations.Digest
