@@ -1,6 +1,5 @@
 package co.topl.brambl
 
-import cats.Monad
 import co.topl.quivr.Models.Primitive
 import co.topl.quivr.{
   Proof,
@@ -67,8 +66,10 @@ object QuivrService {
     prover.prove((Primitive.Digest.token, preImage), message)
   }
 
-  def verify(proposition: Proposition, proof: Proof)(tx: Signable): Trivial[Boolean] = {
+  def verify(proposition: Option[Proposition], proof: Option[Proof])(tx: Signable): Trivial[Boolean] = {
     val verifier: Verifier[Trivial] = Verifier.instances.verifierInstance
-    verifier.evaluate(proposition, proof, ctx(tx))
+
+    if(proposition.isEmpty || proof.isEmpty) false
+    else verifier.evaluate(proposition, proof, ctx(tx))
   }
 }

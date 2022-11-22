@@ -4,7 +4,7 @@ import co.topl.node.Models.Metadata
 import co.topl.node.Tetra
 import co.topl.node.Tetra.Predicate
 import co.topl.brambl.Models._
-import co.topl.brambl.Credentials._
+import co.topl.brambl.Storage._
 import co.topl.genus.Models.Txo
 
 // Functions related to Transaction Builder

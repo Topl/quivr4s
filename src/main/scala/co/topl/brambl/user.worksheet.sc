@@ -8,6 +8,8 @@ import co.topl.brambl.Models._
 import co.topl.node.Tetra.Box
 import co.topl.common.{Digest, Preimage}
 import co.topl.genus.Models.Txo
+import co.topl.node.Tetra
+import co.topl.brambl.QuivrService
 
 // Examples of how *Brambl* Quivr and Credentials will be called by a user of the SDK
 
@@ -69,3 +71,33 @@ val txo2: Txo = ??? // The new TXO retrieved from Genus
 
 val unprovenT2V2 = TransactionBuilder.buildUnprovenIoTxV2(txo2, value)
 val t2V2 = Credentials.proveIoTxV2(unprovenT2V2)
+
+
+
+
+// I'm not sure where these 2 functions should go.
+
+// Verify the attestation for an input is satisfied
+def verifyInput(tx: Signable)(input: Tetra.IoTx.SpentOutput): Boolean = {
+  val attestation = input.attestation
+  val threshold = attestation.image.threshold
+  val numSatisfied = (attestation.known.conditions zip attestation.responses)
+    .map((challenges) => QuivrService.verify(challenges._1, challenges._2)(tx))
+    .map(if(_) 1 else 0)
+    .sum
+
+  threshold >= numSatisfied
+}
+
+// verify if all attestations in a transaction is verified
+def verifyIoTx(tx: Tetra.IoTx): Boolean =
+  tx.inputs.map(verifyInput(tx)(_))
+    .reduce((p1, p2) => (p1 && p2)) // Only true iff all attestations are true
+
+
+
+// Example for verifying transactions
+val isT1V1Verified = verifyIoTx(t1V1)
+val isT1V2Verified = verifyIoTx(t1V2)
+val isT2V1Verified = verifyIoTx(t2V1)
+val isT2V2Verified = verifyIoTx(t2V2)
