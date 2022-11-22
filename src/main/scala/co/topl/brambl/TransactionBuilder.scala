@@ -9,9 +9,14 @@ import co.topl.genus.Models.Txo
 
 // Functions related to Transaction Builder
 object TransactionBuilder {
-
-  // 1 of 1 proposition input. indices version
-  def buildUnprovenSpentOutputV1(idx: Indices, meta: Tetra.Datums.SpentOutput): UnprovenSpentOutputV1 = {
+  /**
+   * Create a simple unproven input
+   *
+   * Version where unproven input contains Predicate.Known
+   *
+   * Predicate will be a 1 of 1 Digest
+   * */
+  private def buildUnprovenSpentOutputV1(idx: Indices, meta: Tetra.Datums.SpentOutput): UnprovenSpentOutputV1 = {
     val proposition = Option(QuivrService.getDigestProposition(getDigest(idx)))
     val knownPredicate = Predicate.Known(List(proposition))
 
@@ -20,12 +25,22 @@ object TransactionBuilder {
     UnprovenSpentOutputV1(txo.id, knownPredicate, txo.box.value, meta)
   }
 
-  // 1 of 1 proposition input. txo version
-  def buildUnprovenSpentOutputV2(txo: Txo, meta: Tetra.Datums.SpentOutput): UnprovenSpentOutputV2 =
+  /**
+   * Create a simple unproven input
+   *
+   * Version where unproven input does not contain Predicate.Known
+   * */
+  private def buildUnprovenSpentOutputV2(txo: Txo, meta: Tetra.Datums.SpentOutput): UnprovenSpentOutputV2 =
     UnprovenSpentOutputV2(txo.id, txo.box.value, meta)
 
-  // 1 of 1 proposition output
-  def buildUnspentOutput(idx: Indices, value: Tetra.Box.Value, meta: Tetra.Datums.UnspentOutput): Tetra.IoTx.UnspentOutput = {
+
+  /**
+   * Create a simple output whose predicate is a 1 of 1 Digest
+   *
+   * In addition to the indices being used to generate the digest secret, the indices will be used to
+   * store the created proposition
+   * */
+  private def buildUnspentOutput(idx: Indices, value: Tetra.Box.Value, meta: Tetra.Datums.UnspentOutput): Tetra.IoTx.UnspentOutput = {
     val proposition = QuivrService.getDigestProposition(getDigest(idx))
     val predicate = Tetra.Predicate(List(proposition), 1)
 
@@ -33,9 +48,10 @@ object TransactionBuilder {
   }
 
   /**
-   * Create unproven transaction. indices version
-   * A simple 1 input 1 output transaction
-   * All propositions are digest propositions
+   * Create unproven transaction.
+   * A simple 1 input 1 output transaction where all propositions are digest propositions
+   *
+   * indices version (i.e, input and output params are specified as indices)
    * */
   def buildUnprovenIoTxV1(
                                   input: Indices,
@@ -45,17 +61,18 @@ object TransactionBuilder {
                                   outputMeta: Tetra.Datums.UnspentOutput = Tetra.Datums.UnspentOutput(None),
                                   schedule: Tetra.IoTx.Schedule = Tetra.IoTx.Schedule(0, 0, 0),
                                   metadata: Metadata = None
-                                ): UnprovenIoTxV1  = {
+                                ): UnprovenIoTx[UnprovenSpentOutputV1]  = {
     val inputs = List(buildUnprovenSpentOutputV1(input, inputMeta))
     val outputs = List(buildUnspentOutput(output, outputValue, outputMeta))
 
-    UnprovenIoTxV1(inputs, outputs, schedule, metadata)
+    UnprovenIoTx[UnprovenSpentOutputV1](inputs, outputs, schedule, metadata)
   }
 
   /**
-   * Create unproven transaction. txo version
-   * A simple 1 input 1 output transaction
-   * All propositions are digest propositions
+   * Create unproven transaction.
+   * A simple 1 input 1 output transaction where all propositions are digest propositions
+   *
+   * Txo version (i.e, input is specified as Genus Txo)
    * */
   def buildUnprovenIoTxV2(
                            input: Txo,
@@ -64,10 +81,11 @@ object TransactionBuilder {
                            outputMeta: Tetra.Datums.UnspentOutput = Tetra.Datums.UnspentOutput(None),
                            schedule: Tetra.IoTx.Schedule = Tetra.IoTx.Schedule(0, 0, 0),
                            metadata: Metadata = None
-                         ): UnprovenIoTxV2  = {
+                         ): UnprovenIoTx[UnprovenSpentOutputV2]  = {
     val inputs = List(buildUnprovenSpentOutputV2(input, inputMeta))
     val outputs = List(buildUnspentOutput(getNextIndices, outputValue, outputMeta))
 
-    UnprovenIoTxV2(inputs, outputs, schedule, metadata)
+    UnprovenIoTx[UnprovenSpentOutputV2](inputs, outputs, schedule, metadata)
   }
+
 }

@@ -23,24 +23,17 @@ object Models {
                                   datum: Tetra.Datums.SpentOutput
                                 )
 
-  case class UnprovenIoTxV1(inputs:   List[UnprovenSpentOutputV1],
-                          outputs:  List[Tetra.IoTx.UnspentOutput],
-                          schedule: Tetra.IoTx.Schedule,
-                          metadata: Metadata
-                         )
+  case class UnprovenIoTx[Input](inputs:   List[Input],
+                                 outputs:  List[Tetra.IoTx.UnspentOutput],
+                                 schedule: Tetra.IoTx.Schedule,
+                                 metadata: Metadata)
 
-  case class UnprovenIoTxV2(inputs:   List[UnprovenSpentOutputV2],
-                          outputs:  List[Tetra.IoTx.UnspentOutput],
-                          schedule: Tetra.IoTx.Schedule,
-                          metadata: Metadata
-                         )
 
   // Adding additional functionality to tetra models
 
   // Abstract away how the signable bytes are generated
   implicit class SignableBytesFromIoTx(iotx: Tetra.IoTx) extends Signable
-  implicit class SignableBytesFromUnprovenIoTxV1(iotx: UnprovenIoTxV1) extends Signable
-  implicit class SignableBytesFromUnprovenIoTxV2(iotx: UnprovenIoTxV2) extends Signable
+  implicit class SignableBytesFromUnprovenIoTx[T](iotx: UnprovenIoTx[T]) extends Signable
 
   // Abstract away how an address is generated from a predicate image
   implicit class AddressFromPredicateImage(predicateImage: Tetra.Predicate.Image) {
@@ -52,4 +45,5 @@ object Models {
     def image: Tetra.Predicate.Image  = Tetra.Predicate.Image(???, predicate.threshold)
   }
 
+  implicit def intFromBoolean(b: Boolean): Int = if(b) 1 else 0
 }
