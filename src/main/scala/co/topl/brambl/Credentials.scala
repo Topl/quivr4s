@@ -40,7 +40,7 @@ object Credentials {
     val idx = getIndicesByBoxId(unprovenInput.reference)
     val preImage = getDigestPreImage(idx)
     val proof = Option(QuivrService.getDigestProof(preImage, message))
-    val knownPredicate = List(Option(QuivrService.getDigestProposition(getDigest(idx))))
+    val knownPredicate = List(Option(QuivrService.getDigestProposition(preImage)))
     val attestation = Tetra.Attestation(predicateImage, Tetra.Predicate.Known(knownPredicate), List(proof))
 
     Tetra.IoTx.SpentOutput(

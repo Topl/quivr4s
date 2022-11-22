@@ -17,7 +17,7 @@ object TransactionBuilder {
    * Predicate will be a 1 of 1 Digest
    * */
   private def buildUnprovenSpentOutputV1(idx: Indices, meta: Tetra.Datums.SpentOutput): UnprovenSpentOutputV1 = {
-    val proposition = Option(QuivrService.getDigestProposition(getDigest(idx)))
+    val proposition = Option(QuivrService.getDigestProposition(getDigest(idx))) // or could be done with preimage
     val knownPredicate = Predicate.Known(List(proposition))
 
     val txo = getTxo(idx)
@@ -41,7 +41,7 @@ object TransactionBuilder {
    * store the created proposition
    * */
   private def buildUnspentOutput(idx: Indices, value: Tetra.Box.Value, meta: Tetra.Datums.UnspentOutput): Tetra.IoTx.UnspentOutput = {
-    val proposition = QuivrService.getDigestProposition(getDigest(idx))
+    val proposition = QuivrService.getDigestProposition(getDigest(idx)) // or could be done with preimage
     val predicate = Tetra.Predicate(List(proposition), 1)
 
     Tetra.IoTx.UnspentOutput(predicate.image.generateAddress, value, meta)

@@ -65,17 +65,16 @@ val isT2V1Verified = QuivrService.verifyIoTx(t2V1)
 // txo version
 
 // Arbitrary data
-// A TXO should be retrieved from Genus, but for now will search by indices
+// A TXO should be retrieved from Genus, but for now will retrieve from storage by indices
 val txo1: Txo = getTxo(idx1)
 
 val unprovenT1V2 = TransactionBuilder.buildUnprovenIoTxV2(txo1, value)
 val t1V2 = Credentials.proveIoTx[UnprovenSpentOutputV2](unprovenT1V2)
 val isT1V2Verified = QuivrService.verifyIoTx(t1V2)
 
+// **** Transaction t1V2 should be broadcast to the chain. After which Genus can inform us of a new Txo
 
-// The t1V2 should be broadcast to the chain. After which Genus can inform us of a new Txo
-
-// A TXO should be retrieved from Genus, but for now will search by indices
+// A TXO should be retrieved from Genus, but for now will retrieve from storage by indices
 val txo2: Txo = getTxo(idx2)
 
 val unprovenT2V2 = TransactionBuilder.buildUnprovenIoTxV2(txo2, value)

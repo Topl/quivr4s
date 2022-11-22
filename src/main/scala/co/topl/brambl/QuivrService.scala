@@ -17,8 +17,6 @@ object QuivrService {
 
   private case class DigestValidator() extends DigestVerifier[Trivial] {
     override def validate(v: DigestVerification): Either[DigestError, DigestVerification] = {
-      // not sure if this is how salt should be used
-      // there's 2 salts; Preimage.salt and DigestVerification.salt
       val test = blake2b256.hash(v.preimage.input ++ v.preimage.salt).value
       val expected = v.digest.value
 
@@ -56,6 +54,24 @@ object QuivrService {
    */
   def getDigestProposition(digest: Digest): Trivial[Proposition] =
     Proposer.digestProposer[Trivial, (String, Digest)].propose(("blake2b256", digest))
+
+
+  /***
+   * Return a Proposition for a Digest Operation from a preimage
+   *
+   * This function allows the creation of a Digest Proposition with the Preimage.
+   * It is included here as it may be how we want Digest Propositions to be initialized in the actual implementation.
+   *
+   * In other words, the value of this function depends on if the user will have access to the preimage or digest
+   * when creating a Digest Proposition
+   *
+   * @param preimage: The Preimage to be hashed into the digest in the Digest Proposition
+   * @return: The Digest Proposition
+   */
+  def getDigestProposition(preimage: Preimage): Trivial[Proposition] = {
+    val digest = Digest(blake2b256.hash(preimage.input ++ preimage.salt).value)
+    getDigestProposition(digest)
+  }
 
 
   /***
