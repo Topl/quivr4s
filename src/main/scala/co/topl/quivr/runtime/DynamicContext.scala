@@ -3,7 +3,7 @@ package co.topl.quivr.runtime
 import cats.Monad
 import cats.data.EitherT
 import co.topl.common.{DigestVerification, SignatureVerification}
-import co.topl.quivr.SignableTxBytes
+import co.topl.quivr.SignableBytes
 import co.topl.quivr.algebras.{DigestVerifier, SignatureVerifier}
 import co.topl.quivr.runtime.Errors.ContextErrors
 
@@ -14,7 +14,7 @@ trait DynamicContext[F[_], K] {
   val signingRoutines: Map[K, SignatureVerifier[F]]
   val hashingRoutines: Map[K, DigestVerifier[F]]
 
-  def signableBytes: F[SignableTxBytes]
+  def signableBytes: F[SignableBytes]
 
   def currentTick: F[Long]
 

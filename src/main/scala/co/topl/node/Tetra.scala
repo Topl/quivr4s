@@ -1,16 +1,16 @@
 package co.topl.node
 
-import co.topl.node.Models.{Blobs, Metadata, BigData, SmallData, Root}
 import co.topl.quivr
-import co.topl.quivr.runtime.{Datum, IncludesHeight}
+import co.topl.quivr.SignableBytes
+import co.topl.quivr.runtime.{Datum, IncludesHeight, IncludesTick}
 
 object Tetra {
 
   case class IoTransaction(
-    inputs:  List[IoTransaction.SpentOutput],
-    outputs: List[IoTransaction.UnspentOutput],
-    datum:   Datums.IoTx,
-    bigData: Option[BigData]
+    inputs:   List[IoTransaction.SpentOutput],
+    outputs:  List[IoTransaction.UnspentOutput],
+    datum:    Datums.IoTx,
+    metadata: Option[Blob]
   )
 
   object IoTransaction {
@@ -20,8 +20,7 @@ object Tetra {
 
     case class UnspentOutput(address: Address, value: Box.Value, datum: Datums.UnspentOutput)
 
-    def signableBytes(tranasction: IoTransaction): SignableBytes = ???
-
+    def signableBytes(transaction: IoTransaction): SignableBytes = ???
   }
 
   case class Address(network: Int, ledger: Int, evidence: Predicate.Id)
@@ -51,7 +50,6 @@ object Tetra {
     case class Image(root: Root, threshold: Int)
 
     def idFromImage(image: Predicate.Image): Predicate.Id = ???
-    //  Id(Predicate.Image(blake2b256.hash(image.root).value, image.threshold)
   }
 
   case class Attestation(image: Predicate.Image, known: Predicate.Known, responses: List[Option[quivr.Proof]])
@@ -71,7 +69,7 @@ object Tetra {
 
     case class Body(root: Root, metadata: SmallData) extends Datum
 
-    case class IoTx(schedule: IoTransaction.Schedule, blobId: Blobs.Id, metadata: SmallData) extends Datum
+    case class IoTx(schedule: IoTransaction.Schedule, blobId: Blob.Id, metadata: SmallData) extends Datum
 
     case class Box(metadata: SmallData) extends Datum
 
@@ -80,20 +78,17 @@ object Tetra {
     case class UnspentOutput(metadata: SmallData) extends Datum
   }
 
-
   trait Blob {
-    val value: Array[Byte]
+    val value: Array[Byte] // may be up to 15kB
     val signableBytes: Array[Byte]
-    val id: Blobs.Id
+    val id: Blob.Id
   }
 
-  object Blobs {
+  object Blob {
     case class Id(value: Array[Byte])
-    case class IoTx(value: BigData)
   }
 
-  type Root = Array[Byte]
-  type SmallData = Array[Byte]
-  type BigData = Option[Blob]
+  type SmallData = Array[Byte] // small, up to 64 bytes
+  type Root = Array[Byte] // fixed size 32 or 64 bytes as a root from an accumulator
   type IdentifiableBytes = Array[Byte] // hash(SignableBytes)
 }

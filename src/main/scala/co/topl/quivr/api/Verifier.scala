@@ -35,7 +35,7 @@ object Verifier {
    */
   def evaluateBind[F[_]: Monad, A](tag: Byte, proof: Proof, context: DynamicContext[F, A])(
     f:                                  Array[Byte] => F[TxBind]
-  ): F[Either[SyntaxErrors.MessageAuthorizationFailed.type, SignableTxBytes]] = for {
+  ): F[Either[SyntaxErrors.MessageAuthorizationFailed.type, SignableBytes]] = for {
     sb             <- context.signableBytes
     verifierTxBind <- f(sb :+ tag)
     msgAuth = Either.cond(verifierTxBind.sameElements(proof.bindToTransaction), sb, MessageAuthorizationFailed)

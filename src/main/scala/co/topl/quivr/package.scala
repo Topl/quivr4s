@@ -1,7 +1,7 @@
 package co.topl
 
 package object quivr {
-  type SignableTxBytes = Array[Byte] // MUST NOT include proof bytes
+  type SignableBytes = Array[Byte] // MUST NOT include proof bytes
   type TxBind = Array[Byte]
 
   // Propositions represent challenges that must be satisfied
@@ -12,36 +12,34 @@ package object quivr {
 
   // The operations offered via the Quivr DSL
   object Operations {
-  trait Locked
+    trait Locked
 
-  trait Digest
+    trait Digest
 
-  trait DigitalSignature
+    trait DigitalSignature
 
-  trait HeightRange
+    trait HeightRange
 
-  trait TickRange
+    trait TickRange
 
-  trait MustInclude
+    trait MustInclude
 
-  trait ExactMatch
+    trait ExactMatch
 
-  trait LessThan
+    trait LessThan
 
-  trait GreaterThan
+    trait GreaterThan
 
-  trait EqualTo
+    trait EqualTo
 
-  trait Threshold
+    trait Threshold
 
-  trait Not
+    trait Not
 
-  trait And
+    trait And
 
-  trait Or
-}
-
-
+    trait Or
+  }
 
   object Models {
 
