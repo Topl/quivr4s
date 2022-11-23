@@ -112,7 +112,7 @@ object QuivrService {
       .map(challenges => verify(challenges._1, challenges._2, tx): Int)
       .sum
 
-    threshold >= numSatisfied
+    numSatisfied >= threshold
   }
 
   /***
