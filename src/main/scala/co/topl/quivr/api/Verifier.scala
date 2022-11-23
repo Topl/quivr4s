@@ -4,12 +4,13 @@ import cats._
 import cats.implicits._
 import co.topl.common.{DigestVerification, Message, SignatureVerification}
 import co.topl.crypto.hash.blake2b256
-import co.topl.quivr.runtime.{DynamicContext, QuivrError}
-import co.topl.quivr.runtime.Errors.AuthorizationErrors.{EvaluationAuthorizationFailed, LockedPropositionIsUnsatisfiable}
-import co.topl.quivr.runtime.Errors.SyntaxErrors
-import co.topl.quivr.runtime.Errors.SyntaxErrors.MessageAuthorizationFailed
 import co.topl.quivr._
-
+import co.topl.quivr.runtime.QuivrRuntimeErrors.ValidationError.{
+  EvaluationAuthorizationFailed,
+  LockedPropositionIsUnsatisfiable,
+  MessageAuthorizationFailed
+}
+import co.topl.quivr.runtime.{DynamicContext, QuivrRuntimeError}
 
 /**
  * A Verifier evaluates whether a given Proof satisfies a certain Proposition
@@ -35,7 +36,7 @@ object Verifier {
    */
   def evaluateBind[F[_]: Monad, A](tag: Byte, proof: Proof, context: DynamicContext[F, A])(
     f:                                  Array[Byte] => F[TxBind]
-  ): F[Either[SyntaxErrors.MessageAuthorizationFailed.type, SignableBytes]] = for {
+  ): F[Either[MessageAuthorizationFailed.type, SignableBytes]] = for {
     sb             <- context.signableBytes
     verifierTxBind <- f(sb :+ tag)
     msgAuth = Either.cond(verifierTxBind.sameElements(proof.bindToTransaction), sb, MessageAuthorizationFailed)
@@ -43,26 +44,26 @@ object Verifier {
 
   protected def bindFunc[F[_]: Applicative](m: Array[Byte]): F[Array[Byte]] = blake2b256.hash(m).value.pure[F]
 
-//  trait Implicits {
-//
-//    implicit class PropositionOps(proposition: Proposition) {
-//
-//      def isSatisfiedBy[F[_]](
-//        proof:            Proof
-//      )(implicit context: DynamicContext[F, String], ev: Verifier[F]): F[Boolean] =
-//        ev.evaluate(proposition, proof, context)
-//    }
-//
-//    implicit class ProofOps(proof: Proof) {
-//
-//      def satisfies[F[_]](
-//        proposition: Proposition
-//      )(implicit ev: Verifier[F], context: DynamicContext[F, String]): F[Boolean] =
-//        ev.evaluate(proposition, proof, context)
-//    }
-//  }
-//
-//  object implicits extends Implicits
+  trait Implicits {
+
+    implicit class PropositionOps(proposition: Proposition) {
+
+      def isSatisfiedBy[F[_]](
+        proof:            Proof
+      )(implicit context: DynamicContext[F, String], ev: Verifier[F]): F[Boolean] =
+        ev.evaluate(proposition, proof, context)
+    }
+
+    implicit class ProofOps(proof: Proof) {
+
+      def satisfies[F[_]](
+        proposition: Proposition
+      )(implicit ev: Verifier[F], context: DynamicContext[F, String]): F[Boolean] =
+        ev.evaluate(proposition, proof, context)
+    }
+  }
+
+  object implicits extends Implicits
 
   trait Instances {
 
@@ -70,8 +71,8 @@ object Verifier {
       proposition: Models.Primitive.Locked.Proposition,
       proof:       Models.Primitive.Locked.Proof,
       context:     DynamicContext[F, String]
-    ): F[Either[QuivrError, Boolean]] = for {
-      msgResult   <- Verifier.evaluateBind(Models.Primitive.Digest.token, proof, context)(Verifier.bindFunc[F])
+    ): F[Either[QuivrRuntimeError, Boolean]] = for {
+      msgResult <- Verifier.evaluateBind(Models.Primitive.Digest.token, proof, context)(Verifier.bindFunc[F])
       res = Either.left(LockedPropositionIsUnsatisfiable)
     } yield res // should always fail, the Locked Proposition is unsatisfiable
 
@@ -79,8 +80,8 @@ object Verifier {
       proposition: Models.Primitive.Digest.Proposition,
       proof:       Models.Primitive.Digest.Proof,
       context:     DynamicContext[F, String]
-    ): F[Either[QuivrError, DigestVerification]] = for {
-      msgResult   <- Verifier.evaluateBind(Models.Primitive.Digest.token, proof, context)(Verifier.bindFunc[F])
+    ): F[Either[QuivrRuntimeError, DigestVerification]] = for {
+      msgResult <- Verifier.evaluateBind(Models.Primitive.Digest.token, proof, context)(Verifier.bindFunc[F])
       verification = DigestVerification(proposition.digest, proof.preimage)
       evalResult <- context.digestVerify(proposition.routine)(verification).value
       res = Either
@@ -95,8 +96,8 @@ object Verifier {
       proposition: Models.Primitive.DigitalSignature.Proposition,
       proof:       Models.Primitive.DigitalSignature.Proof,
       context:     DynamicContext[F, String]
-    ): F[Either[QuivrError, SignatureVerification]] = for {
-      msgResult   <- Verifier.evaluateBind(Models.Primitive.DigitalSignature.token, proof, context)(Verifier.bindFunc[F])
+    ): F[Either[QuivrRuntimeError, SignatureVerification]] = for {
+      msgResult <- Verifier.evaluateBind(Models.Primitive.DigitalSignature.token, proof, context)(Verifier.bindFunc[F])
       signedMessage <- context.signableBytes
       verification = SignatureVerification(proposition.vk, proof.witness, Message(signedMessage))
       evalResult <- context.signatureVerify(proposition.routine)(verification).value

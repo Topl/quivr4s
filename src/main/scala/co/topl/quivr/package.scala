@@ -8,7 +8,7 @@ package object quivr {
   sealed abstract class Proposition
 
   // For each Proposition there is a corresponding Proof that can be constructed to satisfy the given Proposition
-  sealed abstract class Proof(val tag: Byte, val bindToTransaction: TxBind)
+  sealed abstract class Proof(val tag: String, val bindToTransaction: TxBind)
 
   // The operations offered via the Quivr DSL
   object Operations {
@@ -46,7 +46,7 @@ package object quivr {
     object Primitive {
 
       object Locked {
-        val token: Byte = 0: Byte
+        val token: String = "locked"
 
         final case class Proposition(
           data: Option[common.Data]
@@ -57,7 +57,7 @@ package object quivr {
       }
 
       object Digest {
-        val token: Byte = 1: Byte
+        val token: String = "digest"
 
         final case class Proposition(
           routine: String,
@@ -73,7 +73,7 @@ package object quivr {
       }
 
       object DigitalSignature {
-        val token: Byte = 2: Byte
+        val token: String = "digital_signature"
 
         final case class Proposition(
           routine: String,
@@ -92,7 +92,7 @@ package object quivr {
     object Contextual {
 
       object HeightRange {
-        val token: Byte = -1: Byte
+        val token: String = "height_range"
 
         final case class Proposition(
           chain: String,
@@ -108,7 +108,7 @@ package object quivr {
       }
 
       object TickRange {
-        val token: Byte = -2: Byte
+        val token: String = "tick_range"
 
         final case class Proposition(
           min: Long,
@@ -123,7 +123,7 @@ package object quivr {
       }
 
       object ExactMatch {
-        val token: Byte = -3: Byte
+        val token: String = "exact_match"
 
         final case class Proposition(label: String, compareTo: Array[Byte])
             extends quivr.Proposition
@@ -135,7 +135,7 @@ package object quivr {
       }
 
       object LessThan {
-        val token: Byte = -4: Byte
+        val token: String = "less_than"
 
         final case class Proposition(label: String, compareTo: Long)
             extends quivr.Proposition
@@ -147,7 +147,7 @@ package object quivr {
       }
 
       object GreaterThan {
-        val token: Byte = -5: Byte
+        val token: String = "greater_than"
 
         final case class Proposition(label: String, compareTo: Long)
             extends quivr.Proposition
@@ -159,7 +159,7 @@ package object quivr {
       }
 
       object EqualTo {
-        val token: Byte = -6: Byte
+        val token: String = "equal_to"
 
         final case class Proposition(label: String, compareTo: Long)
             extends quivr.Proposition
@@ -175,7 +175,7 @@ package object quivr {
     object Compositional {
 
       object Threshold {
-        val token: Byte = 127: Byte
+        val token: String = "threshold"
 
         final case class Proposition(
           challenges: Set[quivr.Proposition],
@@ -191,7 +191,7 @@ package object quivr {
       }
 
       object Not {
-        val token: Byte = 126: Byte
+        val token: String = "not"
 
         final case class Proposition(
           proposition: quivr.Proposition
@@ -206,7 +206,7 @@ package object quivr {
       }
 
       object And {
-        val token: Byte = 125: Byte
+        val token: String = "and"
 
         final case class Proposition(
           left:  quivr.Proposition,
@@ -223,7 +223,7 @@ package object quivr {
       }
 
       object Or {
-        val token: Byte = 124: Byte
+        val token: String = "or"
 
         final case class Proposition(
           left:  quivr.Proposition,

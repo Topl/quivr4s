@@ -5,7 +5,7 @@ import cats.data.EitherT
 import co.topl.common.{DigestVerification, SignatureVerification}
 import co.topl.quivr.SignableBytes
 import co.topl.quivr.algebras.{DigestVerifier, SignatureVerifier}
-import co.topl.quivr.runtime.Errors.ContextErrors
+import co.topl.quivr.runtime.QuivrRuntimeErrors.ContextError
 
 trait DynamicContext[F[_], K] {
   val datums: Map[K, Datum]
@@ -18,25 +18,25 @@ trait DynamicContext[F[_], K] {
 
   def currentTick: F[Long]
 
-  def heightOf(label: K)(implicit monad: Monad[F]): EitherT[F, QuivrError, Long] =
+  def heightOf(label: K)(implicit monad: Monad[F]): EitherT[F, QuivrRuntimeError, Long] =
     EitherT.fromEither[F](
       datums.get(label) match {
         case Some(v: IncludesHeight) => Right(v.height)
-        case _                       => Left(ContextErrors.FailedToFindDatum)
+        case _                       => Left(ContextError.FailedToFindDatum)
       }
     )
 
   def digestVerify(routine: K)(verification: DigestVerification)(implicit
     monad:                  Monad[F]
-  ): EitherT[F, QuivrError, DigestVerification] = for {
-    verifier <- EitherT.fromOption(hashingRoutines.get(routine), ContextErrors.FailedToFindDigestVerifier)
+  ): EitherT[F, QuivrRuntimeError, DigestVerification] = for {
+    verifier <- EitherT.fromOption(hashingRoutines.get(routine), ContextError.FailedToFindDigestVerifier)
     res      <- EitherT(verifier.validate(verification))
   } yield res
 
   def signatureVerify(routine: K)(verification: SignatureVerification)(implicit
     monad:                     Monad[F]
-  ): EitherT[F, QuivrError, SignatureVerification] = for {
-    verifier <- EitherT.fromOption[F](signingRoutines.get(routine), ContextErrors.FailedToFindSignatureVerifier)
+  ): EitherT[F, QuivrRuntimeError, SignatureVerification] = for {
+    verifier <- EitherT.fromOption[F](signingRoutines.get(routine), ContextError.FailedToFindSignatureVerifier)
     res      <- EitherT(verifier.validate(verification))
   } yield res
 

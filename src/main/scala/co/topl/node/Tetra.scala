@@ -2,7 +2,7 @@ package co.topl.node
 
 import co.topl.quivr
 import co.topl.quivr.SignableBytes
-import co.topl.quivr.runtime.{Datum, IncludesHeight, IncludesTick}
+import co.topl.quivr.runtime.{Datum, IncludesHeight}
 
 object Tetra {
 
