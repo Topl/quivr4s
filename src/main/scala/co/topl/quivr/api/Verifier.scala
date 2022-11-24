@@ -12,6 +12,8 @@ import co.topl.quivr.runtime.QuivrRuntimeErrors.ValidationError.{
 }
 import co.topl.quivr.runtime.{DynamicContext, QuivrRuntimeError}
 
+import java.nio.charset.StandardCharsets
+
 /**
  * A Verifier evaluates whether a given Proof satisfies a certain Proposition
  */
@@ -34,11 +36,11 @@ object Verifier {
    * @param context the Dynamic evaluation context which should provide an API for retrieving the signable bytes
    * @return an array of bytes that is similar to a "signature" for the proof
    */
-  def evaluateBind[F[_]: Monad, A](tag: Byte, proof: Proof, context: DynamicContext[F, A])(
+  def evaluateBind[F[_]: Monad, A](tag: String, proof: Proof, context: DynamicContext[F, A])(
     f:                                  Array[Byte] => F[TxBind]
   ): F[Either[MessageAuthorizationFailed.type, SignableBytes]] = for {
     sb             <- context.signableBytes
-    verifierTxBind <- f(sb :+ tag)
+    verifierTxBind <- f(tag.getBytes(StandardCharsets.UTF_8) ++ sb)
     msgAuth = Either.cond(verifierTxBind.sameElements(proof.bindToTransaction), sb, MessageAuthorizationFailed)
   } yield msgAuth
 
