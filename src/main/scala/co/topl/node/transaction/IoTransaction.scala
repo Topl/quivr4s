@@ -1,11 +1,11 @@
-package co.topl.node.outputs
+package co.topl.node.transaction
 
-import co.topl.node.Tetra.Datums
+import co.topl.node.TetraDatums
 
 case class IoTransaction(
   inputs:  List[SpentOutput],
   outputs: List[UnspentOutput],
-  datum:   Datums.IoTx,
+  datum:   TetraDatums.IoTx,
   blobOpt: Option[Blob]
 )
 

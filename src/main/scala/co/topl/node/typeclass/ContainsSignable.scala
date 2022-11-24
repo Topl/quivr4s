@@ -1,8 +1,8 @@
 package co.topl.node.typeclass
 
-import co.topl.node.Tetra._
+import co.topl.node.TetraDatums._
 import co.topl.node._
-import co.topl.node.outputs.{Blob, Box, IoTransaction, SpentOutput, UnspentOutput}
+import co.topl.node.transaction.{Blob, Box, IoTransaction, SpentOutput, UnspentOutput}
 import co.topl.quivr.Models.Compositional.{And, Not, Or, Threshold}
 import co.topl.quivr.Models.Contextual._
 import co.topl.quivr.Models.Primitive.{Digest, DigitalSignature, Locked}

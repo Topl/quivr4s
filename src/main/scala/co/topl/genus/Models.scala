@@ -1,6 +1,7 @@
 package co.topl.genus
 
-import co.topl.node.Tetra.{Box, Address}
+import co.topl.node.Address
+import co.topl.node.transaction.Box
 
 object Models {
   trait TxoState

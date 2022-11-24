@@ -1,12 +1,12 @@
-package co.topl.node.outputs
+package co.topl.node.transaction
 
-import co.topl.node.Tetra.Datums
-import co.topl.node.Address
+import co.topl.node.TetraDatums.Datums
+import co.topl.node.{Address, TetraDatums}
 
 case class UnspentOutput(
   address: Address,
   value:   Box.Value,
-  datum:   Datums.UnspentOutput,
+  datum:   TetraDatums.UnspentOutput,
   blobOpt: Option[Blob]
 )
 

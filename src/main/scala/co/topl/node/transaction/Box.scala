@@ -1,4 +1,4 @@
-package co.topl.node.outputs
+package co.topl.node.transaction
 
 import co.topl.node.Predicate
 

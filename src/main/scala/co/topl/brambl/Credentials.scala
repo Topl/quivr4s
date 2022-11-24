@@ -1,8 +1,7 @@
 package co.topl.brambl
 
-import co.topl.brambl.Models._
-import co.topl.node.Tetra
-import co.topl.brambl.Storage._
+import co.topl.brambl.Models.UnprovenSpentOutputV1
+import co.topl.node.transaction.SpentOutput
 import co.topl.quivr.SignableBytes
 
 
@@ -15,13 +14,13 @@ object Credentials {
    * @param message: Message to bind with the proofs
    * @return
    */
-  private def proveSpentOutputV1(unprovenInput: UnprovenSpentOutputV1, message: SignableBytes): Tetra.IoTransaction.SpentOutput = {
+  private def proveSpentOutputV1(unprovenInput: UnprovenSpentOutputV1, message: SignableBytes): SpentOutput = {
     val predicateImage = getBoxById(unprovenInput.reference).image
     val preImage = getDigestPreImage(getIndicesByBoxId(unprovenInput.reference))
     val proof = Option(QuivrService.getDigestProof(preImage, message))
-    val attestation = Tetra.Attestation(predicateImage, unprovenInput.knownPredicate, List(proof))
+    val attestation = TetraDatums.Attestation(predicateImage, unprovenInput.knownPredicate, List(proof))
 
-    Tetra.IoTransaction.SpentOutput(
+    TetraDatums.IoTransaction.SpentOutput(
       unprovenInput.reference,
       attestation,
       unprovenInput.value,
@@ -35,15 +34,15 @@ object Credentials {
    * @param message: Message to bind with the proofs
    * @return
    */
-  private def proveSpentOutputV2(unprovenInput: UnprovenSpentOutputV2, message: SignableBytes): Tetra.IoTransaction.SpentOutput = {
+  private def proveSpentOutputV2(unprovenInput: UnprovenSpentOutputV2, message: SignableBytes): TetraDatums.IoTransaction.SpentOutput = {
     val predicateImage = getBoxById(unprovenInput.reference).image
     val idx = getIndicesByBoxId(unprovenInput.reference)
     val preImage = getDigestPreImage(idx)
     val proof = Option(QuivrService.getDigestProof(preImage, message))
     val knownPredicate = List(Option(QuivrService.getDigestProposition(preImage)))
-    val attestation = Tetra.Attestation(predicateImage, Tetra.Predicate.Known(knownPredicate), List(proof))
+    val attestation = TetraDatums.Attestation(predicateImage, TetraDatums.Predicate.Known(knownPredicate), List(proof))
 
-    Tetra.IoTransaction.SpentOutput(
+    TetraDatums.IoTransaction.SpentOutput(
       unprovenInput.reference,
       attestation,
       unprovenInput.value,
@@ -56,7 +55,7 @@ object Credentials {
    * @param unprovenTx
    * @return
    */
-  def proveIoTx[T](unprovenTx: UnprovenIoTx[T]): Tetra.IoTransaction = {
+  def proveIoTx[T](unprovenTx: UnprovenIoTx[T]): TetraDatums.IoTransaction = {
     val message = unprovenTx.getSignableBytes
 
     val unprovenInput = unprovenTx.inputs.head
@@ -66,7 +65,7 @@ object Credentials {
       case v2: UnprovenSpentOutputV2 => proveSpentOutputV2(v2, message)
     }
 
-    Tetra.IoTransaction(List(provenInput), unprovenTx.outputs, unprovenTx.schedule, unprovenTx.metadata)
+    TetraDatums.IoTransaction(List(provenInput), unprovenTx.outputs, unprovenTx.schedule, unprovenTx.metadata)
   }
 
 }

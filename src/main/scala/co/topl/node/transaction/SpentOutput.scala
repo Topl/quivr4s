@@ -1,13 +1,13 @@
-package co.topl.node.outputs
+package co.topl.node.transaction
 
-import co.topl.node.Tetra.Datums
-import co.topl.node.Attestation
+import co.topl.node.TetraDatums.Datums
+import co.topl.node.{Attestation, TetraDatums}
 
 case class SpentOutput(
   reference:   Box.Id,
   attestation: Attestation,
   value:       Box.Value,
-  datum:       Datums.SpentOutput,
+  datum:       TetraDatums.SpentOutput,
   blobOpt:     Option[Blob]
 )
 

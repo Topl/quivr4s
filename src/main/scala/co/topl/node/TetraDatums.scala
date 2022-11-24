@@ -1,9 +1,9 @@
 package co.topl.node
 
+import co.topl.node.transaction.{Blob, IoTransaction}
 import co.topl.quivr.runtime.{Datum, IncludesHeight}
 
-object Tetra {
-  object Datums {
+object TetraDatums {
     case class Eon(beginSlot: Long, height: Long) extends Datum with IncludesHeight
 
     case class Era(beginSlot: Long, height: Long) extends Datum with IncludesHeight
@@ -20,4 +20,3 @@ object Tetra {
 
     case class UnspentOutput(blobId: Blob.Id, metadata: SmallData) extends Datum
   }
-}

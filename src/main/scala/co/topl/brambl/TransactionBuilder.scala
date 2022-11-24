@@ -1,8 +1,8 @@
 package co.topl.brambl
 
 import co.topl.node.Models.Metadata
-import co.topl.node.Tetra
-import co.topl.node.Tetra.Predicate
+import co.topl.node.TetraDatums
+import co.topl.node.TetraDatums.Predicate
 import co.topl.brambl.Models._
 import co.topl.brambl.Storage._
 import co.topl.genus.Models.Txo
@@ -16,7 +16,7 @@ object TransactionBuilder {
    *
    * Predicate will be a 1 of 1 Digest
    * */
-  private def buildUnprovenSpentOutputV1(idx: Indices, meta: Tetra.Datums.SpentOutput): UnprovenSpentOutputV1 = {
+  private def buildUnprovenSpentOutputV1(idx: Indices, meta: TetraDatums.Datums.SpentOutput): UnprovenSpentOutputV1 = {
     val proposition = Option(QuivrService.getDigestProposition(getDigest(idx))) // or could be done with preimage
     val knownPredicate = Predicate.Known(List(proposition))
 
@@ -30,7 +30,7 @@ object TransactionBuilder {
    *
    * Version where unproven input does not contain Predicate.Known
    * */
-  private def buildUnprovenSpentOutputV2(txo: Txo, meta: Tetra.Datums.SpentOutput): UnprovenSpentOutputV2 =
+  private def buildUnprovenSpentOutputV2(txo: Txo, meta: TetraDatums.Datums.SpentOutput): UnprovenSpentOutputV2 =
     UnprovenSpentOutputV2(txo.id, txo.box.value, meta)
 
 
@@ -40,11 +40,11 @@ object TransactionBuilder {
    * In addition to the indices being used to generate the digest secret, the indices will be used to
    * store the created proposition
    * */
-  private def buildUnspentOutput(idx: Indices, value: Tetra.Box.Value, meta: Tetra.Datums.UnspentOutput): Tetra.IoTx.UnspentOutput = {
+  private def buildUnspentOutput(idx: Indices, value: TetraDatums.Box.Value, meta: TetraDatums.Datums.UnspentOutput): TetraDatums.IoTx.UnspentOutput = {
     val proposition = QuivrService.getDigestProposition(getDigest(idx)) // or could be done with preimage
-    val predicate = Tetra.Predicate(List(proposition), 1)
+    val predicate = TetraDatums.Predicate(List(proposition), 1)
 
-    Tetra.IoTx.UnspentOutput(predicate.image.generateAddress, value, meta)
+    TetraDatums.IoTx.UnspentOutput(predicate.image.generateAddress, value, meta)
   }
 
   /**
@@ -54,13 +54,13 @@ object TransactionBuilder {
    * indices version (i.e, input and output params are specified as indices)
    * */
   def buildUnprovenIoTxV1(
-                                  input: Indices,
-                                  output: Indices,
-                                  outputValue: Tetra.Box.Value,
-                                  inputMeta: Tetra.Datums.SpentOutput = Tetra.Datums.SpentOutput(None),
-                                  outputMeta: Tetra.Datums.UnspentOutput = Tetra.Datums.UnspentOutput(None),
-                                  schedule: Tetra.IoTx.Schedule = Tetra.IoTx.Schedule(0, 0, 0),
-                                  metadata: Metadata = None
+                           input: Indices,
+                           output: Indices,
+                           outputValue: TetraDatums.Box.Value,
+                           inputMeta: TetraDatums.Datums.SpentOutput = TetraDatums.Datums.SpentOutput(None),
+                           outputMeta: TetraDatums.Datums.UnspentOutput = TetraDatums.Datums.UnspentOutput(None),
+                           schedule: TetraDatums.IoTx.Schedule = TetraDatums.IoTx.Schedule(0, 0, 0),
+                           metadata: Metadata = None
                                 ): UnprovenIoTx[UnprovenSpentOutputV1]  = {
     val inputs = List(buildUnprovenSpentOutputV1(input, inputMeta))
     val outputs = List(buildUnspentOutput(output, outputValue, outputMeta))
@@ -76,10 +76,10 @@ object TransactionBuilder {
    * */
   def buildUnprovenIoTxV2(
                            input: Txo,
-                           outputValue: Tetra.Box.Value,
-                           inputMeta: Tetra.Datums.SpentOutput = Tetra.Datums.SpentOutput(None),
-                           outputMeta: Tetra.Datums.UnspentOutput = Tetra.Datums.UnspentOutput(None),
-                           schedule: Tetra.IoTx.Schedule = Tetra.IoTx.Schedule(0, 0, 0),
+                           outputValue: TetraDatums.Box.Value,
+                           inputMeta: TetraDatums.Datums.SpentOutput = TetraDatums.Datums.SpentOutput(None),
+                           outputMeta: TetraDatums.Datums.UnspentOutput = TetraDatums.Datums.UnspentOutput(None),
+                           schedule: TetraDatums.IoTx.Schedule = TetraDatums.IoTx.Schedule(0, 0, 0),
                            metadata: Metadata = None
                          ): UnprovenIoTx[UnprovenSpentOutputV2]  = {
     val inputs = List(buildUnprovenSpentOutputV2(input, inputMeta))

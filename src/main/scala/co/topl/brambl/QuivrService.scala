@@ -5,10 +5,10 @@ import co.topl.quivr.{Proof, Proposer, Proposition, Prover, SignableBytes, Verif
 import co.topl.quivr.runtime.{Datum, DynamicContext}
 import co.topl.common.{Digest, DigestVerification, Preimage}
 import co.topl.brambl.Models.{Signable, intFromBoolean}
-import co.topl.node.Tetra.Datums
+import co.topl.node.TetraDatums.Datums
 import co.topl.quivr.algebras.DigestVerifier
 import co.topl.crypto.hash.blake2b256
-import co.topl.node.Tetra
+import co.topl.node.TetraDatums
 
 case class DigestError() extends runtime.Error
 
@@ -108,7 +108,7 @@ object QuivrService {
    * @param tx: The transaction the attestation belongs to.
    * @return Boolean
    */
-  private def verifyAttestation(attestation: Tetra.Attestation)(implicit tx: Tetra.IoTx): Boolean = {
+  private def verifyAttestation(attestation: TetraDatums.Attestation)(implicit tx: TetraDatums.IoTx): Boolean = {
     val threshold = attestation.image.threshold
     val numSatisfied = (attestation.known.conditions zip attestation.responses)
       .map(challenges => verify(challenges._1, challenges._2, tx): Int)
@@ -122,7 +122,7 @@ object QuivrService {
    * @param tx: The transaction to verify
    * @return Boolean
    */
-  def verifyIoTx(implicit tx: Tetra.IoTx): Boolean =
+  def verifyIoTx(implicit tx: TetraDatums.IoTx): Boolean =
     tx.inputs.map(_.attestation)
       .map(verifyAttestation)
       .reduce(_ && _) // Only true iff all attestations are true

@@ -4,7 +4,7 @@ import co.topl.brambl.Models.{AddressFromPredicateImage, Indices}
 import co.topl.common.{Digest, Preimage}
 import co.topl.crypto.hash.blake2b256
 import co.topl.genus.Models.Txo
-import co.topl.node.Tetra.{Box, Predicate}
+import co.topl.node.TetraDatums.{Box, Predicate}
 
 /***
  *
