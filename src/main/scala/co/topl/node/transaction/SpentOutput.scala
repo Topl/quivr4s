@@ -1,6 +1,5 @@
 package co.topl.node.transaction
 
-import co.topl.node.TetraDatums.Datums
 import co.topl.node.{Attestation, TetraDatums}
 
 case class SpentOutput(
@@ -10,7 +9,3 @@ case class SpentOutput(
   datum:       TetraDatums.SpentOutput,
   blobOpt:     Option[Blob]
 )
-
-object SpentOutput {
-  case class Id(bytes: Array[Byte])
-}

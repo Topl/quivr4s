@@ -5,7 +5,7 @@ import co.topl.node.TetraDatums
 import co.topl.node.TetraDatums.Predicate
 import co.topl.brambl.Models._
 import co.topl.brambl.Storage._
-import co.topl.genus.Models.Txo
+import .TransactionOutput
 
 // Functions related to Transaction Builder
 object TransactionBuilder {
@@ -30,7 +30,7 @@ object TransactionBuilder {
    *
    * Version where unproven input does not contain Predicate.Known
    * */
-  private def buildUnprovenSpentOutputV2(txo: Txo, meta: TetraDatums.Datums.SpentOutput): UnprovenSpentOutputV2 =
+  private def buildUnprovenSpentOutputV2(txo: TransactionOutput, meta: TetraDatums.Datums.SpentOutput): UnprovenSpentOutputV2 =
     UnprovenSpentOutputV2(txo.id, txo.box.value, meta)
 
 
@@ -75,7 +75,7 @@ object TransactionBuilder {
    * Txo version (i.e, input is specified as Genus Txo)
    * */
   def buildUnprovenIoTxV2(
-                           input: Txo,
+                           input: TransactionOutput,
                            outputValue: TetraDatums.Box.Value,
                            inputMeta: TetraDatums.Datums.SpentOutput = TetraDatums.Datums.SpentOutput(None),
                            outputMeta: TetraDatums.Datums.UnspentOutput = TetraDatums.Datums.UnspentOutput(None),

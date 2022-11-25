@@ -2,8 +2,9 @@ package co.topl.quivr.api
 
 import cats.implicits._
 import cats.{Applicative, Monad}
-import co.topl.common
+import co.topl.common.Models.{Preimage, Witness}
 import co.topl.quivr.{Models, Proof, SignableBytes, TxBind}
+
 import java.nio.charset.StandardCharsets
 
 // Provers create proofs that are bound to the transaction which executes the proof.
@@ -34,14 +35,16 @@ object Prover {
    * @param message unique bytes from a transaction that will be bound to the proof
    * @return an array of bytes that is similar to a "signature" for the proof
    */
-  private def bind(tag: String, message: SignableBytes)(f: Array[Byte] => TxBind): TxBind = f(tag.getBytes(StandardCharsets.UTF_8) ++ message)
+  private def bind(tag: String, message: SignableBytes)(f: Array[Byte] => TxBind): TxBind = f(
+    tag.getBytes(StandardCharsets.UTF_8) ++ message
+  )
 
   trait Instances {
 
     private def lockedProver[F[_]: Applicative]: F[Proof] = Models.Primitive.Locked.Proof().pure[F].widen
 
-    private def digestProver[F[_]: Applicative](preimage: common.Preimage, message: SignableBytes)(
-                                                f:                                                  Array[Byte] => TxBind
+    private def digestProver[F[_]: Applicative](preimage: Preimage, message: SignableBytes)(
+      f:                                                  Array[Byte] => TxBind
     ): F[Proof] =
       Models.Primitive.Digest
         .Proof(
@@ -51,8 +54,8 @@ object Prover {
         .pure[F]
         .widen
 
-    private def signatureProver[F[_]: Applicative](witness: common.Witness, message: SignableBytes)(
-                                                   f:                                                    Array[Byte] => TxBind
+    private def signatureProver[F[_]: Applicative](witness: Witness, message: SignableBytes)(
+      f:                                                    Array[Byte] => TxBind
     ): F[Proof] =
       Models.Primitive.DigitalSignature
         .Proof(
@@ -164,22 +167,22 @@ object Prover {
         args match {
           case Models.Primitive.Locked.token =>
             lockedProver[F]
-          case (Models.Primitive.Digest.token, t: common.Preimage) =>
+          case (Models.Primitive.Digest.token, t: Preimage) =>
             digestProver[F](t, message)(instanceBind)
-          case (Models.Primitive.DigitalSignature.token, t: common.Witness) =>
+          case (Models.Primitive.DigitalSignature.token, t: Witness) =>
             signatureProver[F](t, message)(instanceBind)
           case Models.Contextual.HeightRange.token =>
             heightProver[F](message)(instanceBind)
           case Models.Contextual.TickRange.token =>
             tickProver[F](message)(instanceBind)
-           case Models.Contextual.ExactMatch.token =>
-             exactMatchProver[F](message)(instanceBind)
-           case Models.Contextual.LessThan.token =>
-             lessThanProver[F](message)(instanceBind)
-           case Models.Contextual.GreaterThan.token =>
-             greaterThanProver[F](message)(instanceBind)
-           case Models.Contextual.EqualTo.token =>
-             equalToProver[F](message)(instanceBind)
+          case Models.Contextual.ExactMatch.token =>
+            exactMatchProver[F](message)(instanceBind)
+          case Models.Contextual.LessThan.token =>
+            lessThanProver[F](message)(instanceBind)
+          case Models.Contextual.GreaterThan.token =>
+            greaterThanProver[F](message)(instanceBind)
+          case Models.Contextual.EqualTo.token =>
+            equalToProver[F](message)(instanceBind)
           case (Models.Compositional.Threshold.token, t: Set[Option[Proof]]) =>
             thresholdProver[F](t, message)(instanceBind)
           case (Models.Compositional.Not.token, t: Proof) =>

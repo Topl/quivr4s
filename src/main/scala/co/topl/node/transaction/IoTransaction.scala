@@ -10,6 +10,5 @@ case class IoTransaction(
 )
 
 object IoTransaction {
-  case class Id(bytes: Array[Byte])
   case class Schedule(min: Long, max: Long, timestamp: Long)
 }

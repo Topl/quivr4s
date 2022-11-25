@@ -1,7 +1,6 @@
-package co.topl
+package co.topl.common
 
-package object common {
-
+object Models {
   case class Preimage(input: Array[Byte], salt: Array[Byte])
   case class Digest(value: Array[Byte])
   case class DigestVerification(digest: Digest, preimage: Preimage)

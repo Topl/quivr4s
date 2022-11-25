@@ -7,7 +7,7 @@ import co.topl.brambl.{Credentials, TransactionBuilder}
 import co.topl.brambl.Models._
 import co.topl.node.TetraDatums.Box
 import co.topl.common.{Digest, Preimage}
-import co.topl.genus.Models.Txo
+import .TransactionOutput
 import co.topl.brambl.QuivrService
 import co.topl.brambl.Storage.getTxo
 
@@ -66,7 +66,7 @@ val isT2V1Verified = QuivrService.verifyIoTx(t2V1)
 
 // Arbitrary data
 // A TXO should be retrieved from Genus, but for now will retrieve from storage by indices
-val txo1: Txo = getTxo(idx1)
+val txo1: TransactionOutput = getTxo(idx1)
 
 val unprovenT1V2 = TransactionBuilder.buildUnprovenIoTxV2(txo1, value)
 val t1V2 = Credentials.proveIoTx[UnprovenSpentOutputV2](unprovenT1V2)
@@ -75,7 +75,7 @@ val isT1V2Verified = QuivrService.verifyIoTx(t1V2)
 // **** Transaction t1V2 should be broadcast to the chain. After which Genus can inform us of a new Txo
 
 // A TXO should be retrieved from Genus, but for now will retrieve from storage by indices
-val txo2: Txo = getTxo(idx2)
+val txo2: TransactionOutput = getTxo(idx2)
 
 val unprovenT2V2 = TransactionBuilder.buildUnprovenIoTxV2(txo2, value)
 val t2V2 = Credentials.proveIoTx[UnprovenSpentOutputV2](unprovenT2V2)

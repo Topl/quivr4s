@@ -2,7 +2,8 @@ package co.topl.quivr.runtime
 
 import cats.Monad
 import cats.data.EitherT
-import co.topl.common.{DigestVerification, SignatureVerification}
+import co.topl.common.Models.{DigestVerification, SignatureVerification}
+import co.topl.common.ParsableDataInterface
 import co.topl.quivr.SignableBytes
 import co.topl.quivr.algebras.{DigestVerifier, SignatureVerifier}
 import co.topl.quivr.runtime.QuivrRuntimeErrors.ContextError
@@ -10,7 +11,7 @@ import co.topl.quivr.runtime.QuivrRuntimeErrors.ContextError
 trait DynamicContext[F[_], K] {
   val datums: Map[K, Datum]
 
-  val interfaces: Map[K, Interface[F]]
+  val interfaces: Map[K, ParsableDataInterface[F]]
   val signingRoutines: Map[K, SignatureVerifier[F]]
   val hashingRoutines: Map[K, DigestVerifier[F]]
 

@@ -2,7 +2,7 @@ package co.topl.node.transaction
 
 import co.topl.node.Predicate
 
-case class Box(image: Predicate.Image, value: Box.Value)
+case class Box(image: Predicate.Commitment, value: Box.Value)
 
 object Box {
   case class Id(bytes: Array[Byte])

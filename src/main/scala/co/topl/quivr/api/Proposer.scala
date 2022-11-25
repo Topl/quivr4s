@@ -2,7 +2,8 @@ package co.topl.quivr.api
 
 import cats.Applicative
 import cats.implicits._
-import co.topl.common
+import co.topl.common.Data
+import co.topl.common.Models.{Digest, VerificationKey}
 import co.topl.quivr.{Models, Proposition}
 
 // Proposers create Propositions from a tuple of arguments (or single argument) of type A.
@@ -14,14 +15,14 @@ trait Proposer[F[_], A] {
 // todo: we probably need to introduce another layer of type guarantees or validation for generic Array[Byte] types
 object Proposer {
 
-  def LockedProposer[F[_]: Applicative, A]: Proposer[F, Option[common.Data]] =
-    (data: Option[common.Data]) => Models.Primitive.Locked.Proposition(data).pure[F].widen
+  def LockedProposer[F[_]: Applicative, A]: Proposer[F, Option[Data]] =
+    (data: Option[Data]) => Models.Primitive.Locked.Proposition(data).pure[F].widen
 
-  def digestProposer[F[_]: Applicative, A]: Proposer[F, (String, common.Digest)] =
-    (args: (String, common.Digest)) => Models.Primitive.Digest.Proposition(args._1, args._2).pure[F].widen
+  def digestProposer[F[_]: Applicative, A]: Proposer[F, (String, Digest)] =
+    (args: (String, Digest)) => Models.Primitive.Digest.Proposition(args._1, args._2).pure[F].widen
 
-  def signatureProposer[F[_]: Applicative, A]: Proposer[F, (String, common.VerificationKey)] =
-    (args: (String, common.VerificationKey)) =>
+  def signatureProposer[F[_]: Applicative, A]: Proposer[F, (String, VerificationKey)] =
+    (args: (String, VerificationKey)) =>
       Models.Primitive.DigitalSignature.Proposition(args._1, args._2).pure[F].widen
 
   def heightProposer[F[_]: Applicative, A]: Proposer[F, (String, Long, Long)] =

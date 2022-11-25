@@ -49,7 +49,7 @@ package object quivr {
         val token: String = "locked"
 
         final case class Proposition(
-          data: Option[common.Data]
+          data: Option[common.Data] = None
         ) extends quivr.Proposition
             with quivr.Operations.Locked
 
@@ -61,12 +61,12 @@ package object quivr {
 
         final case class Proposition(
           routine: String,
-          digest:  common.Digest
+          digest:  common.Models.Digest
         ) extends quivr.Proposition
             with quivr.Operations.Digest
 
         final case class Proof(
-          preimage:        common.Preimage,
+          preimage:        common.Models.Preimage,
           transactionBind: TxBind
         ) extends quivr.Proof(token, transactionBind)
             with quivr.Operations.Digest
@@ -77,12 +77,12 @@ package object quivr {
 
         final case class Proposition(
           routine: String,
-          vk:      common.VerificationKey
+          vk:      common.Models.VerificationKey
         ) extends quivr.Proposition
             with quivr.Operations.DigitalSignature
 
         final case class Proof(
-          witness:         common.Witness,
+          witness:         common.Models.Witness,
           transactionBind: TxBind
         ) extends quivr.Proof(token, transactionBind)
             with quivr.Operations.DigitalSignature

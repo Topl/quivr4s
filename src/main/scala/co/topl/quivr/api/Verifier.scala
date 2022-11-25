@@ -2,7 +2,7 @@ package co.topl.quivr.api
 
 import cats._
 import cats.implicits._
-import co.topl.common.{DigestVerification, Message, SignatureVerification}
+import co.topl.common.Models.{DigestVerification, Message, SignatureVerification}
 import co.topl.crypto.hash.blake2b256
 import co.topl.quivr._
 import co.topl.quivr.runtime.QuivrRuntimeErrors.ValidationError.{

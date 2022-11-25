@@ -1,4 +1,4 @@
-package co.topl.quivr.algebras
+package co.topl.common
 
 trait ContextualValidation[F[_], E, T, Context] {
 
