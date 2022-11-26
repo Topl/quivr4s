@@ -4,7 +4,7 @@ import co.topl.brambl.Models.Indices
 import co.topl.common.Models.{Digest, Preimage}
 import co.topl.crypto.hash.blake2b256
 import co.topl.genus.TransactionOutput
-import co.topl.node.Predicate
+import co.topl.node.FullPredicate
 import co.topl.node.transaction.Box
 
 /**
@@ -20,28 +20,28 @@ object Storage {
   // Dummy values
   val boxes: Map[Box.Id, Box] = Map(
     Box.Id("0,0,1".getBytes) -> Box(
-      Predicate.Image(
+      FullPredicate.Image(
         Array(0: Byte),
         1
       ),
       Box.Values.Token(1)
     ),
     Box.Id("0,0,2".getBytes) -> Box(
-      Predicate.Image(
+      FullPredicate.Image(
         Array(0: Byte),
         1
       ),
       Box.Values.Token(1)
     ),
     Box.Id("0,0,3".getBytes) -> Box(
-      Predicate.Image(
+      FullPredicate.Image(
         Array(0: Byte),
         1
       ),
       Box.Values.Token(1)
     ),
     Box.Id("5,5,5".getBytes) -> Box(
-      Predicate.Image(
+      FullPredicate.Image(
         Array(0: Byte),
         1
       ),
@@ -73,7 +73,7 @@ object Storage {
   def getTxoByBoxId(id: Box.Id): TransactionOutput = {
     val box = getBoxById(id)
 
-    TransactionOutput(id, box.value, box.image.generateAddress)
+    TransactionOutput(id, box.value, box.predicate.generateAddress)
   }
 
   /**

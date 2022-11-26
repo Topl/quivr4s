@@ -14,9 +14,9 @@ object TetraDatums {
 
     case class Body(root: Root, metadata: SmallData) extends Datum
 
-    case class IoTx(schedule: IoTransaction.Schedule, blobId: Blob.Id, metadata: SmallData) extends Datum
+    case class IoTx(schedule: IoTransaction.Schedule, blobId: Identifiers.Blob, metadata: SmallData) extends Datum
 
-    case class SpentOutput(blobId: Blob.Id, metadata: SmallData) extends Datum
+    case class SpentOutput(blobId:  Identifiers.Blob, metadata: SmallData) extends Datum
 
-    case class UnspentOutput(blobId: Blob.Id, metadata: SmallData) extends Datum
+    case class UnspentOutput(blobId:  Identifiers.Blob, metadata: SmallData) extends Datum
   }

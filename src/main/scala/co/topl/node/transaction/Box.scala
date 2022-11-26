@@ -1,17 +1,20 @@
 package co.topl.node.transaction
 
-import co.topl.node.Predicate
+import co.topl.node.{Lock, Root}
 
-case class Box(image: Predicate.Commitment, value: Box.Value)
+case class Box(lock: Lock, value: Box.Value)
 
 object Box {
-  case class Id(bytes: Array[Byte])
 
-  sealed abstract class Value(quantity: Long)
+
+  sealed abstract class Value {
+    val quantity: Long
+    val blobsRoot: List[Option[Blob]] = List()
+  }
 
   object Values {
-    case class Token(quantity: Long) extends Box.Value(quantity)
+    case class Token(quantity: Long) extends Box.Value
 
-    case class Asset(label: Byte, quantity: Long, metadata: Array[Byte]) extends Box.Value(quantity)
+    case class Asset(label: Byte, quantity: Long, metadata: Array[Byte]) extends Box.Value
   }
 }

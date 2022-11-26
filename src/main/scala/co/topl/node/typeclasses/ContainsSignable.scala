@@ -37,8 +37,27 @@ object ContainsSignable {
       stxo.attestation.signable ++
       stxo.datum.signable
 
-    implicit val predicateSignable: ContainsSignable[Predicate.Commitment] = (image: Predicate.Commitment) =>
-      image.root ++ BigInt(image.threshold).toByteArray
+    implicit val lockSignable: ContainsSignable[Lock] = {
+      case l: Locks.Predicate  => predicateLockSignable.signableBytes(l)
+      case l: Locks.Image      => imageLockSignable.signableBytes(l)
+      case l: Locks.Commitment => commitmentLockSignable.signableBytes(l)
+    }
+
+    // consider making predicate non-empty
+    implicit val predicateLockSignable: ContainsSignable[Locks.Predicate] = (predicate: Locks.Predicate) =>
+      BigInt(predicate.threshold).toByteArray ++
+      predicate.challenges.zipWithIndex.foldLeft(Array[Byte]()) { case (acc, (prop, index)) =>
+        acc ++ BigInt(index).toByteArray ++ propositionSignable.signableBytes(prop)
+      }
+
+    implicit val imageLockSignable: ContainsSignable[Locks.Image] = (image: Locks.Image) =>
+      BigInt(image.threshold).toByteArray ++
+      image.leaves.zipWithIndex.foldLeft(Array[Byte]()) { case (acc, (leaf, index)) =>
+        acc ++ BigInt(index).toByteArray ++ leaf.bytes
+      }
+
+    implicit val commitmentLockSignable: ContainsSignable[Locks.Commitment] = (commitment: Locks.Commitment) =>
+      BigInt(commitment.threshold).toByteArray ++ BigInt(commitment.size).toByteArray ++ commitment.root
 
     implicit val unspentOutputSignable: ContainsSignable[UnspentOutput] = (utxo: UnspentOutput) =>
       utxo.address.signable ++
@@ -46,7 +65,7 @@ object ContainsSignable {
       utxo.datum.signable
 
     implicit val boxSignable: ContainsSignable[Box] = (box: Box) =>
-      box.image.signable ++
+      box.lock.signable ++
       box.value.signable
 
     implicit val boxValueSignable: ContainsSignable[Box.Value] = {
@@ -54,8 +73,10 @@ object ContainsSignable {
       case v: Box.Values.Asset => assetValueSignable.signableBytes(v)
     }
 
+
     implicit val tokenValueSignable: ContainsSignable[Box.Values.Token] = (token: Box.Values.Token) =>
-      BigInt(token.quantity).toByteArray
+      BigInt(token.quantity).toByteArray ++
+        token.blobs.signable
 
     implicit val assetValueSignable: ContainsSignable[Box.Values.Asset] = (asset: Box.Values.Asset) =>
       Array(asset.label) ++
@@ -64,10 +85,15 @@ object ContainsSignable {
 
     implicit val addressSignable: ContainsSignable[Address] = (address: Address) =>
       BigInt(address.network).toByteArray ++
-      BigInt(address.network).toByteArray ++
-      address.evidence.bytes
+      BigInt(address.ledger).toByteArray ++
+      address.lockId.bytes
 
-    implicit val blobSignable: ContainsSignable[Blob] = (blob: Blob) => blob.value
+    // should we allow this?
+    implicit val listOptionBlobSignable: ContainsSignable[List[Option[Blob]]] = (blobs: List[Option[Blob]]) =>
+      blobs.zipWithIndex.foldLeft(Array[Byte]()) {
+        case (acc, (Some(blob), index)) => acc ++ BigInt(index).toByteArray ++ blob.value
+        case (acc, (_, index)) => acc ++ BigInt(index).toByteArray
+      }
 
     implicit val iotxScheduleSignable: ContainsSignable[IoTransaction.Schedule] = (schedule: IoTransaction.Schedule) =>
       BigInt(schedule.min).toByteArray ++
@@ -75,41 +101,54 @@ object ContainsSignable {
 
     implicit val iotxDatumSignable: ContainsSignable[TetraDatums.IoTx] = (datum: TetraDatums.IoTx) =>
       datum.schedule.signable ++
-      datum.blobId.value ++
+      datum.blobId.signable ++
       datum.metadata
 
     implicit val stxoDatumSignable: ContainsSignable[TetraDatums.SpentOutput] = (datum: TetraDatums.SpentOutput) =>
-      datum.blobId.value ++ datum.metadata
+      datum.blobId.signable ++ datum.metadata
 
     implicit val utxoDatumSignable: ContainsSignable[TetraDatums.UnspentOutput] = (datum: TetraDatums.UnspentOutput) =>
-      datum.blobId.value ++ datum.metadata
+      datum.blobId.signable ++ datum.metadata
+
+    implicit val predicateAttestationSignable: ContainsSignable[Attestations.Predicate] =
+      (attestation: Attestations.Predicate) => attestation.lock.signable
+
+    private def knownAttestation(known: List[Option[Proposition]]): Array[Byte] =
+      known.zipWithIndex.foldLeft(Array[Byte]()) { case (acc: Array[Byte], (Some(p: Proposition), index: Int)) =>
+        acc ++
+        BigInt(index).toByteArray ++ {
+          p match {
+            case _: Locked.Proposition => Models.Primitive.Locked.token.getBytes(StandardCharsets.UTF_8)
+            case _: Digest.Proposition => Models.Primitive.Digest.token.getBytes(StandardCharsets.UTF_8)
+            case _: DigitalSignature.Proposition =>
+              Models.Primitive.DigitalSignature.token.getBytes(StandardCharsets.UTF_8)
+            case _: HeightRange.Proposition => Models.Contextual.HeightRange.token.getBytes(StandardCharsets.UTF_8)
+            case _: TickRange.Proposition   => Models.Contextual.TickRange.token.getBytes(StandardCharsets.UTF_8)
+            case _: ExactMatch.Proposition  => Models.Contextual.ExactMatch.token.getBytes(StandardCharsets.UTF_8)
+            case _: LessThan.Proposition    => Models.Contextual.LessThan.token.getBytes(StandardCharsets.UTF_8)
+            case _: GreaterThan.Proposition => Models.Contextual.GreaterThan.token.getBytes(StandardCharsets.UTF_8)
+            case _: EqualTo.Proposition     => Models.Contextual.EqualTo.token.getBytes(StandardCharsets.UTF_8)
+            case _: Threshold.Proposition   => Models.Compositional.Threshold.token.getBytes(StandardCharsets.UTF_8)
+            case _: Not.Proposition         => Models.Compositional.Not.token.getBytes(StandardCharsets.UTF_8)
+            case _: And.Proposition         => Models.Compositional.And.token.getBytes(StandardCharsets.UTF_8)
+            case _: Or.Proposition          => Models.Compositional.Or.token.getBytes(StandardCharsets.UTF_8)
+            case _                          => Array.fill(8)(0xff.toByte) // 8 bytes of 1, should be eqv to -1L
+          }
+        }
+      }
+
+    implicit val imageAttestationSignable: ContainsSignable[Attestations.Image] = (attestation: Attestations.Image) =>
+      attestation.lock.signable ++ knownAttestation(attestation.known)
+
+    implicit val commitmentAttestationSignable: ContainsSignable[Attestations.Commitment] =
+      (attestation: Attestations.Commitment) => attestation.lock.signable ++ knownAttestation(attestation.known)
 
     // responses is not used when creating the signable bytes
-    implicit val attestationSignable: ContainsSignable[Attestation] = (attestation: Attestation) =>
-      attestation.image.signable ++
-      attestation.known.challenges.zipWithIndex.foldLeft(Array[Byte]()) {
-        case (acc: Array[Byte], (Some(p: Proposition), index: Int)) =>
-          acc ++
-          BigInt(index).toByteArray ++ {
-            p match {
-              case _: Locked.Proposition => Models.Primitive.Locked.token.getBytes(StandardCharsets.UTF_8)
-              case _: Digest.Proposition => Models.Primitive.Digest.token.getBytes(StandardCharsets.UTF_8)
-              case _: DigitalSignature.Proposition =>
-                Models.Primitive.DigitalSignature.token.getBytes(StandardCharsets.UTF_8)
-              case _: HeightRange.Proposition => Models.Contextual.HeightRange.token.getBytes(StandardCharsets.UTF_8)
-              case _: TickRange.Proposition   => Models.Contextual.TickRange.token.getBytes(StandardCharsets.UTF_8)
-              case _: ExactMatch.Proposition  => Models.Contextual.ExactMatch.token.getBytes(StandardCharsets.UTF_8)
-              case _: LessThan.Proposition    => Models.Contextual.LessThan.token.getBytes(StandardCharsets.UTF_8)
-              case _: GreaterThan.Proposition => Models.Contextual.GreaterThan.token.getBytes(StandardCharsets.UTF_8)
-              case _: EqualTo.Proposition     => Models.Contextual.EqualTo.token.getBytes(StandardCharsets.UTF_8)
-              case _: Threshold.Proposition   => Models.Compositional.Threshold.token.getBytes(StandardCharsets.UTF_8)
-              case _: Not.Proposition         => Models.Compositional.Not.token.getBytes(StandardCharsets.UTF_8)
-              case _: And.Proposition         => Models.Compositional.And.token.getBytes(StandardCharsets.UTF_8)
-              case _: Or.Proposition          => Models.Compositional.Or.token.getBytes(StandardCharsets.UTF_8)
-              case _                          => Array.fill(8)(0xff.toByte) // 8 bytes of 1, should be eqv to -1L
-            }
-          }
-      }
+    implicit val attestationSignable: ContainsSignable[Attestation] = {
+      case a: Attestations.Predicate => predicateAttestationSignable.signableBytes(a)
+      case a: Attestations.Image => imageAttestationSignable.signableBytes(a)
+      case a: Attestations.Commitment => commitmentAttestationSignable.signableBytes(a)
+    }
 
     private def lockedSignable(p: Locked.Proposition): SignableBytes =
       Locked.token.getBytes(StandardCharsets.UTF_8)
