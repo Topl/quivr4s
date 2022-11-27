@@ -1,14 +1,8 @@
 package co.topl.node.box
 
-import co.topl.crypto.accumulators.LeafData
-import co.topl.crypto.accumulators.merkle.MerkleTree
-import co.topl.crypto.hash.Blake2b
-import co.topl.crypto.hash.digest.Digest32
-import co.topl.crypto.implicits.{blake2b256Hash, digestDigest32}
-import co.topl.node.Root
-import co.topl.node.typeclasses.ContainsEvidence.Ops
-import co.topl.node.typeclasses.ContainsSignable.instances.propositionSignable
-import co.topl.node.typeclasses.Evidence
+import co.topl.node.Identifiers
+import co.topl.node.typeclasses.ContainsEvidence.{ListOps, SignableOps}
+import co.topl.node.typeclasses.ContainsSignable.instances._
 import co.topl.quivr.Proposition
 
 sealed abstract class Lock
@@ -21,22 +15,37 @@ object Locks {
 
   // Semi-public information
   // The most commonly shared construction between parties
-  case class Image(leaves: List[Evidence], threshold: Int) extends Lock
+  case class Image32(leaves: List[Identifiers.BoxLock32], threshold: Int) extends Lock
+  case class Image64(leaves: List[Identifiers.BoxLock64], threshold: Int) extends Lock
 
   // Public information
   // Predicate Commitments are used to encumber boxes
   // use a Root here so we can provide a membership proof of the conditions
-  case class Commitment(root: Root, size: Int, threshold: Int) extends Lock
+  case class Commitment32(root: Identifiers.AccumulatorRoot32, size: Int, threshold: Int) extends Lock
+  case class Commitment64(root: Identifiers.AccumulatorRoot64, size: Int, threshold: Int) extends Lock
 
-  def image(predicate: Predicate): Image =
-    Image(
-      predicate.challenges.map(_.evidence),
+  def image32(predicate: Predicate): Image32 =
+    Image32(
+      predicate.challenges.map(c => Identifiers.BoxLock32(c.blake2bEvidence.sized32Evidence)),
       predicate.threshold
     )
 
-  def commit(image: Image): Commitment =
-    Commitment(
-      MerkleTree.apply[Blake2b, Digest32](image.leaves.map(l => LeafData(l.value)).toSeq).rootHash.value,
+  def image64(predicate: Predicate): Image64 =
+    Image64(
+      predicate.challenges.map(c => Identifiers.BoxLock64(c.blake2bEvidence.sized64Evidence)),
+      predicate.threshold
+    )
+
+  def commit32(image: Image32): Commitment32 =
+    Commitment32(
+      Identifiers.AccumulatorRoot32(image.leaves.merkleEvidence.sized32Evidence),
+      image.leaves.size,
+      image.threshold
+    )
+
+  def commit64(image: Image64): Commitment64 =
+    Commitment64(
+      Identifiers.AccumulatorRoot64(image.leaves.merkleEvidence.sized64Evidence),
       image.leaves.size,
       image.threshold
     )

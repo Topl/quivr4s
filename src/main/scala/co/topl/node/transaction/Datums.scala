@@ -14,9 +14,9 @@ object Datums {
 
     case class Body(root: Root, metadata: SmallData) extends Datum
 
-    case class IoTx(schedule: IoTransaction.Schedule, references: List[References.Output], metadata: SmallData) extends Datum
+    case class IoTx(schedule: IoTransaction.Schedule, references: List[References.Output32], metadata: SmallData) extends Datum
 
-    case class SpentOutput(references: List[References.KnownPredicate], metadata: SmallData) extends Datum
+    case class SpentOutput(references: List[References.KnownPredicate32], metadata: SmallData) extends Datum
 
-    case class UnspentOutput(references: List[References.Blob], metadata: SmallData) extends Datum
+    case class UnspentOutput(references: List[References.Blob32], metadata: SmallData) extends Datum
   }
