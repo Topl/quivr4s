@@ -1,8 +1,5 @@
 package co.topl.node
 
-import co.topl.node.box.Lock
-import co.topl.node.transaction.IoTransaction
-
 sealed abstract class Reference {
   val index: Int
   val id: Identifier
