@@ -10,7 +10,7 @@ import co.topl.quivr.{Models, Proposition, SignableBytes}
 
 import java.nio.charset.StandardCharsets
 
-// Object -> Signable -> Evidence -> Identifier
+// Object -> Signable -> Evidence -> Identifier -> Reference
 trait ContainsSignable[T] {
   def signableBytes(t: T): SignableBytes
 }

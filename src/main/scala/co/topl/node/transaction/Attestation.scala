@@ -1,4 +1,4 @@
-package co.topl.node
+package co.topl.node.transaction
 
 import co.topl.node.box.{Lock, Locks}
 import co.topl.quivr

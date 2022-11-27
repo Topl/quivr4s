@@ -1,7 +1,7 @@
 package co.topl.genus
 
-import co.topl.node.Address
 import co.topl.node.box.Box
+import co.topl.node.transaction.Address
 
 case class TransactionOutput(
   id:       Box.Id,

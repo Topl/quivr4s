@@ -1,5 +1,7 @@
 package co.topl.node
 
+// References combine an Identifier and an index
+// todo: discuss whether the index here should be a 128-bit to allow for embedding Cartesian indices (3x 0 -> 2^31)
 sealed abstract class Reference {
   val index: Int
   val id: Identifier

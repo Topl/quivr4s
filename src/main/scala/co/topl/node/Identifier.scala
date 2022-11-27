@@ -7,13 +7,13 @@ import co.topl.node.typeclasses.ContainsEvidence.{ListOps, SignableOps}
 import co.topl.node.typeclasses.ContainsSignable.instances._
 import co.topl.node.typeclasses.{ContainsEvidence, ContainsSignable}
 
+// Identifiers are tagged evidence
 sealed abstract class Identifier {
   val tag: String
   val evidence: Evidence[_]
   val value: Array[Byte] = evidence.value
 }
 
-// Identifiers are tagged evidence
 object Identifiers {
 
   // known leaves
