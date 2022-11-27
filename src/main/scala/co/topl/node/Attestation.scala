@@ -1,5 +1,6 @@
 package co.topl.node
 
+import co.topl.node.box.{Lock, Locks}
 import co.topl.quivr
 import co.topl.quivr.{Proof, Proposition}
 

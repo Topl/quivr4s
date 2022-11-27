@@ -1,7 +1,7 @@
 package co.topl.brambl
 
 import co.topl.crypto.hash.blake2b256
-import co.topl.node.TetraDatums
+import co.topl.node.transaction.Datums
 import co.topl.quivr.Models.Primitive
 import co.topl.quivr.algebras.DigestVerifier
 import co.topl.quivr.runtime.{Datum, DynamicContext}
@@ -26,11 +26,11 @@ object QuivrService {
   case class ToplContext(tx: Signable) extends DynamicContext[Trivial, String] {
     override val datums: Map[String, Datum] = Map(
       // Datums with height => Not needed for digest operations
-      "eon" -> TetraDatums.Eon(10, 2), // <- not sure what "beginSlot" is referring to. First slot of the eon?
-      "era" -> TetraDatums.Era(22, 4),
-      "epoch" -> TetraDatums.Epoch(34, 6),
-      "header" -> TetraDatums.Header(24, None),
-      "body" -> TetraDatums.Body(Array(0: Byte), Array(0: Byte))
+      "eon" -> Datums.Eon(10, 2), // <- not sure what "beginSlot" is referring to. First slot of the eon?
+      "era" -> Datums.Era(22, 4),
+      "epoch" -> Datums.Epoch(34, 6),
+      "header" -> Datums.Header(24, None),
+      "body" -> Datums.Body(Array(0: Byte), Array(0: Byte))
     )
     override val hashingRoutines = Map("blake2b256" -> DigestValidator())
     override def signableBytes: SignableBytes = tx.getSignableBytes

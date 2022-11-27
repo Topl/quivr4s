@@ -5,7 +5,7 @@ import co.topl.crypto.hash.blake2b256
 import co.topl.quivr.runtime.DynamicContext
 import co.topl.brambl.{Credentials, TransactionBuilder}
 import co.topl.brambl.Models._
-import co.topl.node.TetraDatums.Box
+import co.topl.node.transaction.Datums.Box
 import co.topl.common.{Digest, Preimage}
 import .TransactionOutput
 import co.topl.brambl.QuivrService

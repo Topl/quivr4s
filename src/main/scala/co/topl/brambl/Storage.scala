@@ -5,7 +5,7 @@ import co.topl.common.Models.{Digest, Preimage}
 import co.topl.crypto.hash.blake2b256
 import co.topl.genus.TransactionOutput
 import co.topl.node.FullPredicate
-import co.topl.node.transaction.Box
+import co.topl.node.box.Box
 
 /**
  * *

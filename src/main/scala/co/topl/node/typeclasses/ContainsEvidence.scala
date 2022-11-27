@@ -4,7 +4,7 @@ import co.topl.crypto.hash.blake2b256
 
 // evidence is a unique
 trait Evidence {
-  val bytes: Array[Byte]
+  val value: Array[Byte]
 }
 
 trait ContainsEvidence[T] {
@@ -16,7 +16,7 @@ object ContainsEvidence {
 
   def fromSignable[T](implicit sb: ContainsSignable[T]): ContainsEvidence[T] = (t: T) =>
     new Evidence {
-      override val bytes: Array[Byte] = blake2b256.hash(sb.signableBytes(t)).value
+      override val value: Array[Byte] = blake2b256.hash(sb.signableBytes(t)).value
     }
 
   implicit class Ops[T: ContainsSignable](t: T) {

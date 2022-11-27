@@ -1,28 +1,15 @@
 package co.topl.node
 
-import co.topl.crypto.hash.blake2b256
-import co.topl.node.typeclasses.ContainsEvidence.Ops
-import co.topl.node.typeclasses.{ContainsRoot, ContainsSignable}
-import co.topl.node.typeclasses.ContainsSignable.instances._
+import co.topl.node.box.Lock
+import co.topl.node.transaction.IoTransaction
 
-trait Reference {
+sealed abstract class Reference {
   val index: Int
   val id: Identifier
 }
 
-trait ContainsReference[T] {
-  def pointer(t: T): Reference
-}
-
-object ContainsReference {
-  def apply[T](t: T)(implicit ev: ContainsReference[T]): ContainsReference[T] = ev
-
-  def fromRoot[T](implicit root: ContainsRoot[T]): ContainsReference[T] = (t: T) =>
-    new Reference {
-      override val bytes: Array[Byte] = blake2b256.hash(root.rootOf(t)).value
-    }
-
-  implicit class Ops[T: ContainsRoot](t: T) {
-    def reference: Reference = fromRoot.evidenceOf(t)
-  }
+object References {
+  case class KnownPredicate(index: Int, id: Identifiers.BoxLock) extends Reference
+  case class Blob(index: Int, id: Identifiers.BoxValue) extends Reference
+  case class Output(index: Int, id: Identifiers.IoTransaction) extends Reference
 }

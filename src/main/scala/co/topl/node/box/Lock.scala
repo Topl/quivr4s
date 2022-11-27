@@ -1,10 +1,11 @@
-package co.topl.node
+package co.topl.node.box
 
 import co.topl.crypto.accumulators.LeafData
 import co.topl.crypto.accumulators.merkle.MerkleTree
 import co.topl.crypto.hash.Blake2b
 import co.topl.crypto.hash.digest.Digest32
 import co.topl.crypto.implicits.{blake2b256Hash, digestDigest32}
+import co.topl.node.Root
 import co.topl.node.typeclasses.ContainsEvidence.Ops
 import co.topl.node.typeclasses.ContainsSignable.instances.propositionSignable
 import co.topl.node.typeclasses.Evidence
@@ -35,7 +36,7 @@ object Locks {
 
   def commit(image: Image): Commitment =
     Commitment(
-      MerkleTree.apply[Blake2b, Digest32](image.leaves.map(l => LeafData(l.bytes)).toSeq).rootHash.value,
+      MerkleTree.apply[Blake2b, Digest32](image.leaves.map(l => LeafData(l.value)).toSeq).rootHash.value,
       image.leaves.size,
       image.threshold
     )

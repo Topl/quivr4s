@@ -1,6 +1,7 @@
 package co.topl.node.typeclasses
 
 import co.topl.node._
+import co.topl.node.box.{Blob, Box, Lock, Locks, Value, Values}
 import co.topl.node.transaction._
 import co.topl.quivr.Models.Compositional.{And, Not, Or, Threshold}
 import co.topl.quivr.Models.Contextual._
@@ -22,20 +23,44 @@ object ContainsSignable {
 
   trait Instances {
 
-    implicit val ioTransactionSignable: ContainsSignable[IoTransaction] = (iotx: IoTransaction) =>
-      iotx.inputs.zipWithIndex.foldLeft(Array[Byte]()) { case (acc, (stxo, idx)) =>
-        acc ++ BigInt(idx).toByteArray ++ stxo.signable
-      } ++
-      iotx.outputs.zipWithIndex.foldLeft(Array[Byte]()) { case (acc, (utxo, idx)) =>
-        acc ++ BigInt(idx).toByteArray ++ utxo.signable
-      } ++
-      iotx.datum.signable
+    implicit val byteSingable: ContainsSignable[Byte] = (byte: Byte) => Array(byte)
 
-    // doesn't include Box.Value since this is committed to via the reference
-    implicit val spentOutputSignable: ContainsSignable[SpentOutput] = (stxo: SpentOutput) =>
-      stxo.reference.bytes ++
-      stxo.attestation.signable ++
-      stxo.datum.signable
+    implicit val arrayByteSignable: ContainsSignable[Array[Byte]] = (bytes: Array[Byte]) => bytes
+
+    implicit val intSignable: ContainsSignable[Int] = (int: Int) => BigInt(int).toByteArray
+
+    implicit val longSignable: ContainsSignable[Long] = (long: Long) => BigInt(long).toByteArray
+
+    implicit val stringSignable: ContainsSignable[String] = (string: String) => string.getBytes(StandardCharsets.UTF_8)
+
+    implicit def listSignable[T: ContainsSignable]: ContainsSignable[List[T]] = (list: List[T]) =>
+      list.zipWithIndex.foldLeft(Array[Byte]()) { case (acc, (item, index)) =>
+        acc ++ BigInt(index).toByteArray ++ item.signable
+      }
+
+    implicit def optionSignable[T: ContainsSignable]: ContainsSignable[Option[T]] = (option: Option[T]) =>
+      option.fold(Array(0xff.toByte))(_.signable)
+
+    implicit val evidenceSignable: ContainsSignable[Evidence] = (evidence: Evidence) => evidence.value
+
+    implicit val identifiersSignable: ContainsSignable[Identifier] = {
+      case i: Identifiers.BoxLock       => boxLockIdentifierSignable.signableBytes(i)
+      case i: Identifiers.BoxValue      => boxValueIdentifierSignable.signableBytes(i)
+      case i: Identifiers.IoTransaction => ioTransactionIdentifierSignable.signableBytes(i)
+    }
+
+    implicit val boxLockIdentifierSignable: ContainsSignable[Identifiers.BoxLock] = (id: Identifiers.BoxLock) =>
+      id.tag.signable ++
+      id.value.signable
+
+    implicit val boxValueIdentifierSignable: ContainsSignable[Identifiers.BoxValue] = (id: Identifiers.BoxValue) =>
+      id.tag.signable ++
+      id.value.signable
+
+    implicit val ioTransactionIdentifierSignable: ContainsSignable[Identifiers.IoTransaction] =
+      (id: Identifiers.IoTransaction) =>
+        id.tag.signable ++
+        id.value.signable
 
     implicit val lockSignable: ContainsSignable[Lock] = {
       case l: Locks.Predicate  => predicateLockSignable.signableBytes(l)
@@ -43,174 +68,179 @@ object ContainsSignable {
       case l: Locks.Commitment => commitmentLockSignable.signableBytes(l)
     }
 
-    // consider making predicate non-empty
-    implicit val predicateLockSignable: ContainsSignable[Locks.Predicate] = (predicate: Locks.Predicate) =>
-      BigInt(predicate.threshold).toByteArray ++
-      predicate.challenges.zipWithIndex.foldLeft(Array[Byte]()) { case (acc, (prop, index)) =>
-        acc ++ BigInt(index).toByteArray ++ propositionSignable.signableBytes(prop)
-      }
+    implicit val boxValueSignable: ContainsSignable[Value] = {
+      case v: Values.Token => tokenValueSignable.signableBytes(v)
+      case v: Values.Asset => assetValueSignable.signableBytes(v)
+    }
 
-    implicit val imageLockSignable: ContainsSignable[Locks.Image] = (image: Locks.Image) =>
-      BigInt(image.threshold).toByteArray ++
-      image.leaves.zipWithIndex.foldLeft(Array[Byte]()) { case (acc, (leaf, index)) =>
-        acc ++ BigInt(index).toByteArray ++ leaf.bytes
-      }
+    implicit val referenceSignable: ContainsSignable[Reference] = {
+      case r: References.KnownPredicate => knownPredicateReferenceSignable.signableBytes(r)
+      case r: References.Blob           => blobReferenceSignable.signableBytes(r)
+      case r: References.Output         => outputReferenceSignable.signableBytes(r)
+    }
 
-    implicit val commitmentLockSignable: ContainsSignable[Locks.Commitment] = (commitment: Locks.Commitment) =>
-      BigInt(commitment.threshold).toByteArray ++ BigInt(commitment.size).toByteArray ++ commitment.root
+    implicit val knownPredicateReferenceSignable: ContainsSignable[References.KnownPredicate] =
+      (reference: References.KnownPredicate) =>
+        reference.index.signable ++
+        reference.id.signable
 
-    implicit val unspentOutputSignable: ContainsSignable[UnspentOutput] = (utxo: UnspentOutput) =>
+    implicit val blobReferenceSignable: ContainsSignable[References.Blob] =
+      (reference: References.Blob) =>
+        reference.index.signable ++
+        reference.id.signable
+
+    implicit val outputReferenceSignable: ContainsSignable[References.Output] =
+      (reference: References.Output) =>
+        reference.index.signable ++
+        reference.id.signable
+
+    // responses is not used when creating the signable bytes
+    implicit val attestationSignable: ContainsSignable[Attestation] = {
+      case a: Attestations.Predicate  => predicateAttestationSignable.signableBytes(a)
+      case a: Attestations.Image      => imageAttestationSignable.signableBytes(a)
+      case a: Attestations.Commitment => commitmentAttestationSignable.signableBytes(a)
+    }
+
+    implicit val ioTransactionSignable: ContainsSignable[IoTransaction] = (iotx: IoTransaction) =>
+      iotx.inputs.signable ++
+      iotx.outputs.signable ++
+      iotx.datum.signable
+
+    // doesn't include Box.Value since this is committed to via the reference
+    implicit val spentOutputSignable: ContainsSignable[Outputs.Spent] = (stxo: Outputs.Spent) =>
+      stxo.reference.signable ++
+      stxo.attestation.signable ++
+      stxo.datum.signable
+
+    implicit val unspentOutputSignable: ContainsSignable[Outputs.Unspent] = (utxo: Outputs.Unspent) =>
       utxo.address.signable ++
       utxo.value.signable ++
       utxo.datum.signable
+
+    // consider making predicate non-empty
+    implicit val predicateLockSignable: ContainsSignable[Locks.Predicate] = (predicate: Locks.Predicate) =>
+      predicate.threshold.signable ++
+      predicate.challenges.signable
+
+    implicit val imageLockSignable: ContainsSignable[Locks.Image] = (image: Locks.Image) =>
+      image.threshold.signable ++
+      image.leaves.signable
+
+    implicit val commitmentLockSignable: ContainsSignable[Locks.Commitment] = (commitment: Locks.Commitment) =>
+      commitment.threshold.signable ++
+      commitment.size.signable ++
+      commitment.root.signable
 
     implicit val boxSignable: ContainsSignable[Box] = (box: Box) =>
       box.lock.signable ++
       box.value.signable
 
-    implicit val boxValueSignable: ContainsSignable[Box.Value] = {
-      case v: Box.Values.Token => tokenValueSignable.signableBytes(v)
-      case v: Box.Values.Asset => assetValueSignable.signableBytes(v)
-    }
+    implicit val tokenValueSignable: ContainsSignable[Values.Token] = (token: Values.Token) =>
+      token.quantity.signable ++
+      token.blobs.signable
 
-
-    implicit val tokenValueSignable: ContainsSignable[Box.Values.Token] = (token: Box.Values.Token) =>
-      BigInt(token.quantity).toByteArray ++
-        token.blobs.signable
-
-    implicit val assetValueSignable: ContainsSignable[Box.Values.Asset] = (asset: Box.Values.Asset) =>
-      Array(asset.label) ++
-      BigInt(asset.quantity).toByteArray ++
-      asset.metadata
+    implicit val assetValueSignable: ContainsSignable[Values.Asset] = (asset: Values.Asset) =>
+      asset.label.signable ++
+      asset.quantity.signable ++
+      asset.metadata.signable
 
     implicit val addressSignable: ContainsSignable[Address] = (address: Address) =>
-      BigInt(address.network).toByteArray ++
-      BigInt(address.ledger).toByteArray ++
-      address.lockId.bytes
+      address.network.signable ++
+      address.ledger.signable ++
+      address.reference.signable
 
-    // should we allow this?
-    implicit val listOptionBlobSignable: ContainsSignable[List[Option[Blob]]] = (blobs: List[Option[Blob]]) =>
-      blobs.zipWithIndex.foldLeft(Array[Byte]()) {
-        case (acc, (Some(blob), index)) => acc ++ BigInt(index).toByteArray ++ blob.value
-        case (acc, (_, index)) => acc ++ BigInt(index).toByteArray
-      }
+    implicit val blobSignable: ContainsSignable[Blob] = (blob: Blob) => blob.value.signable
 
     implicit val iotxScheduleSignable: ContainsSignable[IoTransaction.Schedule] = (schedule: IoTransaction.Schedule) =>
-      BigInt(schedule.min).toByteArray ++
-      BigInt(schedule.max).toByteArray
+      schedule.min.signable ++
+      schedule.max.signable
 
-    implicit val iotxDatumSignable: ContainsSignable[TetraDatums.IoTx] = (datum: TetraDatums.IoTx) =>
+    implicit val iotxDatumSignable: ContainsSignable[Datums.IoTx] = (datum: Datums.IoTx) =>
       datum.schedule.signable ++
-      datum.blobId.signable ++
-      datum.metadata
+      datum.references.signable ++
+      datum.metadata.signable
 
-    implicit val stxoDatumSignable: ContainsSignable[TetraDatums.SpentOutput] = (datum: TetraDatums.SpentOutput) =>
-      datum.blobId.signable ++ datum.metadata
+    implicit val stxoDatumSignable: ContainsSignable[Datums.SpentOutput] = (datum: Datums.SpentOutput) =>
+      datum.references.signable ++
+      datum.metadata.signable
 
-    implicit val utxoDatumSignable: ContainsSignable[TetraDatums.UnspentOutput] = (datum: TetraDatums.UnspentOutput) =>
-      datum.blobId.signable ++ datum.metadata
+    implicit val utxoDatumSignable: ContainsSignable[Datums.UnspentOutput] = (datum: Datums.UnspentOutput) =>
+      datum.references.signable ++
+      datum.metadata.signable
 
     implicit val predicateAttestationSignable: ContainsSignable[Attestations.Predicate] =
       (attestation: Attestations.Predicate) => attestation.lock.signable
 
-    private def knownAttestation(known: List[Option[Proposition]]): Array[Byte] =
-      known.zipWithIndex.foldLeft(Array[Byte]()) { case (acc: Array[Byte], (Some(p: Proposition), index: Int)) =>
-        acc ++
-        BigInt(index).toByteArray ++ {
-          p match {
-            case _: Locked.Proposition => Models.Primitive.Locked.token.getBytes(StandardCharsets.UTF_8)
-            case _: Digest.Proposition => Models.Primitive.Digest.token.getBytes(StandardCharsets.UTF_8)
-            case _: DigitalSignature.Proposition =>
-              Models.Primitive.DigitalSignature.token.getBytes(StandardCharsets.UTF_8)
-            case _: HeightRange.Proposition => Models.Contextual.HeightRange.token.getBytes(StandardCharsets.UTF_8)
-            case _: TickRange.Proposition   => Models.Contextual.TickRange.token.getBytes(StandardCharsets.UTF_8)
-            case _: ExactMatch.Proposition  => Models.Contextual.ExactMatch.token.getBytes(StandardCharsets.UTF_8)
-            case _: LessThan.Proposition    => Models.Contextual.LessThan.token.getBytes(StandardCharsets.UTF_8)
-            case _: GreaterThan.Proposition => Models.Contextual.GreaterThan.token.getBytes(StandardCharsets.UTF_8)
-            case _: EqualTo.Proposition     => Models.Contextual.EqualTo.token.getBytes(StandardCharsets.UTF_8)
-            case _: Threshold.Proposition   => Models.Compositional.Threshold.token.getBytes(StandardCharsets.UTF_8)
-            case _: Not.Proposition         => Models.Compositional.Not.token.getBytes(StandardCharsets.UTF_8)
-            case _: And.Proposition         => Models.Compositional.And.token.getBytes(StandardCharsets.UTF_8)
-            case _: Or.Proposition          => Models.Compositional.Or.token.getBytes(StandardCharsets.UTF_8)
-            case _                          => Array.fill(8)(0xff.toByte) // 8 bytes of 1, should be eqv to -1L
-          }
-        }
-      }
-
     implicit val imageAttestationSignable: ContainsSignable[Attestations.Image] = (attestation: Attestations.Image) =>
-      attestation.lock.signable ++ knownAttestation(attestation.known)
+      attestation.lock.signable ++
+      attestation.known.signable
 
     implicit val commitmentAttestationSignable: ContainsSignable[Attestations.Commitment] =
-      (attestation: Attestations.Commitment) => attestation.lock.signable ++ knownAttestation(attestation.known)
+      (attestation: Attestations.Commitment) =>
+        attestation.lock.signable ++
+        attestation.known.signable
 
-    // responses is not used when creating the signable bytes
-    implicit val attestationSignable: ContainsSignable[Attestation] = {
-      case a: Attestations.Predicate => predicateAttestationSignable.signableBytes(a)
-      case a: Attestations.Image => imageAttestationSignable.signableBytes(a)
-      case a: Attestations.Commitment => commitmentAttestationSignable.signableBytes(a)
-    }
+    implicit val lockedSignable: ContainsSignable[Models.Primitive.Locked.Proposition] = (p: Locked.Proposition) =>
+      Locked.token.signable
 
-    private def lockedSignable(p: Locked.Proposition): SignableBytes =
-      Locked.token.getBytes(StandardCharsets.UTF_8)
+    implicit val digestSignable: ContainsSignable[Models.Primitive.Digest.Proposition] = (p: Digest.Proposition) =>
+      Digest.token.signable ++
+      p.routine.signable ++
+      p.digest.value.signable
 
-    private def digestSignable(p: Digest.Proposition): SignableBytes =
-      Digest.token.getBytes(StandardCharsets.UTF_8) ++
-      p.routine.getBytes(StandardCharsets.UTF_8) ++
-      p.digest.value
+    implicit val signatureSignable: ContainsSignable[Models.Primitive.DigitalSignature.Proposition] =
+      (p: DigitalSignature.Proposition) =>
+        DigitalSignature.token.getBytes(StandardCharsets.UTF_8) ++
+        p.routine.getBytes(StandardCharsets.UTF_8) ++
+        p.vk.value
 
-    private def signatureSignable(p: DigitalSignature.Proposition): SignableBytes =
-      DigitalSignature.token.getBytes(StandardCharsets.UTF_8) ++
-      p.routine.getBytes(StandardCharsets.UTF_8) ++
-      p.vk.value
+    implicit val heightRangeSignable: ContainsSignable[Models.Contextual.HeightRange.Proposition] =
+      (p: HeightRange.Proposition) =>
+        HeightRange.token.signable ++
+        p.chain.signable ++
+        p.min.signable ++
+        p.max.signable
 
-    private def heightRangeSignable(p: HeightRange.Proposition): SignableBytes =
-      HeightRange.token.getBytes(StandardCharsets.UTF_8) ++
-      p.chain.getBytes(StandardCharsets.UTF_8) ++
-      BigInt(p.min).toByteArray ++
-      BigInt(p.max).toByteArray
+    implicit val tickRangeSignable: ContainsSignable[Models.Contextual.TickRange.Proposition] =
+      (p: TickRange.Proposition) =>
+        TickRange.token.signable ++
+        p.min.signable ++
+        p.max.signable
 
-    private def tickRangeSignable(p: TickRange.Proposition): SignableBytes =
-      TickRange.token.getBytes(StandardCharsets.UTF_8) ++
-      BigInt(p.min).toByteArray ++
-      BigInt(p.max).toByteArray
+    implicit val thresholdSignable: ContainsSignable[Models.Compositional.Threshold.Proposition] =
+      (p: Threshold.Proposition) =>
+        Threshold.token.signable ++
+        p.threshold.signable ++
+        p.challenges.toList.signable
 
-    private def thresholdSignable(p: Threshold.Proposition): SignableBytes =
-      Threshold.token.getBytes(StandardCharsets.UTF_8) ++
-      BigInt(p.threshold).toByteArray ++
-      p.challenges.zipWithIndex.foldLeft(Array[Byte]()) { case (acc, (challenge, index)) =>
-        acc ++
-        BigInt(index).toByteArray ++
-        challenge.signable
-      }
-
-    private def notSignable(p: Not.Proposition): SignableBytes =
-      Not.token.getBytes(StandardCharsets.UTF_8) ++
+    implicit val notSignable: ContainsSignable[Models.Compositional.Not.Proposition] = (p: Not.Proposition) =>
+      Not.token.signable ++
       p.proposition.signable
 
-    private def andSignable(p: And.Proposition): SignableBytes =
-      And.token.getBytes(StandardCharsets.UTF_8) ++
+    implicit val andSignable: ContainsSignable[Models.Compositional.And.Proposition] = (p: And.Proposition) =>
+      And.token.signable ++
       p.left.signable ++
       p.right.signable
 
-    private def orSignable(p: Or.Proposition): SignableBytes =
-      Or.token.getBytes(StandardCharsets.UTF_8) ++
+    implicit val orSignable: ContainsSignable[Models.Compositional.Or.Proposition] = (p: Or.Proposition) =>
+      Or.token.signable ++
       p.left.signable ++
       p.right.signable
 
     implicit val propositionSignable: ContainsSignable[Proposition] = {
-      case p: Locked.Proposition           => lockedSignable(p)
-      case p: Digest.Proposition           => digestSignable(p)
-      case p: DigitalSignature.Proposition => signatureSignable(p)
-      case p: HeightRange.Proposition      => heightRangeSignable(p)
-      case p: TickRange.Proposition        => tickRangeSignable(p)
+      case p: Locked.Proposition           => lockedSignable.signableBytes(p)
+      case p: Digest.Proposition           => digestSignable.signableBytes(p)
+      case p: DigitalSignature.Proposition => signatureSignable.signableBytes(p)
+      case p: HeightRange.Proposition      => heightRangeSignable.signableBytes(p)
+      case p: TickRange.Proposition        => tickRangeSignable.signableBytes(p)
       case p: ExactMatch.Proposition       => ???
       case p: LessThan.Proposition         => ???
       case p: GreaterThan.Proposition      => ???
       case p: EqualTo.Proposition          => ???
-      case p: Threshold.Proposition        => thresholdSignable(p)
-      case p: Not.Proposition              => notSignable(p)
-      case p: And.Proposition              => andSignable(p)
-      case p: Or.Proposition               => orSignable(p)
+      case p: Threshold.Proposition        => thresholdSignable.signableBytes(p)
+      case p: Not.Proposition              => notSignable.signableBytes(p)
+      case p: And.Proposition              => andSignable.signableBytes(p)
+      case p: Or.Proposition               => orSignable.signableBytes(p)
     }
   }
 
