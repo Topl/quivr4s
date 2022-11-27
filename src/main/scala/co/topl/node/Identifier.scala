@@ -11,7 +11,6 @@ import co.topl.node.typeclasses.{ContainsEvidence, ContainsSignable}
 sealed abstract class Identifier {
   val tag: String
   val evidence: Evidence[_]
-  val value: Array[Byte] = evidence.value
 }
 
 object Identifiers {

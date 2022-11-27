@@ -1,7 +1,7 @@
 package co.topl.node.transaction
 
+import co.topl.node.Reference
 import co.topl.node.box.{Blob, Lock, Value}
-import co.topl.node.{Reference, References}
 
 sealed abstract class Output {
   val value: Value

@@ -47,11 +47,9 @@ object ContainsSignable {
       case e: Evidence.Sized64 => size64EvidenceSignable.signableBytes(e)
     }
 
-    implicit val size32EvidenceSignable: ContainsSignable[Evidence.Sized32] = (ev: Evidence.Sized32) =>
-      ev.digest.value
+    implicit val size32EvidenceSignable: ContainsSignable[Evidence.Sized32] = (ev: Evidence.Sized32) => ev.digest.value
 
-    implicit val size64EvidenceSignable: ContainsSignable[Evidence.Sized64] = (ev: Evidence.Sized64) =>
-      ev.digest.value
+    implicit val size64EvidenceSignable: ContainsSignable[Evidence.Sized64] = (ev: Evidence.Sized64) => ev.digest.value
 
     implicit val identifiersSignable: ContainsSignable[Identifier] = {
       case i: Identifiers.AccumulatorRoot32 => accumulatorRoot32IdentifierSignable.signableBytes(i)
@@ -67,38 +65,42 @@ object ContainsSignable {
     implicit val accumulatorRoot32IdentifierSignable: ContainsSignable[Identifiers.AccumulatorRoot32] =
       (id: Identifiers.AccumulatorRoot32) =>
         id.tag.signable ++
-        id.value.signable
+        id.evidence.value.signable
 
     implicit val accumulatorRoot64IdentifierSignable: ContainsSignable[Identifiers.AccumulatorRoot64] =
       (id: Identifiers.AccumulatorRoot64) =>
         id.tag.signable ++
-          id.value.signable
+        id.evidence.value.signable
 
-    implicit val boxLock32IdentifierSignable: ContainsSignable[Identifiers.BoxLock32] = (id: Identifiers.BoxLock32) =>
-      id.tag.signable ++
-      id.value.signable
+    implicit val boxLock32IdentifierSignable: ContainsSignable[Identifiers.BoxLock32] =
+      (id: Identifiers.BoxLock32) =>
+        id.tag.signable ++
+        id.evidence.value.signable
 
-    implicit val boxLock64IdentifierSignable: ContainsSignable[Identifiers.BoxLock64] = (id: Identifiers.BoxLock64) =>
-      id.tag.signable ++
-        id.value.signable
+    implicit val boxLock64IdentifierSignable: ContainsSignable[Identifiers.BoxLock64] =
+      (id: Identifiers.BoxLock64) =>
+        id.tag.signable ++
+        id.evidence.value.signable
 
-    implicit val boxValue32IdentifierSignable: ContainsSignable[Identifiers.BoxValue32] = (id: Identifiers.BoxValue32) =>
-      id.tag.signable ++
-      id.value.signable
+    implicit val boxValue32IdentifierSignable: ContainsSignable[Identifiers.BoxValue32] =
+      (id: Identifiers.BoxValue32) =>
+        id.tag.signable ++
+        id.evidence.value.signable
 
-    implicit val boxValue64IdentifierSignable: ContainsSignable[Identifiers.BoxValue64] = (id: Identifiers.BoxValue64) =>
-      id.tag.signable ++
-        id.value.signable
+    implicit val boxValue64IdentifierSignable: ContainsSignable[Identifiers.BoxValue64] =
+      (id: Identifiers.BoxValue64) =>
+        id.tag.signable ++
+        id.evidence.value.signable
 
     implicit val ioTransaction32IdentifierSignable: ContainsSignable[Identifiers.IoTransaction32] =
       (id: Identifiers.IoTransaction32) =>
         id.tag.signable ++
-        id.value.signable
+        id.evidence.value.signable
 
     implicit val ioTransaction64IdentifierSignable: ContainsSignable[Identifiers.IoTransaction64] =
       (id: Identifiers.IoTransaction64) =>
         id.tag.signable ++
-          id.value.signable
+        id.evidence.value.signable
 
     implicit val referenceSignable: ContainsSignable[Reference] = {
       case r: References.KnownPredicate32 => knownPredicate32ReferenceSignable.signableBytes(r)
@@ -117,7 +119,7 @@ object ContainsSignable {
     implicit val knownPredicate64ReferenceSignable: ContainsSignable[References.KnownPredicate64] =
       (reference: References.KnownPredicate64) =>
         reference.index.signable ++
-          reference.id.signable
+        reference.id.signable
 
     implicit val blob32ReferenceSignable: ContainsSignable[References.Blob32] =
       (reference: References.Blob32) =>
@@ -127,7 +129,7 @@ object ContainsSignable {
     implicit val blob64ReferenceSignable: ContainsSignable[References.Blob64] =
       (reference: References.Blob64) =>
         reference.index.signable ++
-          reference.id.signable
+        reference.id.signable
 
     implicit val output32ReferenceSignable: ContainsSignable[References.Output32] =
       (reference: References.Output32) =>
@@ -137,7 +139,7 @@ object ContainsSignable {
     implicit val output64ReferenceSignable: ContainsSignable[References.Output64] =
       (reference: References.Output64) =>
         reference.index.signable ++
-          reference.id.signable
+        reference.id.signable
 
     implicit val boxValueSignable: ContainsSignable[Value] = {
       case v: Values.Token => tokenValueSignable.signableBytes(v)
@@ -154,7 +156,7 @@ object ContainsSignable {
       asset.metadata.signable
 
     implicit val lockSignable: ContainsSignable[Lock] = {
-      case l: Locks.Predicate  => predicateLockSignable.signableBytes(l)
+      case l: Locks.Predicate    => predicateLockSignable.signableBytes(l)
       case l: Locks.Image32      => image32LockSignable.signableBytes(l)
       case l: Locks.Image64      => image64LockSignable.signableBytes(l)
       case l: Locks.Commitment32 => commitment32LockSignable.signableBytes(l)
@@ -172,7 +174,7 @@ object ContainsSignable {
 
     implicit val image64LockSignable: ContainsSignable[Locks.Image64] = (image: Locks.Image64) =>
       image.threshold.signable ++
-        image.leaves.signable
+      image.leaves.signable
 
     implicit val commitment32LockSignable: ContainsSignable[Locks.Commitment32] = (commitment: Locks.Commitment32) =>
       commitment.threshold.signable ++
@@ -181,12 +183,12 @@ object ContainsSignable {
 
     implicit val commitment64LockSignable: ContainsSignable[Locks.Commitment64] = (commitment: Locks.Commitment64) =>
       commitment.threshold.signable ++
-        commitment.size.signable ++
-        commitment.root.signable
+      commitment.size.signable ++
+      commitment.root.signable
 
     // responses is not used when creating the signable bytes
     implicit val attestationSignable: ContainsSignable[Attestation] = {
-      case a: Attestations.Predicate  => predicateAttestationSignable.signableBytes(a)
+      case a: Attestations.Predicate    => predicateAttestationSignable.signableBytes(a)
       case a: Attestations.Image32      => image32AttestationSignable.signableBytes(a)
       case a: Attestations.Image64      => image64AttestationSignable.signableBytes(a)
       case a: Attestations.Commitment32 => commitment32AttestationSignable.signableBytes(a)
@@ -196,12 +198,14 @@ object ContainsSignable {
     implicit val predicateAttestationSignable: ContainsSignable[Attestations.Predicate] =
       (attestation: Attestations.Predicate) => attestation.lock.signable
 
-    implicit val image32AttestationSignable: ContainsSignable[Attestations.Image32] = (attestation: Attestations.Image32) =>
-      attestation.lock.signable ++
-      attestation.known.signable
+    implicit val image32AttestationSignable: ContainsSignable[Attestations.Image32] =
+      (attestation: Attestations.Image32) =>
+        attestation.lock.signable ++
+        attestation.known.signable
 
-    implicit val image64AttestationSignable: ContainsSignable[Attestations.Image64] = (attestation: Attestations.Image64) =>
-      attestation.lock.signable ++
+    implicit val image64AttestationSignable: ContainsSignable[Attestations.Image64] =
+      (attestation: Attestations.Image64) =>
+        attestation.lock.signable ++
         attestation.known.signable
 
     implicit val commitment32AttestationSignable: ContainsSignable[Attestations.Commitment32] =
@@ -212,7 +216,7 @@ object ContainsSignable {
     implicit val commitment64AttestationSignable: ContainsSignable[Attestations.Commitment64] =
       (attestation: Attestations.Commitment64) =>
         attestation.lock.signable ++
-          attestation.known.signable
+        attestation.known.signable
 
     implicit val ioTransactionSignable: ContainsSignable[IoTransaction] = (iotx: IoTransaction) =>
       iotx.inputs.signable ++
