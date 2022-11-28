@@ -4,7 +4,7 @@ case class IoTransaction(
   inputs:     List[Outputs.Spent],
   outputs:    List[Outputs.Unspent],
   datum:      Datums.IoTx,
-  outputsOpt: List[Option[Output]]
+  outputsOpt: List[Option[Output]] = List()
 )
 
 object IoTransaction {

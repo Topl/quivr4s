@@ -6,6 +6,7 @@ import co.topl.quivr.{Proof, Proposition}
 
 sealed abstract class Attestation {
   val lock: Lock
+  val responses: List[Option[Proof]]
 }
 
 object Attestations {

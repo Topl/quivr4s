@@ -36,15 +36,15 @@ object Verifier {
    * @param context the Dynamic evaluation context which should provide an API for retrieving the signable bytes
    * @return an array of bytes that is similar to a "signature" for the proof
    */
-  def evaluateBind[F[_]: Monad, A](tag: String, proof: Proof, context: DynamicContext[F, A])(
-    f:                                  Array[Byte] => F[TxBind]
+  private def evaluateBlake2b256Bind[F[_]: Monad, A](
+    tag:     String,
+    proof:   Proof,
+    context: DynamicContext[F, A]
   ): F[Either[MessageAuthorizationFailed.type, SignableBytes]] = for {
     sb             <- context.signableBytes
-    verifierTxBind <- f(tag.getBytes(StandardCharsets.UTF_8) ++ sb)
+    verifierTxBind <- blake2b256.hash(tag.getBytes(StandardCharsets.UTF_8) ++ sb).value.pure[F]
     msgAuth = Either.cond(verifierTxBind.sameElements(proof.bindToTransaction), sb, MessageAuthorizationFailed)
   } yield msgAuth
-
-  protected def bindFunc[F[_]: Applicative](m: Array[Byte]): F[Array[Byte]] = blake2b256.hash(m).value.pure[F]
 
   trait Implicits {
 
@@ -74,7 +74,7 @@ object Verifier {
       proof:       Models.Primitive.Locked.Proof,
       context:     DynamicContext[F, String]
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
-      msgResult <- Verifier.evaluateBind(Models.Primitive.Digest.token, proof, context)(Verifier.bindFunc[F])
+      msgResult <- Verifier.evaluateBlake2b256Bind(Models.Primitive.Digest.token, proof, context)
       res = Either.left(LockedPropositionIsUnsatisfiable)
     } yield res // should always fail, the Locked Proposition is unsatisfiable
 
@@ -83,7 +83,7 @@ object Verifier {
       proof:       Models.Primitive.Digest.Proof,
       context:     DynamicContext[F, String]
     ): F[Either[QuivrRuntimeError, DigestVerification]] = for {
-      msgResult <- Verifier.evaluateBind(Models.Primitive.Digest.token, proof, context)(Verifier.bindFunc[F])
+      msgResult <- Verifier.evaluateBlake2b256Bind(Models.Primitive.Digest.token, proof, context)
       verification = DigestVerification(proposition.digest, proof.preimage)
       evalResult <- context.digestVerify(proposition.routine)(verification).value
       res = Either
@@ -99,7 +99,7 @@ object Verifier {
       proof:       Models.Primitive.DigitalSignature.Proof,
       context:     DynamicContext[F, String]
     ): F[Either[QuivrRuntimeError, SignatureVerification]] = for {
-      msgResult <- Verifier.evaluateBind(Models.Primitive.DigitalSignature.token, proof, context)(Verifier.bindFunc[F])
+      msgResult <- Verifier.evaluateBlake2b256Bind(Models.Primitive.DigitalSignature.token, proof, context)
       signedMessage <- context.signableBytes
       verification = SignatureVerification(proposition.vk, proof.witness, Message(signedMessage))
       evalResult <- context.signatureVerify(proposition.routine)(verification).value
@@ -116,7 +116,7 @@ object Verifier {
 //      proof:       Models.Contextual.HeightRange.Proof,
 //      context:     DynamicContext[F, String]
 //    ): F[Either[runtime.Error, Long]] = for {
-//      msgResult <- Verifier.evaluateBind(Models.Contextual.HeightRange.token, proof, context)(Verifier.bindFunc[F])
+//      msgResult <- Verifier.evaluateBlake2b256Bind(Models.Contextual.HeightRange.token, proof, context)(Verifier.bindFunc[F])
 //      height <- context.heightOf(proposition.chain)
 //       evalResult <- Either
 //         .cond(
@@ -137,7 +137,7 @@ object Verifier {
     //   proof:       Models.Contextual.TickRange.Proof,
     //   context:     DynamicContext[F, String]
     // ): F[Either[runtime.Error, Long]] = for {
-    //   msgAuth <- Verifier.evaluateBind(Models.Contextual.TickRange.token, proof, context)(
+    //   msgAuth <- Verifier.evaluateBlake2b256Bind(Models.Contextual.TickRange.token, proof, context)(
     //     blake2b256.hash(_).value.pure[F]
     //   )
     //   currentTick <- context.currentTick
@@ -150,7 +150,7 @@ object Verifier {
     //   proof:       Models.Contextual.ExactMatch.Proof,
     //   context:     DynamicContext[F, String]
     // ): F[Either[runtime.Error, Array[Byte]]] = for {
-    //   msgAuth <- Verifier.evaluateBind(Models.Contextual.ExactMatch.token, proof, context)(
+    //   msgAuth <- Verifier.evaluateBlake2b256Bind(Models.Contextual.ExactMatch.token, proof, context)(
     //     blake2b256.hash(_).value.pure[F]
     //   )
     //   evalAuth = context.exactMatch(proposition.label, proposition.compareTo)
@@ -162,7 +162,7 @@ object Verifier {
     //   proof:       Models.Contextual.LessThan.Proof,
     //   context:     DynamicContext[F, String]
     // ): F[Either[runtime.Error, Long]] = for {
-    //   msgAuth <- Verifier.evaluateBind(Models.Contextual.LessThan.token, proof, context)(
+    //   msgAuth <- Verifier.evaluateBlake2b256Bind(Models.Contextual.LessThan.token, proof, context)(
     //     blake2b256.hash(_).value.pure[F]
     //   )
     //   evalAuth = context.lessThan(proposition.label, proposition.compareTo)
@@ -174,7 +174,7 @@ object Verifier {
     //   proof:       Models.Contextual.GreaterThan.Proof,
     //   context:     DynamicContext[F, String]
     // ): F[Either[runtime.Error, Long]] = for {
-    //   msgAuth <- Verifier.evaluateBind(Models.Contextual.GreaterThan.token, proof, context)(
+    //   msgAuth <- Verifier.evaluateBlake2b256Bind(Models.Contextual.GreaterThan.token, proof, context)(
     //     blake2b256.hash(_).value.pure[F]
     //   )
     //   evalAuth = context.greaterThan(proposition.label, proposition.compareTo)
@@ -186,7 +186,7 @@ object Verifier {
     //   proof:       Models.Contextual.EqualTo.Proof,
     //   context:     DynamicContext[F, String]
     // ): F[Either[runtime.Error, Long]] = for {
-    //   msgAuth <- Verifier.evaluateBind(Models.Contextual.EqualTo.token, proof, context)(
+    //   msgAuth <- Verifier.evaluateBlake2b256Bind(Models.Contextual.EqualTo.token, proof, context)(
     //     blake2b256.hash(_).value.pure[F]
     //   )
     //   evalAuth = context.equalTo(proposition.label, proposition.compareTo)
@@ -199,7 +199,7 @@ object Verifier {
 //      context:           DynamicContext[F, String]
 //    )(implicit verifier: Verifier[F]): F[Either[runtime.Error, Boolean]] =
 //      for {
-//        msgAuth <- Verifier.evaluateBind(Models.Compositional.Threshold.token, proof, context)(
+//        msgAuth <- Verifier.evaluateBlake2b256Bind(Models.Compositional.Threshold.token, proof, context)(
 //          blake2b256.hash(_).value.pure[F]
 //        )
 //        evalAuth <-
@@ -235,7 +235,7 @@ object Verifier {
 //    )(implicit
 //      verifier: Verifier[F]
 //    ): F[Either[runtime.Error, Boolean]] = for {
-//      msgAuth <- Verifier.evaluateBind(Models.Compositional.Not.token, proof, context)(Verifier.bindFunc[F])
+//      msgAuth <- Verifier.evaluateBlake2b256Bind(Models.Compositional.Not.token, proof, context)(Verifier.bindFunc[F])
 //      internalAuth <- verifier.evaluate(proposition.proposition, proof.proof, context)
 //      evalAuth = !internalAuth
 //      res = msgAuth && evalAuth
@@ -248,7 +248,7 @@ object Verifier {
 //    )(implicit
 //      verifier: Verifier[F]
 //    ): F[Either[runtime.Error, Boolean]] = for {
-//      msgAuth <- Verifier.evaluateBind(Models.Compositional.And.token, proof, context)(Verifier.bindFunc[F])
+//      msgAuth <- Verifier.evaluateBlake2b256Bind(Models.Compositional.And.token, proof, context)(Verifier.bindFunc[F])
 //      internalAuth <- verifier.evaluate(proposition.left, proof.left, context)
 //      evalAuth <-
 //        if (internalAuth) {
@@ -266,7 +266,7 @@ object Verifier {
 //    )(implicit
 //      verifier: Verifier[F]
 //    ): F[Either[runtime.Error, Boolean]] = for {
-//      msgAuth <- Verifier.evaluateBind(Models.Compositional.Or.token, proof, context)(Verifier.bindFunc[F])
+//      msgAuth <- Verifier.evaluateBlake2b256Bind(Models.Compositional.Or.token, proof, context)(Verifier.bindFunc[F])
 //      internalAuth <- verifier.evaluate(proposition.left, proof.left, context)
 //      evalAuth <-
 //        if (internalAuth) {

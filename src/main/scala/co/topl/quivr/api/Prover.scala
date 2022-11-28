@@ -3,6 +3,7 @@ package co.topl.quivr.api
 import cats.implicits._
 import cats.{Applicative, Monad}
 import co.topl.common.Models.{Preimage, Witness}
+import co.topl.crypto.hash.blake2b256
 import co.topl.quivr.{Models, Proof, SignableBytes, TxBind}
 
 import java.nio.charset.StandardCharsets
@@ -35,126 +36,113 @@ object Prover {
    * @param message unique bytes from a transaction that will be bound to the proof
    * @return an array of bytes that is similar to a "signature" for the proof
    */
-  private def bind(tag: String, message: SignableBytes)(f: Array[Byte] => TxBind): TxBind = f(
-    tag.getBytes(StandardCharsets.UTF_8) ++ message
-  )
+  private def blake2b256Bind(tag: String, message: SignableBytes): TxBind =
+    blake2b256.hash(tag.getBytes(StandardCharsets.UTF_8) ++ message).value
 
   trait Instances {
 
     private def lockedProver[F[_]: Applicative]: F[Proof] = Models.Primitive.Locked.Proof().pure[F].widen
 
-    private def digestProver[F[_]: Applicative](preimage: Preimage, message: SignableBytes)(
-      f:                                                  Array[Byte] => TxBind
-    ): F[Proof] =
+    private def digestProver[F[_]: Applicative](preimage: Preimage, message: SignableBytes): F[Proof] =
       Models.Primitive.Digest
         .Proof(
           preimage,
-          bind(Models.Primitive.Digest.token, message)(f)
+          blake2b256Bind(Models.Primitive.Digest.token, message)
         )
         .pure[F]
         .widen
 
-    private def signatureProver[F[_]: Applicative](witness: Witness, message: SignableBytes)(
-      f:                                                    Array[Byte] => TxBind
-    ): F[Proof] =
+    private def signatureProver[F[_]: Applicative](witness: Witness, message: SignableBytes): F[Proof] =
       Models.Primitive.DigitalSignature
         .Proof(
           witness,
-          bind(Models.Primitive.DigitalSignature.token, message)(f)
+          blake2b256Bind(Models.Primitive.DigitalSignature.token, message)
         )
         .pure[F]
         .widen
 
-    private def heightProver[F[_]: Applicative](message: SignableBytes)(f: Array[Byte] => TxBind): F[Proof] =
+    private def heightProver[F[_]: Applicative](message: SignableBytes): F[Proof] =
       Models.Contextual.HeightRange
         .Proof(
-          bind(Models.Contextual.HeightRange.token, message)(f)
+          blake2b256Bind(Models.Contextual.HeightRange.token, message)
         )
         .pure[F]
         .widen
 
-    private def tickProver[F[_]: Applicative](message: SignableBytes)(f: Array[Byte] => TxBind): F[Proof] =
+    private def tickProver[F[_]: Applicative](message: SignableBytes): F[Proof] =
       Models.Contextual.HeightRange
         .Proof(
-          bind(Models.Contextual.HeightRange.token, message)(f)
+          blake2b256Bind(Models.Contextual.HeightRange.token, message)
         )
         .pure[F]
         .widen
 
-    private def exactMatchProver[F[_]: Applicative](message: SignableBytes)(f: Array[Byte] => TxBind): F[Proof] =
+    private def exactMatchProver[F[_]: Applicative](message: SignableBytes): F[Proof] =
       Models.Contextual.ExactMatch
         .Proof(
-          bind(Models.Contextual.ExactMatch.token, message)(f)
+          blake2b256Bind(Models.Contextual.ExactMatch.token, message)
         )
         .pure[F]
         .widen
 
-    private def lessThanProver[F[_]: Applicative](message: SignableBytes)(f: Array[Byte] => TxBind): F[Proof] =
+    private def lessThanProver[F[_]: Applicative](message: SignableBytes): F[Proof] =
       Models.Contextual.LessThan
         .Proof(
-          bind(Models.Contextual.LessThan.token, message)(f)
+          blake2b256Bind(Models.Contextual.LessThan.token, message)
         )
         .pure[F]
         .widen
 
-    private def greaterThanProver[F[_]: Applicative](message: SignableBytes)(f: Array[Byte] => TxBind): F[Proof] =
+    private def greaterThanProver[F[_]: Applicative](message: SignableBytes): F[Proof] =
       Models.Contextual.GreaterThan
         .Proof(
-          bind(Models.Contextual.GreaterThan.token, message)(f)
+          blake2b256Bind(Models.Contextual.GreaterThan.token, message)
         )
         .pure[F]
         .widen
 
-    private def equalToProver[F[_]: Applicative](message: SignableBytes)(f: Array[Byte] => TxBind): F[Proof] =
+    private def equalToProver[F[_]: Applicative](message: SignableBytes): F[Proof] =
       Models.Contextual.EqualTo
         .Proof(
-          bind(Models.Contextual.EqualTo.token, message)(f)
+          blake2b256Bind(Models.Contextual.EqualTo.token, message)
         )
         .pure[F]
         .widen
 
-    private def thresholdProver[F[_]: Applicative](challenges: Set[Option[Proof]], message: SignableBytes)(
-      f:                                                       Array[Byte] => TxBind
-    ): F[Proof] =
+    private def thresholdProver[F[_]: Applicative](challenges: Set[Option[Proof]], message: SignableBytes): F[Proof] =
       Models.Compositional.Threshold
         .Proof(
           challenges,
-          bind(Models.Compositional.Threshold.token, message)(f)
+          blake2b256Bind(Models.Compositional.Threshold.token, message)
         )
         .pure[F]
         .widen
 
-    private def notProver[F[_]: Applicative](proof: Proof, message: SignableBytes)(
-      f:                                            Array[Byte] => TxBind
-    ): F[Proof] =
+    private def notProver[F[_]: Applicative](proof: Proof, message: SignableBytes): F[Proof] =
       Models.Compositional.Not
         .Proof(
           proof,
-          bind(Models.Compositional.Not.token, message)(f)
+          blake2b256Bind(Models.Compositional.Not.token, message)
         )
         .pure[F]
         .widen
 
-    private def andProver[F[_]: Applicative](left: Proof, right: Proof, message: SignableBytes)(
-      f:                                           Array[Byte] => TxBind
-    ): F[Proof] =
+    private def andProver[F[_]: Applicative](left: Proof, right: Proof, message: SignableBytes): F[Proof] =
       Models.Compositional.And
         .Proof(
           left,
           right,
-          bind(Models.Compositional.And.token, message)(f)
+          blake2b256Bind(Models.Compositional.And.token, message)
         )
         .pure[F]
         .widen
 
-    private def orProver[F[_]: Applicative](left: Proof, right: Proof, message: SignableBytes)(
-      f:                                          Array[Byte] => TxBind
-    ): F[Proof] =
+    private def orProver[F[_]: Applicative](left: Proof, right: Proof, message: SignableBytes): F[Proof] =
       Models.Compositional.Or
         .Proof(
           left,
           right,
-          bind(Models.Compositional.Or.token, message)(f)
+          blake2b256Bind(Models.Compositional.Or.token, message)
         )
         .pure[F]
         .widen
