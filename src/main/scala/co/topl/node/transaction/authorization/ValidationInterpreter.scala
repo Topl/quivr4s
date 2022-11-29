@@ -97,36 +97,36 @@ object ValidationInterpreter {
       ): F[Either[ValidationError, Boolean]] =
         thresholdVerifier(known, responses, threshold, context)
 
-      private def thresholdVerifier[F[_]: Monad](
+      private def thresholdVerifier(
         propositions:      List[Option[Proposition]],
         proofs:            List[Option[Proof]],
         threshold:         Int,
         context:           DynamicContext[F, String]
-      )(implicit verifier: Verifier[F]): F[Either[ValidationError, Boolean]] =
-        for {
-          res <-
-            if (threshold === 0) true.pure[F]
-            else if (threshold >= propositions.size) false.pure[F]
-            else if (proofs.isEmpty) false.pure[F]
-            // We assume a one-to-one pairing of sub-proposition to sub-proof with the assumption that some of the proofs
-            // may be Proofs.False
-            else if (proofs.size =!= propositions.size) false.pure[F]
-            else {
-              propositions.toList
-                .zip(proofs)
-                .foldLeftM(0L) {
-                  case (successCount, _) if successCount >= threshold =>
-                    successCount.pure[F]
-                  case (successCount, (_, None)) =>
-                    successCount.pure[F]
-                  case (successCount, (Some(prop: Proposition), Some(proof: Proof))) =>
-                    verifier.evaluate(prop, proof, context).map {
-                      case true => successCount + 1
-                      case _    => successCount
-                    }
-                }
-                .map(_ >= threshold)
-            }
-        } yield res
+      )(implicit verifier: Verifier[F]): F[Either[ValidationError, Boolean]] = for {
+        evalAuth <-
+          if (threshold === 0) true.pure[F]
+          else if (threshold >= propositions.size) false.pure[F]
+          else if (proofs.isEmpty) false.pure[F]
+          // We assume a one-to-one pairing of sub-proposition to sub-proof with the assumption that some of the proofs
+          // may be Proofs.False
+          else if (proofs.size =!= propositions.size) false.pure[F]
+          else {
+            propositions
+              .zip(proofs)
+              .foldLeftM(0L) {
+                case (successCount, _) if successCount >= threshold =>
+                  successCount.pure[F]
+                case (successCount, (_, None)) =>
+                  successCount.pure[F]
+                case (successCount, (Some(prop: Proposition), Some(proof: Proof))) =>
+                  verifier.evaluate(prop, proof, context).map {
+                    case true => successCount + 1
+                    case _    => successCount
+                  }
+              }
+              .map(_ >= threshold)
+          }
+        res <- Either.cond(evalAuth, evalAuth, ValidationErrors.ValidationFailed).pure[F]
+      } yield res
     }
 }

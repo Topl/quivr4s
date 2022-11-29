@@ -7,7 +7,7 @@ import co.topl.quivr.Proposition
 
 sealed abstract class Lock
 
-// Predicate -> Image -> Commitment -> Identifier
+// Predicate -> Image -> Commitment -> Identifier -> Address -> Reference
 object Locks {
   // Private information
   // this should probably be a non-empty chain, but how to enforce across other languages?

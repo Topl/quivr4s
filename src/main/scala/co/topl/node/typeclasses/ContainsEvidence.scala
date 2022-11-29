@@ -17,7 +17,7 @@ object ContainsEvidence {
   def apply[T](t: T)(implicit ev: ContainsEvidence[T]): ContainsEvidence[T] = ev
 
   implicit class SignableOps[T: ContainsSignable](t: T) {
-    def blake2bEvidence: ContainsEvidence[T] = blake2bEvidenceFromSignable[T]
+    def blake2bEvidence: ContainsEvidence[T] = blake2bEvidenceFromSignable[T](t)
   }
 
   def blake2bEvidenceFromSignable[T: ContainsSignable](t: T): ContainsEvidence[T] =
@@ -40,7 +40,7 @@ object ContainsEvidence {
     }
 
   implicit class ListOps[T: ContainsSignable](t: List[T]) {
-    def merkleEvidence: ContainsEvidence[T] = merkleRootFromBlake2bEvidence[T]
+    def merkleEvidence: ContainsEvidence[List[T]] = merkleRootFromBlake2bEvidence[T](t)
   }
 
   def merkleRootFromBlake2bEvidence[T: ContainsSignable](list: List[T]): ContainsEvidence[List[T]] =

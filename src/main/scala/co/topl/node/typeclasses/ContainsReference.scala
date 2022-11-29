@@ -11,21 +11,21 @@ trait ContainsReference[T] {
 object ContainsReference {
   def apply[T](t: T)(implicit ev: ContainsReference[T]): ContainsReference[T] = ev
 
-  def fromBoxLock32(index: Int, bl: Lock): References.KnownPredicate32 =
-    References.KnownPredicate32(index, Identifiers.boxLock32(bl))
+  def fromBoxLock32(network: Int, ledger: Int, indices: List[Int], lock: Lock): References.KnownPredicate32 =
+    References.KnownPredicate32(network, ledger, indices, Identifiers.boxLock32(lock))
 
-  def fromBoxLock64(index: Int, bl: Lock): References.KnownPredicate64 =
-    References.KnownPredicate64(index, Identifiers.boxLock64(bl))
+  def fromBoxLock64(network: Int, ledger: Int, indices: List[Int], lock: Lock): References.KnownPredicate64 =
+    References.KnownPredicate64(network, ledger, indices, Identifiers.boxLock64(lock))
 
-  def fromBoxValue32(index: Int, bv: Value): References.Blob32 =
-    References.Blob32(index, Identifiers.boxValue32(bv))
+  def fromBoxValue32(network: Int, ledger: Int, indices: List[Int], value: Value): References.Blob32 =
+    References.Blob32(network, ledger, indices, Identifiers.boxValue32(value))
 
-  def fromBoxValue64(index: Int, bv: Value): References.Blob64 =
-    References.Blob64(index, Identifiers.boxValue64(bv))
+  def fromBoxValue64(network: Int, ledger: Int, indices: List[Int], value: Value): References.Blob64 =
+    References.Blob64(network, ledger, indices, Identifiers.boxValue64(value))
 
-  def fromTransaction32(index: Int, iotx: IoTransaction): References.Output32 =
-    References.Output32(index, Identifiers.transaction32(iotx))
+  def fromTransaction32(network: Int, ledger: Int, indices: List[Int], iotx: IoTransaction): References.Output32 =
+    References.Output32(network, ledger, indices, Identifiers.transaction32(iotx))
 
-  def fromTransaction64(index: Int, iotx: IoTransaction): References.Output64 =
-    References.Output64(index, Identifiers.transaction64(iotx))
+  def fromTransaction64(network: Int, ledger: Int, indices: List[Int], iotx: IoTransaction): References.Output64 =
+    References.Output64(network, ledger, indices, Identifiers.transaction64(iotx))
 }

@@ -10,7 +10,7 @@ import co.topl.quivr.{Models, Proposition, SignableBytes}
 
 import java.nio.charset.StandardCharsets
 
-// Object -> Signable -> Evidence -> Identifier -> Reference
+// Object -> Signable -> Evidence -> Identifier -> Address -> Reference
 trait ContainsSignable[T] {
   def signableBytes(t: T): SignableBytes
 }
@@ -113,32 +113,32 @@ object ContainsSignable {
 
     implicit val knownPredicate32ReferenceSignable: ContainsSignable[References.KnownPredicate32] =
       (reference: References.KnownPredicate32) =>
-        reference.index.signable ++
+        reference.indices.signable ++
         reference.id.signable
 
     implicit val knownPredicate64ReferenceSignable: ContainsSignable[References.KnownPredicate64] =
       (reference: References.KnownPredicate64) =>
-        reference.index.signable ++
+        reference.indices.signable ++
         reference.id.signable
 
     implicit val blob32ReferenceSignable: ContainsSignable[References.Blob32] =
       (reference: References.Blob32) =>
-        reference.index.signable ++
+        reference.indices.signable ++
         reference.id.signable
 
     implicit val blob64ReferenceSignable: ContainsSignable[References.Blob64] =
       (reference: References.Blob64) =>
-        reference.index.signable ++
+        reference.indices.signable ++
         reference.id.signable
 
     implicit val output32ReferenceSignable: ContainsSignable[References.Output32] =
       (reference: References.Output32) =>
-        reference.index.signable ++
+        reference.indices.signable ++
         reference.id.signable
 
     implicit val output64ReferenceSignable: ContainsSignable[References.Output64] =
       (reference: References.Output64) =>
-        reference.index.signable ++
+        reference.indices.signable ++
         reference.id.signable
 
     implicit val boxValueSignable: ContainsSignable[Value] = {
@@ -250,7 +250,7 @@ object ContainsSignable {
     implicit val addressSignable: ContainsSignable[Address] = (address: Address) =>
       address.network.signable ++
       address.ledger.signable ++
-      address.reference.signable
+      address.identifier.signable
 
     implicit val blobSignable: ContainsSignable[Blob] = (blob: Blob) => blob.value.signable
 

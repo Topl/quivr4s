@@ -1,6 +1,6 @@
 package co.topl.node.transaction
 
-import co.topl.node.Reference
+import co.topl.node.{Address, Reference}
 import co.topl.node.box.{Blob, Lock, Value}
 import co.topl.quivr.runtime.Datum
 

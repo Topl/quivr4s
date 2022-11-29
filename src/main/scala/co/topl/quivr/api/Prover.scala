@@ -156,29 +156,29 @@ object Prover {
           case Models.Primitive.Locked.token =>
             lockedProver[F]
           case (Models.Primitive.Digest.token, t: Preimage) =>
-            digestProver[F](t, message)(instanceBind)
+            digestProver[F](t, message)
           case (Models.Primitive.DigitalSignature.token, t: Witness) =>
-            signatureProver[F](t, message)(instanceBind)
+            signatureProver[F](t, message)
           case Models.Contextual.HeightRange.token =>
-            heightProver[F](message)(instanceBind)
+            heightProver[F](message)
           case Models.Contextual.TickRange.token =>
-            tickProver[F](message)(instanceBind)
+            tickProver[F](message)
           case Models.Contextual.ExactMatch.token =>
-            exactMatchProver[F](message)(instanceBind)
+            exactMatchProver[F](message)
           case Models.Contextual.LessThan.token =>
-            lessThanProver[F](message)(instanceBind)
+            lessThanProver[F](message)
           case Models.Contextual.GreaterThan.token =>
-            greaterThanProver[F](message)(instanceBind)
+            greaterThanProver[F](message)
           case Models.Contextual.EqualTo.token =>
-            equalToProver[F](message)(instanceBind)
+            equalToProver[F](message)
           case (Models.Compositional.Threshold.token, t: Set[Option[Proof]]) =>
-            thresholdProver[F](t, message)(instanceBind)
+            thresholdProver[F](t, message)
           case (Models.Compositional.Not.token, t: Proof) =>
-            notProver[F](t, message)(instanceBind)
+            notProver[F](t, message)
           case (Models.Compositional.And.token, l: Proof, r: Proof) =>
-            andProver[F](l, r, message)(instanceBind)
+            andProver[F](l, r, message)
           case (Models.Compositional.Or.token, l: Proof, r: Proof) =>
-            orProver[F](l, r, message)(instanceBind)
+            orProver[F](l, r, message)
           case _ =>
             lockedProver[F]
         }
