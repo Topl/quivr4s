@@ -7,7 +7,7 @@ case class IoTransaction(
   inputs:  List[SpentOutput],
   outputs: List[UnspentOutput],
   datum:   Datum[Events.IoTransaction],
-  opts:    List[Option[Spendable[_, _]]] = List()
+  opts:    List[Option[Spendable[_, _]]]
 ) extends Spendable[(List[SpentOutput], List[UnspentOutput]), Spendable[_, _]] {
   override val value: (List[SpentOutput], List[UnspentOutput]) = (inputs, outputs)
 }
