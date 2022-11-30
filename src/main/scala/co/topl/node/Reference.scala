@@ -1,6 +1,9 @@
 package co.topl.node
 
-// References combine an Identifier and an index
+/**
+ * Reference combine an Identifier and an index. They are meant to refer to a specific element (or elements)
+ * of a certain type (denoted by the Identifier) available at a specific location (network + ledger)
+ */
 sealed abstract class Reference {
   val network: Int
   val ledger: Int

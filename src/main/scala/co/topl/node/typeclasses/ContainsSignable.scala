@@ -225,8 +225,8 @@ object ContainsSignable {
         attestation.lock.signable ++
         attestation.known.signable
 
-    implicit def datumSignable[T: ContainsSignable]: ContainsSignable[Datum[T]] = (datum: Datum[T]) =>
-      datum.value.signable
+    implicit def datumSignable[T: ContainsSignable]: ContainsSignable[Datum[Event]] = (datum: Datum[Event]) =>
+      datum.event.signable
 
     implicit val eventSignable: ContainsSignable[Event] = {
       case Events.Eon(beginSlot, height)   => beginSlot.signable ++ height.signable
@@ -234,16 +234,18 @@ object ContainsSignable {
       case Events.Epoch(beginSlot, height) => beginSlot.signable ++ height.signable
       case Events.Header(height)           => height.signable
       case Events.Body(root)               => root.signable
-      case Events.IoTransaction(schedule, references, metadata) =>
-        schedule.signable ++ references.signable ++ metadata.signable
-      case Events.SpentOutput(references, metadata)   => references.signable ++ metadata.signable
-      case Events.UnspentOutput(references, metadata) => references.signable ++ metadata.signable
+      case Events.IoTransaction(schedule, references32, references64, metadata) =>
+        schedule.signable ++ references32.signable ++ references64.signable ++ metadata.signable
+      case Events.SpentOutput(references32, references64,, metadata)   =>
+        references32.signable ++ references64.signable ++ metadata.signable
+      case Events.UnspentOutput(references32, references64,, metadata) =>
+        references32.signable ++ references64.signable ++ metadata.signable
     }
 
     implicit val ioTransactionSignable: ContainsSignable[IoTransaction] = (iotx: IoTransaction) =>
       iotx.inputs.signable ++
       iotx.outputs.signable ++
-      iotx.datum.value.signable
+      iotx.datum.event.signable
 
     implicit val iotxScheduleSignable: ContainsSignable[IoTransaction.Schedule] = (schedule: IoTransaction.Schedule) =>
       schedule.min.signable ++
@@ -258,12 +260,12 @@ object ContainsSignable {
     implicit val spentOutputSignable: ContainsSignable[SpentOutput] = (stxo: SpentOutput) =>
       stxo.reference.signable ++
       stxo.attestation.signable ++
-      stxo.datum.value.signable
+      stxo.datum.event.signable
 
     implicit val unspentOutputSignable: ContainsSignable[UnspentOutput] = (utxo: UnspentOutput) =>
       utxo.address.signable ++
       utxo.value.signable ++
-      utxo.datum.value.signable
+      utxo.datum.event.signable
 
     implicit val boxSignable: ContainsSignable[Box] = (box: Box) =>
       box.lock.signable ++
@@ -278,15 +280,15 @@ object ContainsSignable {
 
     implicit val iotxDatumSignable: ContainsSignable[Events.IoTransaction] = (event: Events.IoTransaction) =>
       event.schedule.signable ++
-      event.references.signable ++
+      event.references32.signable ++
       event.metadata.signable
 
     implicit val stxoDatumSignable: ContainsSignable[Events.SpentOutput] = (event: Events.SpentOutput) =>
-      event.references.signable ++
+      event.references32.signable ++
       event.metadata.signable
 
     implicit val utxoDatumSignable: ContainsSignable[Events.UnspentOutput] = (event: Events.UnspentOutput) =>
-      event.references.signable ++
+      event.references32.signable ++
       event.metadata.signable
 
     implicit val propositionSignable: ContainsSignable[Proposition] = {
@@ -295,10 +297,10 @@ object ContainsSignable {
       case p: DigitalSignature.Proposition => signatureSignable.signableBytes(p)
       case p: HeightRange.Proposition      => heightRangeSignable.signableBytes(p)
       case p: TickRange.Proposition        => tickRangeSignable.signableBytes(p)
-      case p: ExactMatch.Proposition       => ???
-      case p: LessThan.Proposition         => ???
-      case p: GreaterThan.Proposition      => ???
-      case p: EqualTo.Proposition          => ???
+      case p: ExactMatch.Proposition       => exactMatchSignable.signableBytes(p)
+      case p: LessThan.Proposition         => lessThanSignable.signableBytes(p)
+      case p: GreaterThan.Proposition      => greaterThanSignable.signableBytes(p)
+      case p: EqualTo.Proposition          => equalToSignable.signableBytes(p)
       case p: Threshold.Proposition        => thresholdSignable.signableBytes(p)
       case p: Not.Proposition              => notSignable.signableBytes(p)
       case p: And.Proposition              => andSignable.signableBytes(p)
@@ -331,6 +333,30 @@ object ContainsSignable {
         TickRange.token.signable ++
         p.min.signable ++
         p.max.signable
+
+    implicit val exactMatchSignable: ContainsSignable[Models.Contextual.ExactMatch.Proposition] =
+      (p: ExactMatch.Proposition) =>
+        ExactMatch.token.signable ++
+        p.location.signable ++
+        p.compareTo.signable
+
+    implicit val lessThanSignable: ContainsSignable[Models.Contextual.LessThan.Proposition] =
+      (p: LessThan.Proposition) =>
+        LessThan.token.signable ++
+          p.location.signable ++
+          p.compareTo.signable
+
+    implicit val greaterThanSignable: ContainsSignable[Models.Contextual.GreaterThan.Proposition] =
+      (p: GreaterThan.Proposition) =>
+        GreaterThan.token.signable ++
+          p.location.signable ++
+          p.compareTo.signable
+
+    implicit val equalToSignable: ContainsSignable[Models.Contextual.EqualTo.Proposition] =
+      (p: EqualTo.Proposition) =>
+        EqualTo.token.signable ++
+          p.location.signable ++
+          p.compareTo.signable
 
     implicit val thresholdSignable: ContainsSignable[Models.Compositional.Threshold.Proposition] =
       (p: Threshold.Proposition) =>

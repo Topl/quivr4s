@@ -2,6 +2,9 @@ package co.topl.quivr.runtime
 
 import co.topl.quivr.{Proof, Proposition}
 
+/**
+ * Errors resulting from evaluation of Quivr propositions / proofs
+ */
 sealed abstract class QuivrRuntimeError
 
 object QuivrRuntimeErrors {

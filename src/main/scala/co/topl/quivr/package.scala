@@ -125,7 +125,7 @@ package object quivr {
       object ExactMatch {
         val token: String = "exact_match"
 
-        final case class Proposition(label: String, compareTo: Array[Byte])
+        final case class Proposition(location: String, compareTo: Array[Byte])
             extends quivr.Proposition
             with quivr.Operations.ExactMatch
 
@@ -137,7 +137,7 @@ package object quivr {
       object LessThan {
         val token: String = "less_than"
 
-        final case class Proposition(label: String, compareTo: Long)
+        final case class Proposition(location: String, compareTo: Long)
             extends quivr.Proposition
             with quivr.Operations.LessThan
 
@@ -149,7 +149,7 @@ package object quivr {
       object GreaterThan {
         val token: String = "greater_than"
 
-        final case class Proposition(label: String, compareTo: Long)
+        final case class Proposition(location: String, compareTo: Long)
             extends quivr.Proposition
             with quivr.Operations.GreaterThan
 
@@ -161,7 +161,7 @@ package object quivr {
       object EqualTo {
         val token: String = "equal_to"
 
-        final case class Proposition(label: String, compareTo: Long)
+        final case class Proposition(location: String, compareTo: Long)
             extends quivr.Proposition
             with quivr.Operations.EqualTo
 

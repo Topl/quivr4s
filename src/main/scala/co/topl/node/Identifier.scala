@@ -31,13 +31,6 @@ object Identifiers {
   case class IoTransaction32(evidence: Evidence[Digest32], tag: String = "iotx_32") extends Identifier
   case class IoTransaction64(evidence: Evidence[Digest64], tag: String = "iotx_64") extends Identifier
 
-  // Ledger roots known transactions
-  // Body roots known Ledgers
-  // Header roots known Body
-  // Epoch roots known Headers
-  // Era roots known Epochs
-  // Eon roots known Eras
-
   def evidenceList32[T: ContainsSignable](list: List[T])(implicit
     ev:                                         ContainsEvidence[List[T]]
   ): Identifiers.AccumulatorRoot32 =

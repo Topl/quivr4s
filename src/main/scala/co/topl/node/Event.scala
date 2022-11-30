@@ -10,18 +10,21 @@ object Events {
   case class Body(root: Root) extends Event
 
   case class IoTransaction(
-    schedule:   co.topl.node.transaction.IoTransaction.Schedule,
-    references: List[References.KnownSpendable32],
-    metadata:   SmallData
+    schedule:     co.topl.node.transaction.IoTransaction.Schedule,
+    references32: List[References.KnownSpendable32],
+    references64: List[References.KnownSpendable64],
+    metadata:     SmallData
   ) extends Event
 
   case class SpentOutput(
-    references: List[References.KnownPredicate32],
-    metadata:   SmallData
+    references32: List[References.KnownPredicate32],
+    references64: List[References.KnownPredicate64],
+    metadata:     SmallData
   ) extends Event
 
   case class UnspentOutput(
-    references: List[References.KnownBlob32],
-    metadata:   SmallData
+    references32: List[References.KnownBlob32],
+    references64: List[References.KnownBlob64],
+    metadata:     SmallData
   ) extends Event
 }

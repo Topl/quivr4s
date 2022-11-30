@@ -5,11 +5,7 @@ import cats.implicits._
 import co.topl.common.Models.{DigestVerification, Message, SignatureVerification}
 import co.topl.crypto.hash.blake2b256
 import co.topl.quivr._
-import co.topl.quivr.runtime.QuivrRuntimeErrors.ValidationError.{
-  EvaluationAuthorizationFailed,
-  LockedPropositionIsUnsatisfiable,
-  MessageAuthorizationFailed
-}
+import co.topl.quivr.runtime.QuivrRuntimeErrors.ValidationError.{EvaluationAuthorizationFailed, LockedPropositionIsUnsatisfiable, MessageAuthorizationFailed}
 import co.topl.quivr.runtime.{DynamicContext, QuivrRuntimeError}
 
 import java.nio.charset.StandardCharsets
@@ -40,11 +36,23 @@ object Verifier {
     tag:     String,
     proof:   Proof,
     context: DynamicContext[F, A]
-  ): F[Boolean] = for {
+  ): F[Either[QuivrRuntimeError, Boolean]] = for {
     sb             <- context.signableBytes
     verifierTxBind <- blake2b256.hash(tag.getBytes(StandardCharsets.UTF_8) ++ sb).value.pure[F]
-    msgAuth = verifierTxBind.sameElements(proof.bindToTransaction)
-  } yield msgAuth
+    res = Either.cond(
+      verifierTxBind sameElements proof.bindToTransaction,
+      true,
+      MessageAuthorizationFailed(proof)
+    )
+  } yield res
+
+  private def collectResult(proposition: Proposition, proof: Proof)(
+    msgResult:                           Either[QuivrRuntimeError, Boolean],
+    evalResult:                          Either[QuivrRuntimeError, _]
+  ): Either[QuivrRuntimeError, Boolean] = (msgResult, evalResult) match {
+    case (Right(true), Right(_)) => Right[QuivrRuntimeError, Boolean](true)
+    case _ => Left[QuivrRuntimeError, Boolean](EvaluationAuthorizationFailed(proposition, proof))
+  }
 
   trait Implicits {
 
@@ -68,16 +76,6 @@ object Verifier {
   object implicits extends Implicits
 
   trait Instances {
-
-    private def collectResult(proposition: Proposition, proof: Proof)(
-      msgResult:                           Boolean,
-      evalResult:                          Either[QuivrRuntimeError, _]
-    ): Either[QuivrRuntimeError, Boolean] =
-      (msgResult, evalResult) match {
-        case (true, Right(_)) => Right[QuivrRuntimeError, Boolean](true)
-        case (true, Left(e))  => Left[QuivrRuntimeError, Boolean](e)
-        case (false, _)       => Left(MessageAuthorizationFailed(proof))
-      }
 
     private def lockedVerifier[F[_]: Monad](
       proposition: Models.Primitive.Locked.Proposition,
@@ -139,7 +137,7 @@ object Verifier {
       context:     DynamicContext[F, String]
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
       msgResult  <- Verifier.evaluateBlake2b256Bind(Models.Contextual.ExactMatch.token, proof, context)
-      evalResult <- context.exactMatch(proposition.label, proposition.compareTo).value
+      evalResult <- context.exactMatch(proposition.location, proposition.compareTo).value
       res = collectResult(proposition, proof)(msgResult, evalResult)
     } yield res
 
@@ -149,7 +147,7 @@ object Verifier {
       context:     DynamicContext[F, String]
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
       msgResult  <- Verifier.evaluateBlake2b256Bind(Models.Contextual.LessThan.token, proof, context)
-      evalResult <- context.lessThan(proposition.label, proposition.compareTo).value
+      evalResult <- context.lessThan(proposition.location, proposition.compareTo).value
       res = collectResult(proposition, proof)(msgResult, evalResult)
     } yield res
 
@@ -159,7 +157,7 @@ object Verifier {
       context:     DynamicContext[F, String]
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
       msgResult  <- Verifier.evaluateBlake2b256Bind(Models.Contextual.GreaterThan.token, proof, context)
-      evalResult <- context.greaterThan(proposition.label, proposition.compareTo).value
+      evalResult <- context.greaterThan(proposition.location, proposition.compareTo).value
       res = collectResult(proposition, proof)(msgResult, evalResult)
     } yield res
 
@@ -169,7 +167,7 @@ object Verifier {
       context:     DynamicContext[F, String]
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
       msgResult  <- Verifier.evaluateBlake2b256Bind(Models.Contextual.EqualTo.token, proof, context)
-      evalResult <- context.equalTo(proposition.label, proposition.compareTo).value
+      evalResult <- context.equalTo(proposition.location, proposition.compareTo).value
       res = collectResult(proposition, proof)(msgResult, evalResult)
     } yield res
 
@@ -203,11 +201,7 @@ object Verifier {
               }
               .map(_ >= proposition.threshold)
           }
-        res = (msgResult, evalResult) match {
-          case (true, true)  => Right[QuivrRuntimeError, Boolean](true)
-          case (true, false) => Left[QuivrRuntimeError, Boolean](EvaluationAuthorizationFailed(proposition, proof))
-          case (false, _)    => Left(MessageAuthorizationFailed(proof))
-        }
+        res = collectResult(proposition, proof)(msgResult, Right(evalResult))
       } yield res
 
     private def notVerifier[F[_]: Monad](
@@ -233,10 +227,11 @@ object Verifier {
       aResult   <- verifier.evaluate(proposition.left, proof.left, context)
       bResult   <- verifier.evaluate(proposition.right, proof.right, context)
       res = (msgResult, aResult, bResult) match {
-        case (true, Right(_), Right(_)) => Right[QuivrRuntimeError, Boolean](true)
-        case (true, aError, Right(_))   => aError
-        case (true, Right(_), bError)   => bError
-        case (false, _, _)              => Left(MessageAuthorizationFailed(proof))
+
+        case (Right(true), Right(_), Right(_)) => Right[QuivrRuntimeError, Boolean](true)
+        case (_, aError, Right(_))   => aError
+        case (_, Right(_), bError)   => bError
+        case _ => Left[QuivrRuntimeError, Boolean](EvaluationAuthorizationFailed(proposition, proof))
       }
     } yield res
 
@@ -251,11 +246,11 @@ object Verifier {
       aResult   <- verifier.evaluate(proposition.left, proof.left, context)
       bResult   <- verifier.evaluate(proposition.right, proof.right, context)
       res = (msgResult, aResult, bResult) match {
-        case (true, Right(_), _)      => Right[QuivrRuntimeError, Boolean](true)
-        case (true, _, Right(_))      => Right[QuivrRuntimeError, Boolean](true)
-        case (true, aError, Right(_)) => aError
-        case (true, Right(_), bError) => bError
-        case (false, _, _)            => Left(MessageAuthorizationFailed(proof))
+        case (Right(true), Right(_), _)      => Right[QuivrRuntimeError, Boolean](true)
+        case (Right(true), _, Right(_))      => Right[QuivrRuntimeError, Boolean](true)
+        case (_, aError, Right(_))   => aError
+        case (_, Right(_), bError)   => bError
+        case _ => Left[QuivrRuntimeError, Boolean](EvaluationAuthorizationFailed(proposition, proof))
       }
     } yield res
 
