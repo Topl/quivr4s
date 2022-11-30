@@ -10,10 +10,12 @@ import co.topl.quivr.runtime.Datum
 import co.topl.quivr.{Models, Proposition, SignableBytes}
 
 import java.nio.charset.StandardCharsets
-// Topl:   TObject -> TSignable -> TEvidence -> TIdentifier -> TAddress -> TReference
-// Cosmos: CObject -> CSignable -> CEvidence -> CIdentifier -> CAddress -> CReference
+// Long -> longSignable -> longSignableEvidence -> longSignableEvidenceId
+// Long -> longSignable -> longSignableEvidence -> longSingableEvidenceSignable -> longSingableEvidenceSignableEvidence
+// Object -> Signable -> Evidence -> Identifier -> Address -> Reference
 
-// Interop: CObject -> CSignable -> CEvidence == TEvidence -> TSignable -> TEvidence -> TIdentifier -> ...
+// Topl: TObject -> TSignable -> TEvidence -> TIdentifier -> TAddress -> TReference
+// DAML: DObject -> DSignable -> DEvidence (==TEvidence) -> TSignable -> TEvidence -> TIdentifier -> TAddress -> TReference
 trait ContainsSignable[T] {
   def signableBytes(t: T): SignableBytes
 }
@@ -27,7 +29,7 @@ object ContainsSignable {
 
   trait Instances {
 
-    implicit val byteSingable: ContainsSignable[Byte] = (byte: Byte) => Array(byte)
+    implicit val byteSingable: ContainsSignable[Byte] = (t: Byte) => Array(t)
 
     implicit val arrayByteSignable: ContainsSignable[Array[Byte]] = (bytes: Array[Byte]) => bytes
 
@@ -59,8 +61,8 @@ object ContainsSignable {
     implicit val identifiersSignable: ContainsSignable[Identifier] = {
       case i: Identifiers.AccumulatorRoot32 => accumulatorRoot32IdentifierSignable.signableBytes(i)
       case i: Identifiers.AccumulatorRoot64 => accumulatorRoot64IdentifierSignable.signableBytes(i)
-      case i: Identifiers.BoxLock32         => boxLock32IdentifierSignable.signableBytes(i)
-      case i: Identifiers.BoxLock64         => boxLock64IdentifierSignable.signableBytes(i)
+      case i: Identifiers.Lock32            => boxLock32IdentifierSignable.signableBytes(i)
+      case i: Identifiers.Lock64            => boxLock64IdentifierSignable.signableBytes(i)
       case i: Identifiers.BoxValue32        => boxValue32IdentifierSignable.signableBytes(i)
       case i: Identifiers.BoxValue64        => boxValue64IdentifierSignable.signableBytes(i)
       case i: Identifiers.IoTransaction32   => ioTransaction32IdentifierSignable.signableBytes(i)
@@ -77,13 +79,13 @@ object ContainsSignable {
         id.tag.signable ++
         id.evidence.value.signable
 
-    implicit val boxLock32IdentifierSignable: ContainsSignable[Identifiers.BoxLock32] =
-      (id: Identifiers.BoxLock32) =>
+    implicit val boxLock32IdentifierSignable: ContainsSignable[Identifiers.Lock32] =
+      (id: Identifiers.Lock32) =>
         id.tag.signable ++
         id.evidence.value.signable
 
-    implicit val boxLock64IdentifierSignable: ContainsSignable[Identifiers.BoxLock64] =
-      (id: Identifiers.BoxLock64) =>
+    implicit val boxLock64IdentifierSignable: ContainsSignable[Identifiers.Lock64] =
+      (id: Identifiers.Lock64) =>
         id.tag.signable ++
         id.evidence.value.signable
 
@@ -110,10 +112,10 @@ object ContainsSignable {
     implicit val referenceSignable: ContainsSignable[Reference] = {
       case r: References.KnownPredicate32 => knownPredicate32ReferenceSignable.signableBytes(r)
       case r: References.KnownPredicate64 => knownPredicate64ReferenceSignable.signableBytes(r)
-      case r: References.Blob32           => blob32ReferenceSignable.signableBytes(r)
-      case r: References.Blob64           => blob64ReferenceSignable.signableBytes(r)
-      case r: References.Output32         => output32ReferenceSignable.signableBytes(r)
-      case r: References.Output64         => output64ReferenceSignable.signableBytes(r)
+      case r: References.KnownBlob32      => blob32ReferenceSignable.signableBytes(r)
+      case r: References.KnownBlob64      => blob64ReferenceSignable.signableBytes(r)
+      case r: References.KnownSpendable32 => output32ReferenceSignable.signableBytes(r)
+      case r: References.KnownSpendable64 => output64ReferenceSignable.signableBytes(r)
     }
 
     implicit val knownPredicate32ReferenceSignable: ContainsSignable[References.KnownPredicate32] =
@@ -126,23 +128,23 @@ object ContainsSignable {
         reference.indices.signable ++
         reference.id.signable
 
-    implicit val blob32ReferenceSignable: ContainsSignable[References.Blob32] =
-      (reference: References.Blob32) =>
+    implicit val blob32ReferenceSignable: ContainsSignable[References.KnownBlob32] =
+      (reference: References.KnownBlob32) =>
         reference.indices.signable ++
         reference.id.signable
 
-    implicit val blob64ReferenceSignable: ContainsSignable[References.Blob64] =
-      (reference: References.Blob64) =>
+    implicit val blob64ReferenceSignable: ContainsSignable[References.KnownBlob64] =
+      (reference: References.KnownBlob64) =>
         reference.indices.signable ++
         reference.id.signable
 
-    implicit val output32ReferenceSignable: ContainsSignable[References.Output32] =
-      (reference: References.Output32) =>
+    implicit val output32ReferenceSignable: ContainsSignable[References.KnownSpendable32] =
+      (reference: References.KnownSpendable32) =>
         reference.indices.signable ++
         reference.id.signable
 
-    implicit val output64ReferenceSignable: ContainsSignable[References.Output64] =
-      (reference: References.Output64) =>
+    implicit val output64ReferenceSignable: ContainsSignable[References.KnownSpendable64] =
+      (reference: References.KnownSpendable64) =>
         reference.indices.signable ++
         reference.id.signable
 
@@ -231,7 +233,7 @@ object ContainsSignable {
       case Events.Era(beginSlot, height)   => beginSlot.signable ++ height.signable
       case Events.Epoch(beginSlot, height) => beginSlot.signable ++ height.signable
       case Events.Header(height)           => height.signable
-      case Events.Body(root, metadata)     => root.signable ++ metadata.signable
+      case Events.Body(root)               => root.signable
       case Events.IoTransaction(schedule, references, metadata) =>
         schedule.signable ++ references.signable ++ metadata.signable
       case Events.SpentOutput(references, metadata)   => references.signable ++ metadata.signable

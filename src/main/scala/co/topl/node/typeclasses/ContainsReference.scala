@@ -17,15 +17,15 @@ object ContainsReference {
   def fromBoxLock64(network: Int, ledger: Int, indices: List[Int], lock: Lock): References.KnownPredicate64 =
     References.KnownPredicate64(network, ledger, indices, Identifiers.boxLock64(lock))
 
-  def fromBoxValue32(network: Int, ledger: Int, indices: List[Int], value: Value): References.Blob32 =
-    References.Blob32(network, ledger, indices, Identifiers.boxValue32(value))
+  def fromBoxValue32(network: Int, ledger: Int, indices: List[Int], value: Value): References.KnownBlob32 =
+    References.KnownBlob32(network, ledger, indices, Identifiers.boxValue32(value))
 
-  def fromBoxValue64(network: Int, ledger: Int, indices: List[Int], value: Value): References.Blob64 =
-    References.Blob64(network, ledger, indices, Identifiers.boxValue64(value))
+  def fromBoxValue64(network: Int, ledger: Int, indices: List[Int], value: Value): References.KnownBlob64 =
+    References.KnownBlob64(network, ledger, indices, Identifiers.boxValue64(value))
 
-  def fromTransaction32(network: Int, ledger: Int, indices: List[Int], iotx: IoTransaction): References.Output32 =
-    References.Output32(network, ledger, indices, Identifiers.transaction32(iotx))
+  def fromTransaction32(network: Int, ledger: Int, indices: List[Int], iotx: IoTransaction): References.KnownSpendable32 =
+    References.KnownSpendable32(network, ledger, indices, Identifiers.transaction32(iotx))
 
-  def fromTransaction64(network: Int, ledger: Int, indices: List[Int], iotx: IoTransaction): References.Output64 =
-    References.Output64(network, ledger, indices, Identifiers.transaction64(iotx))
+  def fromTransaction64(network: Int, ledger: Int, indices: List[Int], iotx: IoTransaction): References.KnownSpendable64 =
+    References.KnownSpendable64(network, ledger, indices, Identifiers.transaction64(iotx))
 }

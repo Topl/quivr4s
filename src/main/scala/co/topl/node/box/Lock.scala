@@ -15,8 +15,8 @@ object Locks {
 
   // Semi-public information
   // The most commonly shared construction between parties
-  case class Image32(leaves: List[Identifiers.BoxLock32], threshold: Int) extends Lock
-  case class Image64(leaves: List[Identifiers.BoxLock64], threshold: Int) extends Lock
+  case class Image32(leaves: List[Identifiers.Lock32], threshold: Int) extends Lock
+  case class Image64(leaves: List[Identifiers.Lock64], threshold: Int) extends Lock
 
   // Public information
   // Predicate Commitments are used to encumber boxes
@@ -26,13 +26,13 @@ object Locks {
 
   def image32(predicate: Predicate): Image32 =
     Image32(
-      predicate.challenges.map(c => Identifiers.BoxLock32(c.blake2bEvidence.sized32Evidence)),
+      predicate.challenges.map(c => Identifiers.Lock32(c.blake2bEvidence.sized32Evidence)),
       predicate.threshold
     )
 
   def image64(predicate: Predicate): Image64 =
     Image64(
-      predicate.challenges.map(c => Identifiers.BoxLock64(c.blake2bEvidence.sized64Evidence)),
+      predicate.challenges.map(c => Identifiers.Lock64(c.blake2bEvidence.sized64Evidence)),
       predicate.threshold
     )
 

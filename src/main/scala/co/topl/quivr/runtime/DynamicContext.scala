@@ -19,13 +19,13 @@ trait DynamicContext[F[_], K] {
 
   def currentTick: F[Long]
 
-  def heightOf(label: K)(implicit monad: Monad[F]): EitherT[F, QuivrRuntimeError, Long] =
+  def heightOf(label: K)(implicit monad: Monad[F]): F[Either[QuivrRuntimeError, Long]] =
     EitherT.fromEither[F](
       datums.get(label) match {
         case Some(v: IncludesHeight[_]) => Right(v.height)
-        case _                          => Left(ContextError.FailedToFindDatum)
+        case _                          => Left(ContextError.FailedToFindDatum: QuivrRuntimeError)
       }
-    )
+    ).value
 
   def digestVerify(routine: K)(verification: DigestVerification)(implicit
     monad:                  Monad[F]
@@ -62,17 +62,17 @@ trait DynamicContext[F[_], K] {
     useInterface(label)(d => Right(d.value))(b => b sameElements compareTo)(monad)
 
   def lessThan(label: K, compareTo: Long)(implicit
-                                          monad:              Monad[F]
+    monad:            Monad[F]
   ): EitherT[F, QuivrRuntimeError, Long] =
     useInterface(label)(d => Right(BigInt(d.value).longValue))(n => n < compareTo)
 
   def greaterThan(label: K, compareTo: Long)(implicit
-                                             monad:              Monad[F]
+    monad:               Monad[F]
   ): EitherT[F, QuivrRuntimeError, Long] =
     useInterface(label)(d => Right(BigInt(d.value).longValue))(n => n > compareTo)
 
   def equalTo(label: K, compareTo: Long)(implicit
-                                         monad:              Monad[F]
+    monad:           Monad[F]
   ): EitherT[F, QuivrRuntimeError, Long] =
     useInterface(label)(d => Right(BigInt(d.value).longValue))(n => n == compareTo)
 }

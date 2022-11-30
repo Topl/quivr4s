@@ -60,7 +60,7 @@ object ValidationInterpreter {
         thresholdVerifier(challenges.map(Some(_)), responses, threshold, context)
 
       private def image32Validate(
-        leaves:    List[Identifiers.BoxLock32],
+        leaves:    List[Identifiers.Lock32],
         threshold: Int,
         known:     List[Option[Proposition]],
         responses: List[Option[Proof]],
@@ -70,7 +70,7 @@ object ValidationInterpreter {
         thresholdVerifier(known, responses, threshold, context)
 
       private def image64Validate(
-        leaves:    List[Identifiers.BoxLock64],
+        leaves:    List[Identifiers.Lock64],
         threshold: Int,
         known:     List[Option[Proposition]],
         responses: List[Option[Proof]],
@@ -120,8 +120,8 @@ object ValidationInterpreter {
                   successCount.pure[F]
                 case (successCount, (Some(prop: Proposition), Some(proof: Proof))) =>
                   verifier.evaluate(prop, proof, context).map {
-                    case true => successCount + 1
-                    case _    => successCount
+                    case Right(true) => successCount + 1
+                    case _           => successCount
                   }
               }
               .map(_ >= threshold)

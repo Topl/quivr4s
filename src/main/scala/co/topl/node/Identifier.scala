@@ -20,8 +20,8 @@ object Identifiers {
   case class AccumulatorRoot64(evidence: Evidence[Digest64], tag: String = "acc_root_64") extends Identifier
 
   // known predicates
-  case class BoxLock32(evidence: Evidence[Digest32], tag: String = "box_lock_32") extends Identifier
-  case class BoxLock64(evidence: Evidence[Digest64], tag: String = "box_lock_64") extends Identifier
+  case class Lock32(evidence: Evidence[Digest32], tag: String = "box_lock_32") extends Identifier
+  case class Lock64(evidence: Evidence[Digest64], tag: String = "box_lock_64") extends Identifier
 
   // known blobs
   case class BoxValue32(evidence: Evidence[Digest32], tag: String = "box_value_32") extends Identifier
@@ -48,11 +48,11 @@ object Identifiers {
   ): Identifiers.AccumulatorRoot64 =
     Identifiers.AccumulatorRoot64(list.merkleEvidence.sized64Evidence)
 
-  def boxLock32(lock: Lock): Identifiers.BoxLock32 =
-    Identifiers.BoxLock32(lock.blake2bEvidence.sized32Evidence)
+  def boxLock32(lock: Lock): Identifiers.Lock32 =
+    Identifiers.Lock32(lock.blake2bEvidence.sized32Evidence)
 
-  def boxLock64(lock: Lock): Identifiers.BoxLock64 =
-    Identifiers.BoxLock64(lock.blake2bEvidence.sized64Evidence)
+  def boxLock64(lock: Lock): Identifiers.Lock64 =
+    Identifiers.Lock64(lock.blake2bEvidence.sized64Evidence)
 
   def boxValue32(value: Value): Identifiers.BoxValue32 =
     Identifiers.BoxValue32(value.blake2bEvidence.sized32Evidence)
