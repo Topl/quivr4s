@@ -1,7 +1,9 @@
 package co.topl.quivr.runtime
 
-trait Datum
+trait Datum[D] {
+  val value: D
+}
 
-trait IncludesHeight extends Datum {
+trait IncludesHeight[T] extends Datum[T] {
   def height: Long
 }

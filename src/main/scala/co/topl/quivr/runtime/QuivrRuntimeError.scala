@@ -13,6 +13,7 @@ object QuivrRuntimeErrors {
     final case class EvaluationAuthorizationFailed(proposition: Proposition, proof: Proof) extends QuivrRuntimeError
     final case class MessageAuthorizationFailed(proof: Proof) extends QuivrRuntimeError
     final case object LockedPropositionIsUnsatisfiable extends QuivrRuntimeError
+    final case object UserProvidedInterfaceFailure extends QuivrRuntimeError
   }
 
   /**

@@ -6,11 +6,14 @@ import co.topl.node.transaction._
 import co.topl.quivr.Models.Compositional.{And, Not, Or, Threshold}
 import co.topl.quivr.Models.Contextual._
 import co.topl.quivr.Models.Primitive.{Digest, DigitalSignature, Locked}
+import co.topl.quivr.runtime.Datum
 import co.topl.quivr.{Models, Proposition, SignableBytes}
 
 import java.nio.charset.StandardCharsets
+// Topl:   TObject -> TSignable -> TEvidence -> TIdentifier -> TAddress -> TReference
+// Cosmos: CObject -> CSignable -> CEvidence -> CIdentifier -> CAddress -> CReference
 
-// Object -> Signable -> Evidence -> Identifier -> Address -> Reference
+// Interop: CObject -> CSignable -> CEvidence == TEvidence -> TSignable -> TEvidence -> TIdentifier -> ...
 trait ContainsSignable[T] {
   def signableBytes(t: T): SignableBytes
 }
@@ -36,7 +39,9 @@ object ContainsSignable {
 
     implicit def listSignable[T: ContainsSignable]: ContainsSignable[List[T]] = (list: List[T]) =>
       list.zipWithIndex.foldLeft(Array[Byte]()) { case (acc, (item, index)) =>
-        acc ++ BigInt(index).toByteArray ++ item.signable
+        acc.signable ++
+        index.signable ++
+        item.signable
       }
 
     implicit def optionSignable[T: ContainsSignable]: ContainsSignable[Option[T]] = (option: Option[T]) =>
@@ -218,30 +223,45 @@ object ContainsSignable {
         attestation.lock.signable ++
         attestation.known.signable
 
+    implicit def datumSignable[T: ContainsSignable]: ContainsSignable[Datum[T]] = (datum: Datum[T]) =>
+      datum.value.signable
+
+    implicit val eventSignable: ContainsSignable[Event] = {
+      case Events.Eon(beginSlot, height)   => beginSlot.signable ++ height.signable
+      case Events.Era(beginSlot, height)   => beginSlot.signable ++ height.signable
+      case Events.Epoch(beginSlot, height) => beginSlot.signable ++ height.signable
+      case Events.Header(height)           => height.signable
+      case Events.Body(root, metadata)     => root.signable ++ metadata.signable
+      case Events.IoTransaction(schedule, references, metadata) =>
+        schedule.signable ++ references.signable ++ metadata.signable
+      case Events.SpentOutput(references, metadata)   => references.signable ++ metadata.signable
+      case Events.UnspentOutput(references, metadata) => references.signable ++ metadata.signable
+    }
+
     implicit val ioTransactionSignable: ContainsSignable[IoTransaction] = (iotx: IoTransaction) =>
       iotx.inputs.signable ++
       iotx.outputs.signable ++
-      iotx.datum.signable
+      iotx.datum.value.signable
 
     implicit val iotxScheduleSignable: ContainsSignable[IoTransaction.Schedule] = (schedule: IoTransaction.Schedule) =>
       schedule.min.signable ++
       schedule.max.signable
 
-    implicit val outputSignable: ContainsSignable[Output] = {
-      case o: Outputs.Spent   => spentOutputSignable.signableBytes(o)
-      case o: Outputs.Unspent => unspentOutputSignable.signableBytes(o)
+    implicit val outputSignable: ContainsSignable[Spendable[_, _]] = {
+      case o: SpentOutput   => spentOutputSignable.signableBytes(o)
+      case o: UnspentOutput => unspentOutputSignable.signableBytes(o)
     }
 
     // doesn't include Box.Value since this is committed to via the reference
-    implicit val spentOutputSignable: ContainsSignable[Outputs.Spent] = (stxo: Outputs.Spent) =>
+    implicit val spentOutputSignable: ContainsSignable[SpentOutput] = (stxo: SpentOutput) =>
       stxo.reference.signable ++
       stxo.attestation.signable ++
-      stxo.datum.signable
+      stxo.datum.value.signable
 
-    implicit val unspentOutputSignable: ContainsSignable[Outputs.Unspent] = (utxo: Outputs.Unspent) =>
+    implicit val unspentOutputSignable: ContainsSignable[UnspentOutput] = (utxo: UnspentOutput) =>
       utxo.address.signable ++
       utxo.value.signable ++
-      utxo.datum.signable
+      utxo.datum.value.signable
 
     implicit val boxSignable: ContainsSignable[Box] = (box: Box) =>
       box.lock.signable ++
@@ -254,18 +274,18 @@ object ContainsSignable {
 
     implicit val blobSignable: ContainsSignable[Blob] = (blob: Blob) => blob.value.signable
 
-    implicit val iotxDatumSignable: ContainsSignable[Datums.IoTx] = (datum: Datums.IoTx) =>
-      datum.schedule.signable ++
-      datum.references.signable ++
-      datum.metadata.signable
+    implicit val iotxDatumSignable: ContainsSignable[Events.IoTransaction] = (event: Events.IoTransaction) =>
+      event.schedule.signable ++
+      event.references.signable ++
+      event.metadata.signable
 
-    implicit val stxoDatumSignable: ContainsSignable[Datums.SpentOutput] = (datum: Datums.SpentOutput) =>
-      datum.references.signable ++
-      datum.metadata.signable
+    implicit val stxoDatumSignable: ContainsSignable[Events.SpentOutput] = (event: Events.SpentOutput) =>
+      event.references.signable ++
+      event.metadata.signable
 
-    implicit val utxoDatumSignable: ContainsSignable[Datums.UnspentOutput] = (datum: Datums.UnspentOutput) =>
-      datum.references.signable ++
-      datum.metadata.signable
+    implicit val utxoDatumSignable: ContainsSignable[Events.UnspentOutput] = (event: Events.UnspentOutput) =>
+      event.references.signable ++
+      event.metadata.signable
 
     implicit val propositionSignable: ContainsSignable[Proposition] = {
       case p: Locked.Proposition           => lockedSignable.signableBytes(p)
@@ -293,9 +313,9 @@ object ContainsSignable {
 
     implicit val signatureSignable: ContainsSignable[Models.Primitive.DigitalSignature.Proposition] =
       (p: DigitalSignature.Proposition) =>
-        DigitalSignature.token.getBytes(StandardCharsets.UTF_8) ++
-        p.routine.getBytes(StandardCharsets.UTF_8) ++
-        p.vk.value
+        DigitalSignature.token.signable ++
+        p.routine.signable ++
+        p.vk.value.signable
 
     implicit val heightRangeSignable: ContainsSignable[Models.Contextual.HeightRange.Proposition] =
       (p: HeightRange.Proposition) =>

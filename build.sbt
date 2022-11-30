@@ -15,5 +15,9 @@ libraryDependencies ++= Seq(
   "org.typelevel" %% "cats-free" % catsVersion,
   "org.typelevel" %% "cats-effect" % "3.3.14",
   "org.scorexfoundation" %% "scrypto" % "2.2.1",
-  "co.topl" %% "crypto" % "1.10.2"
+  "co.topl" %% "crypto" % "1.10.2",
+  "org.typelevel" %% "simulacrum" % "1.0.1"
 )
+
+// For Scala 2.13+
+scalacOptions += "-Ymacro-annotations"

@@ -3,13 +3,13 @@ package co.topl.quivr.runtime
 import cats.Monad
 import cats.data.EitherT
 import co.topl.common.Models.{DigestVerification, SignatureVerification}
-import co.topl.common.ParsableDataInterface
+import co.topl.common.{Data, ParsableDataInterface}
 import co.topl.quivr.SignableBytes
 import co.topl.quivr.algebras.{DigestVerifier, SignatureVerifier}
-import co.topl.quivr.runtime.QuivrRuntimeErrors.ContextError
+import co.topl.quivr.runtime.QuivrRuntimeErrors.{ContextError, ValidationError}
 
 trait DynamicContext[F[_], K] {
-  val datums: Map[K, Datum]
+  val datums: Map[K, Datum[_]]
 
   val interfaces: Map[K, ParsableDataInterface[F]]
   val signingRoutines: Map[K, SignatureVerifier[F]]
@@ -22,8 +22,8 @@ trait DynamicContext[F[_], K] {
   def heightOf(label: K)(implicit monad: Monad[F]): EitherT[F, QuivrRuntimeError, Long] =
     EitherT.fromEither[F](
       datums.get(label) match {
-        case Some(v: IncludesHeight) => Right(v.height)
-        case _                       => Left(ContextError.FailedToFindDatum)
+        case Some(v: IncludesHeight[_]) => Right(v.height)
+        case _                          => Left(ContextError.FailedToFindDatum)
       }
     )
 
@@ -41,25 +41,38 @@ trait DynamicContext[F[_], K] {
     res      <- EitherT(verifier.validate(verification))
   } yield res
 
-//   def useInterface[E, T](label: K)(f: common.Data => Either[E, T])(ff: T => Boolean)(implicit
-//     monad:                     Monad[F]
-//   ): EitherT[F, E, T] =  for {
-//    interface: T <- EitherT.fromOption[F](interfaces.get(label), QErrors.ContextErrors.FailedToFindInterface)
-//    decoded <- interface.parse[E, T](f)
-//    result <- ff(decoded)
-//   } yield ???
+  def useInterface[E, T](label: K)(f: Data => Either[QuivrRuntimeError, T])(ff: T => Boolean)(implicit
+    monad:                      Monad[F]
+  ): EitherT[F, QuivrRuntimeError, T] =
+    EitherT.fromEither[F](
+      interfaces.get(label) match {
+        case Some(interface) =>
+          interface.parse[QuivrRuntimeError, T](f).flatMap { t =>
+            Either.cond(ff(t), t, ValidationError.UserProvidedInterfaceFailure)
+          }
+        case None => Left(ContextError.FailedToFindInterface)
+      }
+    )
 
-// //  def MustInclude() = ???
+  //  def MustInclude() = ???
 
-//   def exactMatch(label: K, compareTo: Array[Byte]): Boolean =
-//     useInterface(label)(d => Some(d.bytes))(b => b sameElements compareTo)
+  def exactMatch(label: K, compareTo: Array[Byte])(implicit
+    monad:              Monad[F]
+  ): EitherT[F, QuivrRuntimeError, Array[Byte]] =
+    useInterface(label)(d => Right(d.value))(b => b sameElements compareTo)(monad)
 
-//   def lessThan(label: K, compareTo: Long): Boolean =
-//     useInterface(label)(d => Some(BigInt(d.bytes)))(n => n.longValue < compareTo)
+  def lessThan(label: K, compareTo: Long)(implicit
+                                          monad:              Monad[F]
+  ): EitherT[F, QuivrRuntimeError, Long] =
+    useInterface(label)(d => Right(BigInt(d.value).longValue))(n => n < compareTo)
 
-//   def greaterThan(label: K, compareTo: Long): Boolean =
-//     useInterface(label)(d => Some(BigInt(d.bytes)))(n => n.longValue > compareTo)
+  def greaterThan(label: K, compareTo: Long)(implicit
+                                             monad:              Monad[F]
+  ): EitherT[F, QuivrRuntimeError, Long] =
+    useInterface(label)(d => Right(BigInt(d.value).longValue))(n => n > compareTo)
 
-//   def equalTo(label: K, compareTo: Long): Boolean =
-//     useInterface(label)(d => Some(BigInt(d.bytes)))(n => n.longValue == compareTo)
+  def equalTo(label: K, compareTo: Long)(implicit
+                                         monad:              Monad[F]
+  ): EitherT[F, QuivrRuntimeError, Long] =
+    useInterface(label)(d => Right(BigInt(d.value).longValue))(n => n == compareTo)
 }
