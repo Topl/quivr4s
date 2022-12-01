@@ -5,6 +5,10 @@ import co.topl.node.typeclasses.ContainsEvidence.{ListOps, SignableOps}
 import co.topl.node.typeclasses.ContainsSignable.instances._
 import co.topl.quivr.Proposition
 
+// should be able to calculate or retrieve the root of the Lock
+// - from Predicate -> Image -> Commitment
+// - from Image -> Commitment
+// - from Commitment -> _.root
 sealed abstract class Lock
 
 // Predicate -> Image -> Commitment -> Signable -> Evidence -> Identifier -> Address -> Reference

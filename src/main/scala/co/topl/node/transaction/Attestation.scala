@@ -1,7 +1,6 @@
 package co.topl.node.transaction
 
 import co.topl.node.box.{Lock, Locks}
-import co.topl.quivr
 import co.topl.quivr.{Proof, Proposition}
 
 sealed abstract class Attestation {
@@ -10,8 +9,6 @@ sealed abstract class Attestation {
 }
 
 object Attestations {
-  val default: List[Option[Proof]] = List(Some(quivr.Models.Primitive.Locked.Proof()))
-
   case class Predicate(lock: Locks.Predicate, responses: List[Option[Proof]])
     extends Attestation
 

@@ -11,20 +11,20 @@ object Events {
 
   case class IoTransaction(
     schedule:     co.topl.node.transaction.IoTransaction.Schedule,
-    references32: List[References.KnownSpendable32],
-    references64: List[References.KnownSpendable64],
+    references32: List[Known.Reference32],
+    references64: List[Known.Reference64],
     metadata:     SmallData
   ) extends Event
 
   case class SpentOutput(
-    references32: List[References.KnownPredicate32],
-    references64: List[References.KnownPredicate64],
+    references32: List[Known.Predicate32],
+    references64: List[Known.Predicate64],
     metadata:     SmallData
   ) extends Event
 
   case class UnspentOutput(
-    references32: List[References.KnownBlob32],
-    references64: List[References.KnownBlob64],
+    references32: List[Known.Blob32],
+    references64: List[Known.Blob64],
     metadata:     SmallData
   ) extends Event
 }

@@ -1,13 +1,13 @@
 package co.topl.node.typeclasses
 
-import co.topl.node._
+import co.topl.node.{Event, _}
 import co.topl.node.box._
-import co.topl.node.transaction._
+import co.topl.node.transaction.{UnspentTransactionOutput, _}
 import co.topl.quivr.Models.Compositional.{And, Not, Or, Threshold}
 import co.topl.quivr.Models.Contextual._
 import co.topl.quivr.Models.Primitive.{Digest, DigitalSignature, Locked}
 import co.topl.quivr.runtime.Datum
-import co.topl.quivr.{Models, Proposition, SignableBytes}
+import co.topl.quivr.{Models, Proof, Proposition, SignableBytes}
 
 import java.nio.charset.StandardCharsets
 // Long -> longSignable -> longSignableEvidence -> longSignableEvidenceId
@@ -109,42 +109,42 @@ object ContainsSignable {
         id.tag.signable ++
         id.evidence.value.signable
 
-    implicit val referenceSignable: ContainsSignable[Reference] = {
-      case r: References.KnownPredicate32 => knownPredicate32ReferenceSignable.signableBytes(r)
-      case r: References.KnownPredicate64 => knownPredicate64ReferenceSignable.signableBytes(r)
-      case r: References.KnownBlob32      => blob32ReferenceSignable.signableBytes(r)
-      case r: References.KnownBlob64      => blob64ReferenceSignable.signableBytes(r)
-      case r: References.KnownSpendable32 => output32ReferenceSignable.signableBytes(r)
-      case r: References.KnownSpendable64 => output64ReferenceSignable.signableBytes(r)
+    implicit val referenceSignable: ContainsSignable[KnownIdentifier] = {
+      case r: Known.Predicate32 => knownPredicate32ReferenceSignable.signableBytes(r)
+      case r: Known.Predicate64 => knownPredicate64ReferenceSignable.signableBytes(r)
+      case r: Known.Blob32      => blob32ReferenceSignable.signableBytes(r)
+      case r: Known.Blob64      => blob64ReferenceSignable.signableBytes(r)
+      case r: Known.Reference32 => output32ReferenceSignable.signableBytes(r)
+      case r: Known.Reference64 => output64ReferenceSignable.signableBytes(r)
     }
 
-    implicit val knownPredicate32ReferenceSignable: ContainsSignable[References.KnownPredicate32] =
-      (reference: References.KnownPredicate32) =>
+    implicit val knownPredicate32ReferenceSignable: ContainsSignable[Known.Predicate32] =
+      (reference: Known.Predicate32) =>
         reference.indices.signable ++
         reference.id.signable
 
-    implicit val knownPredicate64ReferenceSignable: ContainsSignable[References.KnownPredicate64] =
-      (reference: References.KnownPredicate64) =>
+    implicit val knownPredicate64ReferenceSignable: ContainsSignable[Known.Predicate64] =
+      (reference: Known.Predicate64) =>
         reference.indices.signable ++
         reference.id.signable
 
-    implicit val blob32ReferenceSignable: ContainsSignable[References.KnownBlob32] =
-      (reference: References.KnownBlob32) =>
+    implicit val blob32ReferenceSignable: ContainsSignable[Known.Blob32] =
+      (reference: Known.Blob32) =>
         reference.indices.signable ++
         reference.id.signable
 
-    implicit val blob64ReferenceSignable: ContainsSignable[References.KnownBlob64] =
-      (reference: References.KnownBlob64) =>
+    implicit val blob64ReferenceSignable: ContainsSignable[Known.Blob64] =
+      (reference: Known.Blob64) =>
         reference.indices.signable ++
         reference.id.signable
 
-    implicit val output32ReferenceSignable: ContainsSignable[References.KnownSpendable32] =
-      (reference: References.KnownSpendable32) =>
+    implicit val output32ReferenceSignable: ContainsSignable[Known.Reference32] =
+      (reference: Known.Reference32) =>
         reference.indices.signable ++
         reference.id.signable
 
-    implicit val output64ReferenceSignable: ContainsSignable[References.KnownSpendable64] =
-      (reference: References.KnownSpendable64) =>
+    implicit val output64ReferenceSignable: ContainsSignable[Known.Reference64] =
+      (reference: Known.Reference64) =>
         reference.indices.signable ++
         reference.id.signable
 
@@ -203,29 +203,35 @@ object ContainsSignable {
     }
 
     implicit val predicateAttestationSignable: ContainsSignable[Attestations.Predicate] =
-      (attestation: Attestations.Predicate) => attestation.lock.signable
+      (attestation: Attestations.Predicate) =>
+        attestation.lock.signable ++
+        attestation.responses.signable
 
     implicit val image32AttestationSignable: ContainsSignable[Attestations.Image32] =
       (attestation: Attestations.Image32) =>
         attestation.lock.signable ++
-        attestation.known.signable
+        attestation.known.signable ++
+        attestation.responses.signable
 
     implicit val image64AttestationSignable: ContainsSignable[Attestations.Image64] =
       (attestation: Attestations.Image64) =>
         attestation.lock.signable ++
-        attestation.known.signable
+        attestation.known.signable ++
+        attestation.responses.signable
 
     implicit val commitment32AttestationSignable: ContainsSignable[Attestations.Commitment32] =
       (attestation: Attestations.Commitment32) =>
         attestation.lock.signable ++
-        attestation.known.signable
+        attestation.known.signable ++
+        attestation.responses.signable
 
     implicit val commitment64AttestationSignable: ContainsSignable[Attestations.Commitment64] =
       (attestation: Attestations.Commitment64) =>
         attestation.lock.signable ++
-        attestation.known.signable
+        attestation.known.signable ++
+        attestation.responses.signable
 
-    implicit def datumSignable[T: ContainsSignable]: ContainsSignable[Datum[Event]] = (datum: Datum[Event]) =>
+    implicit def datumSignable[T <: Event: ContainsSignable]: ContainsSignable[Datum[T]] = (datum: Datum[T]) =>
       datum.event.signable
 
     implicit val eventSignable: ContainsSignable[Event] = {
@@ -236,36 +242,36 @@ object ContainsSignable {
       case Events.Body(root)               => root.signable
       case Events.IoTransaction(schedule, references32, references64, metadata) =>
         schedule.signable ++ references32.signable ++ references64.signable ++ metadata.signable
-      case Events.SpentOutput(references32, references64,, metadata)   =>
+      case Events.SpentOutput(references32, references64, metadata) =>
         references32.signable ++ references64.signable ++ metadata.signable
-      case Events.UnspentOutput(references32, references64,, metadata) =>
+      case Events.UnspentOutput(references32, references64, metadata) =>
         references32.signable ++ references64.signable ++ metadata.signable
     }
 
     implicit val ioTransactionSignable: ContainsSignable[IoTransaction] = (iotx: IoTransaction) =>
       iotx.inputs.signable ++
       iotx.outputs.signable ++
-      iotx.datum.event.signable
+      iotx.datum.signable
 
     implicit val iotxScheduleSignable: ContainsSignable[IoTransaction.Schedule] = (schedule: IoTransaction.Schedule) =>
       schedule.min.signable ++
       schedule.max.signable
 
-    implicit val outputSignable: ContainsSignable[Spendable[_, _]] = {
-      case o: SpentOutput   => spentOutputSignable.signableBytes(o)
-      case o: UnspentOutput => unspentOutputSignable.signableBytes(o)
-    }
+    implicit def referenceSignable[T: ContainsSignable]: ContainsSignable[Reference[T]] =
+      (reference: Reference[T]) =>
+        reference.datum.signable ++
+        reference.opts.signable
 
     // doesn't include Box.Value since this is committed to via the reference
-    implicit val spentOutputSignable: ContainsSignable[SpentOutput] = (stxo: SpentOutput) =>
+    implicit val spentOutputSignable: ContainsSignable[SpentTransactionOutput] = (stxo: SpentTransactionOutput) =>
       stxo.reference.signable ++
       stxo.attestation.signable ++
-      stxo.datum.event.signable
+      stxo.datum.signable
 
-    implicit val unspentOutputSignable: ContainsSignable[UnspentOutput] = (utxo: UnspentOutput) =>
+    implicit val unspentOutputSignable: ContainsSignable[UnspentTransactionOutput] = (utxo: UnspentTransactionOutput) =>
       utxo.address.signable ++
       utxo.value.signable ++
-      utxo.datum.event.signable
+      utxo.datum.signable
 
     implicit val boxSignable: ContainsSignable[Box] = (box: Box) =>
       box.lock.signable ++
@@ -290,6 +296,22 @@ object ContainsSignable {
     implicit val utxoDatumSignable: ContainsSignable[Events.UnspentOutput] = (event: Events.UnspentOutput) =>
       event.references32.signable ++
       event.metadata.signable
+
+    implicit val proofSignable: ContainsSignable[Proof] = {
+      case _: Locked.Proof           => Array(0xff.toByte)
+      case _: Digest.Proof           => Array(0xff.toByte)
+      case _: DigitalSignature.Proof => Array(0xff.toByte)
+      case _: HeightRange.Proof      => Array(0xff.toByte)
+      case _: TickRange.Proof        => Array(0xff.toByte)
+      case _: ExactMatch.Proof       => Array(0xff.toByte)
+      case _: LessThan.Proof         => Array(0xff.toByte)
+      case _: GreaterThan.Proof      => Array(0xff.toByte)
+      case _: EqualTo.Proof          => Array(0xff.toByte)
+      case _: Threshold.Proof        => Array(0xff.toByte)
+      case _: Not.Proof              => Array(0xff.toByte)
+      case _: And.Proof              => Array(0xff.toByte)
+      case _: Or.Proof               => Array(0xff.toByte)
+    }
 
     implicit val propositionSignable: ContainsSignable[Proposition] = {
       case p: Locked.Proposition           => lockedSignable.signableBytes(p)
@@ -343,20 +365,20 @@ object ContainsSignable {
     implicit val lessThanSignable: ContainsSignable[Models.Contextual.LessThan.Proposition] =
       (p: LessThan.Proposition) =>
         LessThan.token.signable ++
-          p.location.signable ++
-          p.compareTo.signable
+        p.location.signable ++
+        p.compareTo.signable
 
     implicit val greaterThanSignable: ContainsSignable[Models.Contextual.GreaterThan.Proposition] =
       (p: GreaterThan.Proposition) =>
         GreaterThan.token.signable ++
-          p.location.signable ++
-          p.compareTo.signable
+        p.location.signable ++
+        p.compareTo.signable
 
     implicit val equalToSignable: ContainsSignable[Models.Contextual.EqualTo.Proposition] =
       (p: EqualTo.Proposition) =>
         EqualTo.token.signable ++
-          p.location.signable ++
-          p.compareTo.signable
+        p.location.signable ++
+        p.compareTo.signable
 
     implicit val thresholdSignable: ContainsSignable[Models.Compositional.Threshold.Proposition] =
       (p: Threshold.Proposition) =>
