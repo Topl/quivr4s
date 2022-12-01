@@ -13,12 +13,6 @@ sealed abstract class KnownIdentifier {
 
 object Known {
 
-  case class Leaf32(network: Int, ledger: Int, indices: List[Int], id: Identifiers.AccumulatorRoot32)
-      extends KnownIdentifier
-
-  case class Leaf64(network: Int, ledger: Int, indices: List[Int], id: Identifiers.AccumulatorRoot64)
-      extends KnownIdentifier
-
   case class Predicate32(network: Int, ledger: Int, indices: List[Int], id: Identifiers.Lock32) extends KnownIdentifier
 
   case class Predicate64(network: Int, ledger: Int, indices: List[Int], id: Identifiers.Lock64) extends KnownIdentifier
@@ -27,9 +21,15 @@ object Known {
 
   case class Blob64(network: Int, ledger: Int, indices: List[Int], id: Identifiers.BoxValue64) extends KnownIdentifier
 
-  case class Reference32(network: Int, ledger: Int, indices: List[Int], id: Identifiers.IoTransaction32)
+  case class TransactionOutput32(network: Int, ledger: Int, indices: List[Int], id: Identifiers.IoTransaction32)
+    extends KnownIdentifier
+
+  case class TransactionOutput64(network: Int, ledger: Int, indices: List[Int], id: Identifiers.IoTransaction64)
+    extends KnownIdentifier
+
+  case class Leaf32(network: Int, ledger: Int, indices: List[Int], id: Identifiers.AccumulatorRoot32)
       extends KnownIdentifier
 
-  case class Reference64(network: Int, ledger: Int, indices: List[Int], id: Identifiers.IoTransaction64)
+  case class Leaf64(network: Int, ledger: Int, indices: List[Int], id: Identifiers.AccumulatorRoot64)
       extends KnownIdentifier
 }

@@ -4,9 +4,9 @@ import co.topl.node.Events
 import co.topl.quivr.runtime.Datum
 
 case class IoTransaction(
-                          inputs:  List[SpentTransactionOutput],
-                          outputs: List[co.topl.node.transaction.UnspentTransactionOutput],
-                          datum:   Datum[Events.IoTransaction]
+  inputs:  List[SpentTransactionOutput],
+  outputs: List[UnspentTransactionOutput],
+  datum:   Datum[Events.IoTransaction]
 )
 
 object IoTransaction {

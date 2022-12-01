@@ -15,10 +15,6 @@ sealed abstract class Identifier {
 
 object Identifiers {
 
-  // known leaves
-  case class AccumulatorRoot32(evidence: Evidence[Digest32], tag: String = "acc_root_32") extends Identifier
-  case class AccumulatorRoot64(evidence: Evidence[Digest64], tag: String = "acc_root_64") extends Identifier
-
   // known predicates
   case class Lock32(evidence: Evidence[Digest32], tag: String = "box_lock_32") extends Identifier
   case class Lock64(evidence: Evidence[Digest64], tag: String = "box_lock_64") extends Identifier
@@ -30,6 +26,10 @@ object Identifiers {
   // known outputs
   case class IoTransaction32(evidence: Evidence[Digest32], tag: String = "iotx_32") extends Identifier
   case class IoTransaction64(evidence: Evidence[Digest64], tag: String = "iotx_64") extends Identifier
+
+  // known leaves
+  case class AccumulatorRoot32(evidence: Evidence[Digest32], tag: String = "acc_root_32") extends Identifier
+  case class AccumulatorRoot64(evidence: Evidence[Digest64], tag: String = "acc_root_64") extends Identifier
 
   def evidenceList32[T: ContainsSignable](list: List[T])(implicit
     ev:                                         ContainsEvidence[List[T]]

@@ -43,14 +43,14 @@ object Datums {
       override val event: Events.Header = datum
     }
 
-  def spentOutputDatum(datum: Events.SpentOutput): Datum[Events.SpentOutput] =
-    new Datum[Events.SpentOutput] {
-      override val event: Events.SpentOutput = datum
+  def spentOutputDatum(datum: Events.SpentTransactionOutput): Datum[Events.SpentTransactionOutput] =
+    new Datum[Events.SpentTransactionOutput] {
+      override val event: Events.SpentTransactionOutput = datum
     }
 
-  def unspentOutputDatum(datum: Events.UnspentOutput): Datum[Events.UnspentOutput] =
-    new Datum[Events.UnspentOutput] {
-      override val event: Events.UnspentOutput = datum
+  def unspentOutputDatum(datum: Events.UnspentTransactionOutput): Datum[Events.UnspentTransactionOutput] =
+    new Datum[Events.UnspentTransactionOutput] {
+      override val event: Events.UnspentTransactionOutput = datum
     }
 
 }
