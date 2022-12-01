@@ -1,14 +1,26 @@
 package co.topl.brambl
 
 import co.topl.quivr.Models.Primitive.Digest
-import co.topl.quivr.{Proposition, Proof}
+import co.topl.quivr.runtime.DynamicContext
+import co.topl.node.transaction.authorization.ValidationInterpreter
+import co.topl.quivr.api.Verifier
+import co.topl.node.transaction.IoTransaction
+import co.topl.quivr.SignableBytes
 
 // Easy to use Topl-opinionated layer for Brambl to use to access the un-opinionated quivr API
 
 object QuivrService {
-  def digestProposition: Digest.Proposition = ???
-  private def digestProof: Digest.Proof = ???
+  type ExecutionCtx[T] = T // Trivial runtime execution context
+  val context: DynamicContext[ExecutionCtx, String] = ???
 
-  // take in any proposition and return a corresponding proof??
-  def prove(prop: Proposition): Proof = ???
+  def digestProposition: Digest.Proposition = ???
+  def digestProof(msg: SignableBytes): Digest.Proof = ???
+
+  def validate(tx: IoTransaction): Boolean = {
+    implicit val verifier: Verifier[ExecutionCtx] = Verifier.instances.verifierInstance
+    ValidationInterpreter
+      .make[ExecutionCtx]()
+      .validate(context)(tx)
+      .isRight
+  }
 }
