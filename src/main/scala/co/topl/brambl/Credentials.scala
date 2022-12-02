@@ -15,7 +15,7 @@ object Credentials {
       val attestations = input.attestation match {
         case Attestations.Predicate(predLock, _) => Attestations.Predicate(
           predLock,
-          predLock.challenges.map(prop => Option(QuivrService.getProof(signable, prop)))
+          predLock.challenges.map(prop => QuivrService.getProof(signable, prop))
         )
         case _ => ???
       }

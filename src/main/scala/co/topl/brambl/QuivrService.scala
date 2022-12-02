@@ -1,7 +1,9 @@
 package co.topl.brambl
 
+import co.topl.common.Data
 import co.topl.common.Models.{Digest, DigestVerification, Preimage}
-import co.topl.quivr.Models.Primitive.Digest.{Proposition => DigestProposition, token => DIGESTTOKEN}
+import co.topl.quivr.Models.Primitive.Digest.{Proof => DigestProof, Proposition => DigestProposition}
+import co.topl.quivr.Models.Primitive.Locked.{Proof => LockedProof, Proposition => LockedProposition}
 import co.topl.quivr.runtime.DynamicContext
 import co.topl.node.transaction.authorization.ValidationInterpreter
 import co.topl.quivr.api.{Proposer, Prover, Verifier}
@@ -9,16 +11,15 @@ import co.topl.node.transaction.{Datums, IoTransaction}
 import co.topl.quivr.{Proof, Proposition, SignableBytes}
 import co.topl.crypto.hash.blake2b256
 import co.topl.node.Events
-import co.topl.node.typeclasses.ContainsSignable
 import co.topl.node.typeclasses.ContainsSignable.instances.ioTransactionSignable
 import co.topl.quivr.algebras.DigestVerifier
-import co.topl.quivr.runtime.{Datum, QuivrRuntimeErrors, QuivrRuntimeError}
+import co.topl.quivr.runtime.{Datum, QuivrRuntimeError, QuivrRuntimeErrors}
 
 // Easy to use Topl-opinionated layer for Brambl to use to access the un-opinionated quivr API
 
 object QuivrService {
 
-  private case class DigestValidator() extends DigestVerifier[Option] {
+  case class DigestValidator() extends DigestVerifier[Option] {
     override def validate(v: DigestVerification): Option[Either[QuivrRuntimeError, DigestVerification]] = {
       val test = blake2b256.hash(v.preimage.input ++ v.preimage.salt).value
       val expected = v.digest.value
@@ -38,10 +39,10 @@ object QuivrService {
       "era" -> Datums.eraDatum(Events.Era(22, 4)),
       "epoch" -> Datums.epochDatum(Events.Epoch(34, 6)),
       "header" -> Datums.headerDatum(Events.Header(24)),
-      "body" -> Datums.bodyDatum(Events.Body(Array(0: Byte)))
+      "root" -> Datums.rootDatum(Events.Root(Array(0: Byte)))
     )
     override val hashingRoutines = Map("blake2b256" -> DigestValidator())
-    override def signableBytes: Option[SignableBytes] = Option(ContainsSignable[IoTransaction].signableBytes(tx))
+    override def signableBytes: Option[SignableBytes] = Option(ioTransactionSignable.signableBytes(tx))
 
     // Arbitrary values
     override val interfaces = Map()
@@ -50,22 +51,28 @@ object QuivrService {
 
   }
 
-  val context: ToplContext = ???
+  def lockedProposition: LockedProposition =
+    Proposer.LockedProposer[Option, Option[Data]].propose(None).get
+
+  def lockedProof(msg: SignableBytes): LockedProof =
+    Prover.lockedProver[Option].prove((), msg).get
 
   def digestProposition(digest: Digest): DigestProposition =
-    Proposer.digestProposer[Option].propose(("blake2b256", digest)).get
-  def digestProof(msg: SignableBytes, preimage: Preimage): Proof =
-    Prover.proveAForMessage[Option, (String, Preimage)](DIGESTTOKEN, preimage)(msg).get
-
+    Proposer.digestProposer[Option, (String, Digest)].propose(("blake2b256", digest)).get
+  def digestProof(msg: SignableBytes, preimage: Preimage): DigestProof =
+    Prover.digestProver[Option].prove(preimage, msg).get
 
   // Credentials can iterate over known propositions and construct proof for each.
-  def getProof(msg: SignableBytes, proposition: Proposition) = {
+  def getProof(msg: SignableBytes, proposition: Proposition): Option[Proof] = {
     proposition match {
-      case _: DigestProposition => digestProof(msg, ???)
+      case _: LockedProposition => Some(lockedProof(msg))
+      case _: DigestProposition => Some(digestProof(msg, ???))
+      case _ => None
     }
   }
 
   def validate(tx: IoTransaction): Boolean = {
+    val context: ToplContext = ToplContext(tx)
     implicit val verifier: Verifier[Option] = Verifier.instances.verifierInstance
     ValidationInterpreter
       .make[Option]()
