@@ -14,6 +14,7 @@ target/
 project/
 .settings
 .ammonite/
+.ipynb_checkpoints/
 .classpath
 .cache
 .sbtserver
