@@ -13,7 +13,7 @@ lazy val catsVersion = "2.8.0"
 libraryDependencies ++= Seq(
   "org.typelevel" %% "cats-core" % catsVersion,
   "org.typelevel" %% "cats-free" % catsVersion,
-  "org.typelevel" %% "cats-effect" % "3.3.14",
+  "org.typelevel" %% "cats-effect" % "3.4.1",
   "org.scorexfoundation" %% "scrypto" % "2.2.1",
   "co.topl" %% "crypto" % "1.10.2",
   "org.typelevel" %% "simulacrum" % "1.0.1"
