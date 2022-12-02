@@ -1,6 +1,6 @@
 package co.topl.node
 
-trait KnownReference[O] {
+sealed abstract class KnownReference[O] {
   val network: Int
   val ledger: Int
   val indices: List[Int]

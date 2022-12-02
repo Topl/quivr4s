@@ -8,7 +8,7 @@ object Events {
   case class Epoch(beginSlot: Long, height: Long) extends Event
   case class Header(height: Long) extends Event
 
-  case class Root(value: Root) extends Event
+  case class Root(value: co.topl.node.Root) extends Event
 
   case class IoTransaction(
     schedule:     co.topl.node.transaction.IoTransaction.Schedule,
