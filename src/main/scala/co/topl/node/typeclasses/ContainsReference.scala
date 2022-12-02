@@ -1,7 +1,7 @@
 package co.topl.node.typeclasses
 
+import co.topl.node.Reference
 import co.topl.node.box.Value
-import co.topl.node.transaction.Reference
 import co.topl.quivr.runtime.Datum
 
 trait ContainsReference {
