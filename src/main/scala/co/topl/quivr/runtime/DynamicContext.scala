@@ -17,7 +17,7 @@ import co.topl.quivr.runtime.QuivrRuntimeErrors.{ContextError, ValidationError}
 trait DynamicContext[F[_], K] {
   val datums: Map[K, Datum[_]]
 
-  val interfaces: Map[K, ParsableDataInterface[F]]
+  val interfaces: Map[K, ParsableDataInterface]
   val signingRoutines: Map[K, SignatureVerifier[F]]
   val hashingRoutines: Map[K, DigestVerifier[F]]
 
