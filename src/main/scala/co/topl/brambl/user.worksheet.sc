@@ -1,7 +1,7 @@
 import co.topl.brambl.TransactionBuilder
 import co.topl.brambl.Credentials
 import co.topl.brambl.QuivrService
-import co.topl.node.References
+import co.topl.node.Known
 
 // Worksheet to use components to illustrate the examples
 
@@ -11,7 +11,7 @@ import co.topl.node.References
 
 // Example 2: Create unproven Tx from Txo references
 // If the user already has the Txos, then Example 1 can be skipped.
-val utxoRef = References.KnownSpendable32(0, 0,
+val utxoRef = Known.TransactionOutput32(0, 0,
   indices = List(0), // Referencing the 1st output in the Transaction (given by id)
   id = ??? // Referring to a transaction that already exists
 )

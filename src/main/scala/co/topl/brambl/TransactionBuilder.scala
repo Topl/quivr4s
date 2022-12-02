@@ -1,10 +1,10 @@
 package co.topl.brambl
 
 import co.topl.node.box.{Lock, Locks, Values}
-import co.topl.node.transaction.{Datums, IoTransaction, SpentOutput, UnspentOutput, Attestations}
-import co.topl.node.{Address, Events, Identifiers}
+import co.topl.node.transaction.{Datums, IoTransaction, SpentTransactionOutput, UnspentTransactionOutput, Attestations}
+import co.topl.node.{Address, Events, Identifiers, Known}
 import co.topl.quivr.runtime.Datum
-import co.topl.node.References
+
 
 
 // Create un-proven transactions
@@ -15,45 +15,44 @@ import co.topl.node.References
 object TransactionBuilder {
 
   // Construct input. Mostly hardcoded for now
-  private def constructSpentOutput(reference: References.KnownSpendable32): SpentOutput = {
-    val lock = Locks.Predicate(List(QuivrService.digestProposition), 1)
+  private def constructSpentOutput(reference: Known.TransactionOutput32): SpentTransactionOutput = {
+    val lock = Locks.Predicate(List(QuivrService.digestProposition(???)), 1)
     val responses = List.fill(lock.challenges.length)(None)
     val attestation = Attestations.Predicate(lock, responses)
 
     val value = Values.Token(1)
     val datum = DatumBuilder.constructSpentOutputDatum
     val opts = ???
-    SpentOutput(reference, attestation, value, datum, opts)
+    SpentTransactionOutput(reference, attestation, value, datum, opts)
   }
 
   // Construct output. Mostly hardcoded for now
-  private def constructUnspentOutput: UnspentOutput = {
-    val lock = Locks.Predicate(List(QuivrService.digestProposition), 1)
+  private def constructUnspentOutput: UnspentTransactionOutput = {
+    val lock = Locks.Predicate(List(QuivrService.digestProposition(???)), 1)
     val address = Address(0, 0, Identifiers.boxLock32(lock))
     val value = Values.Token(1)
     val datum = DatumBuilder.constructUnspentOutputDatum
     val opts = ???
-    UnspentOutput(address, value, datum, opts)
+    UnspentTransactionOutput(address, value, datum, opts)
   }
 
 
   // Will take in a list of Txos and more
   // For now will just hardcode
-  def constructIoTransaction(refs: List[References.KnownSpendable32]): IoTransaction  = {
+  def constructIoTransaction(refs: List[Known.TransactionOutput32]): IoTransaction  = {
     val inputs = refs.map(constructSpentOutput)
     val outputs = List(constructUnspentOutput)
     val datum = DatumBuilder.constructIoTxDatum
-    val opts = ??? // unsure
-    IoTransaction(inputs, outputs, datum, opts)
+    IoTransaction(inputs, outputs, datum)
   }
 }
 
 private object DatumBuilder {
   private def ioTxEvent: Events.IoTransaction = ???
-  private def spentOutputEvent: Events.SpentOutput = ???
-  private def unspentOutputEvent: Events.UnspentOutput = ???
+  private def spentOutputEvent: Events.SpentTransactionOutput = ???
+  private def unspentOutputEvent: Events.UnspentTransactionOutput = ???
 
   def constructIoTxDatum: Datum[Events.IoTransaction] = Datums.ioTransactionDatum(ioTxEvent)
-  def constructSpentOutputDatum: Datum[Events.SpentOutput] = Datums.spentOutputDatum(spentOutputEvent)
-  def constructUnspentOutputDatum: Datum[Events.UnspentOutput] = Datums.unspentOutputDatum(unspentOutputEvent)
+  def constructSpentOutputDatum: Datum[Events.SpentTransactionOutput] = Datums.spentOutputDatum(spentOutputEvent)
+  def constructUnspentOutputDatum: Datum[Events.UnspentTransactionOutput] = Datums.unspentOutputDatum(unspentOutputEvent)
 }

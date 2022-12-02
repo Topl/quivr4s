@@ -1,6 +1,6 @@
 package co.topl.brambl
 
-import co.topl.node.transaction.{IoTransaction, SpentOutput, Attestations}
+import co.topl.node.transaction.{IoTransaction, SpentTransactionOutput, Attestations}
 import co.topl.node.typeclasses.ContainsSignable.instances._
 import co.topl.node.typeclasses.ContainsSignable
 
@@ -11,22 +11,22 @@ object Credentials {
   def prove(unprovenTx: IoTransaction): IoTransaction = {
     val signable = ContainsSignable[IoTransaction].signableBytes(unprovenTx)
 
-    def proveInput(input: SpentOutput): SpentOutput = {
+    def proveInput(input: SpentTransactionOutput): SpentTransactionOutput = {
       val attestations = input.attestation match {
         case Attestations.Predicate(predLock, _) => Attestations.Predicate(
           predLock,
-          predLock.challenges.map(_ => Option(QuivrService.digestProof(signable)))
+          predLock.challenges.map(prop => Option(QuivrService.getProof(signable, prop)))
         )
         case _ => ???
       }
-      SpentOutput(input.reference, attestations, input.value, input.datum, input.opts)
+      SpentTransactionOutput(input.knownIdentifier, attestations, input.value, input.datum, input.opts)
     }
 
     // We are only worrying about 1 of 1 Digest predicates for now
     val inputs = unprovenTx.inputs.map(proveInput)
     IoTransaction(
       inputs,
-      unprovenTx.outputs, unprovenTx.datum, unprovenTx.opts
+      unprovenTx.outputs, unprovenTx.datum
     )
   }
 }
