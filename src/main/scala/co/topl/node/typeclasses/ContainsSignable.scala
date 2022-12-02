@@ -224,8 +224,7 @@ object ContainsSignable {
     }
 
     implicit val tokenValueSignable: ContainsSignable[Values.Token] = (token: Values.Token) =>
-      token.quantity.signable ++
-      token.blobs.signable
+      token.quantity.signable
 
     implicit val assetValueSignable: ContainsSignable[Values.Asset] = (asset: Values.Asset) =>
       asset.label.signable ++
