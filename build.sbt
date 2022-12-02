@@ -4,11 +4,11 @@ organization := "co.topl"
 
 version := "0.1"
 
-scalaVersion := "2.13.9"
+scalaVersion := "2.13.10"
 
 resolvers += "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/"
 
-lazy val catsVersion = "2.8.0"
+lazy val catsVersion = "2.9.0"
 
 libraryDependencies ++= Seq(
   "org.typelevel" %% "cats-core" % catsVersion,
