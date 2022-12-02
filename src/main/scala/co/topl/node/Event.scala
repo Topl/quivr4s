@@ -1,5 +1,9 @@
 package co.topl.node
 
+/**
+ * Events are uniquely identifiable occurrences of state mutations within the blockchain protocol.
+ * Each event is associated with certain data that may be updated every tick.
+ */
 sealed abstract class Event
 
 object Events {
