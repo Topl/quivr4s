@@ -2,7 +2,7 @@ package co.topl.node.box
 
 sealed abstract class Value {
   val quantity: Long
-  val blobs: List[Option[Blob]] = List()
+  val blobs: List[Option[Blob]]
 }
 
 object Values {

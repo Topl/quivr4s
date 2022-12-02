@@ -12,6 +12,17 @@ out/
 *.iml
 target/
 project/
+.settings
+.classpath
+.cache
+.sbtserver
+project/.sbtserver
+tags
+nohup.out
+out
+.bloop
+.vscode
+.metals
 
 # scala build folders
 target
