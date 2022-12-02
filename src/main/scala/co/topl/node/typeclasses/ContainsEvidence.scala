@@ -7,6 +7,9 @@ import co.topl.crypto.hash.{blake2b256, blake2b512, Blake2b}
 import co.topl.crypto.implicits.{blake2b256Hash, blake2b512Hash, digestDigest32, digestDigest64}
 import co.topl.node.Evidence
 
+/**
+ * Contains signable bytes and has methods to get evidence of those bytes in the form of a 32 or 64 byte hash.
+ */
 trait ContainsEvidence[T] {
   val value: T
   val sized32Evidence: Evidence[Digest32]
