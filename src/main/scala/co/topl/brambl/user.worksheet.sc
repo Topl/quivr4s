@@ -4,6 +4,7 @@ import co.topl.brambl.QuivrService
 import co.topl.node.KnownIdentifiers
 
 // Worksheet to use components to illustrate the examples
+// To simplify, for functions/fields with both a 32 and 64 version, I am only considering the 32 version
 
 
 // Example 1: Fetch Txo references from Indices (Optional)

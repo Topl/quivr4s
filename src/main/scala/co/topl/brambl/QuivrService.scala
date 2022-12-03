@@ -2,13 +2,12 @@ package co.topl.brambl
 
 import co.topl.common.Data
 import co.topl.common.Models.{Digest, DigestVerification, Preimage}
-import co.topl.quivr.Models.Primitive.Digest.{Proof => DigestProof, Proposition => DigestProposition}
-import co.topl.quivr.Models.Primitive.Locked.{Proof => LockedProof, Proposition => LockedProposition}
+import co.topl.quivr.Models.Primitive
 import co.topl.quivr.runtime.DynamicContext
 import co.topl.node.transaction.authorization.ValidationInterpreter
 import co.topl.quivr.api.{Proposer, Prover, Verifier}
 import co.topl.node.transaction.{Datums, IoTransaction}
-import co.topl.quivr.{Proof, Proposition, SignableBytes}
+import co.topl.quivr.{SignableBytes}
 import co.topl.crypto.hash.blake2b256
 import co.topl.node.Events
 import co.topl.node.typeclasses.ContainsSignable.instances.ioTransactionSignable
@@ -51,25 +50,16 @@ object QuivrService {
 
   }
 
-  def lockedProposition: LockedProposition =
+  def lockedProposition: Primitive.Locked.Proposition =
     Proposer.LockedProposer[Option, Option[Data]].propose(None).get
 
-  def lockedProof(msg: SignableBytes): LockedProof =
+  def lockedProof(msg: SignableBytes): Primitive.Locked.Proof =
     Prover.lockedProver[Option].prove((), msg).get
 
-  def digestProposition(digest: Digest): DigestProposition =
+  def digestProposition(digest: Digest): Primitive.Digest.Proposition =
     Proposer.digestProposer[Option, (String, Digest)].propose(("blake2b256", digest)).get
-  def digestProof(msg: SignableBytes, preimage: Preimage): DigestProof =
+  def digestProof(msg: SignableBytes, preimage: Preimage): Primitive.Digest.Proof =
     Prover.digestProver[Option].prove(preimage, msg).get
-
-  // Credentials can iterate over known propositions and construct proof for each.
-  def getProof(msg: SignableBytes, proposition: Proposition): Option[Proof] = {
-    proposition match {
-      case _: LockedProposition => Some(lockedProof(msg))
-      case _: DigestProposition => Some(digestProof(msg, ???))
-      case _ => None
-    }
-  }
 
   def validate(tx: IoTransaction): Boolean = {
     val context: ToplContext = ToplContext(tx)
