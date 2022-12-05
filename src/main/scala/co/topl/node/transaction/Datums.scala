@@ -33,14 +33,14 @@ object Datums {
       override val event: Events.Header = datum
     }
 
-  def bodyDatum(datum: Events.Header): Datum[Events.Header] =
-    new Datum[Events.Header] {
-      override val event: Events.Header = datum
+  def rootDatum(datum: Events.Root): Datum[Events.Root] =
+    new Datum[Events.Root] {
+      override val event: Events.Root = datum
     }
 
-  def ioTransactionDatum(datum: Events.Header): Datum[Events.Header] =
-    new Datum[Events.Header] {
-      override val event: Events.Header = datum
+  def ioTransactionDatum(datum: Events.IoTransaction): Datum[Events.IoTransaction] =
+    new Datum[Events.IoTransaction] {
+      override val event: Events.IoTransaction = datum
     }
 
   def spentOutputDatum(datum: Events.SpentTransactionOutput): Datum[Events.SpentTransactionOutput] =

@@ -8,28 +8,27 @@ import co.topl.node.typeclasses.ContainsSignable.instances._
 import co.topl.node.typeclasses.{ContainsEvidence, ContainsSignable}
 
 // Identifiers are tagged evidence
-sealed abstract class Identifier {
-  val tag: String
+sealed abstract class Identifier(val tag: String) {
   val evidence: Evidence[_]
 }
 
 object Identifiers {
 
   // known predicates
-  case class Lock32(evidence: Evidence[Digest32], tag: String = "box_lock_32") extends Identifier
-  case class Lock64(evidence: Evidence[Digest64], tag: String = "box_lock_64") extends Identifier
+  case class Lock32(evidence: Evidence[Digest32]) extends Identifier("box_lock_32")
+  case class Lock64(evidence: Evidence[Digest64]) extends Identifier("box_lock_64")
 
   // known blobs
-  case class BoxValue32(evidence: Evidence[Digest32], tag: String = "box_value_32") extends Identifier
-  case class BoxValue64(evidence: Evidence[Digest64], tag: String = "box_value_64") extends Identifier
+  case class BoxValue32(evidence: Evidence[Digest32]) extends Identifier("box_value_32")
+  case class BoxValue64(evidence: Evidence[Digest64]) extends Identifier("box_value_64")
 
   // known outputs
-  case class IoTransaction32(evidence: Evidence[Digest32], tag: String = "iotx_32") extends Identifier
-  case class IoTransaction64(evidence: Evidence[Digest64], tag: String = "iotx_64") extends Identifier
+  case class IoTransaction32(evidence: Evidence[Digest32]) extends Identifier("iotx_32")
+  case class IoTransaction64(evidence: Evidence[Digest64]) extends Identifier("iotx_64")
 
   // known leaves
-  case class AccumulatorRoot32(evidence: Evidence[Digest32], tag: String = "acc_root_32") extends Identifier
-  case class AccumulatorRoot64(evidence: Evidence[Digest64], tag: String = "acc_root_64") extends Identifier
+  case class AccumulatorRoot32(evidence: Evidence[Digest32]) extends Identifier("acc_root_32")
+  case class AccumulatorRoot64(evidence: Evidence[Digest64]) extends Identifier("acc_root_64")
 
   def evidenceList32[T: ContainsSignable](list: List[T])(implicit
     ev:                                         ContainsEvidence[List[T]]
