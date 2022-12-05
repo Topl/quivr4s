@@ -16,7 +16,7 @@ import co.topl.crypto.hash.blake2b256
 
 // Helper to get a digest obj from indices
 def getDigest(idx: Indices): Digest = Digest(
-  blake2b256.hash(Wallet.getSecret(idx)).value
+  blake2b256.hash(Wallet.getSecret(idx) ++ "salt".getBytes).value
 )
 
 // Helper to get N of 2 predicate
