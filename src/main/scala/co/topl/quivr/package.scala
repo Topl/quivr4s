@@ -1,59 +1,243 @@
 package co.topl
 
 package object quivr {
-  type Digest = Array[Byte]
+  type SignableBytes = Array[Byte] // MUST NOT include proof bytes
+  type TxBind = Array[Byte]
 
-  case class Box(evidence: Array[Byte], value: Box.Value)
+  // Propositions represent challenges that must be satisfied
+  sealed abstract class Proposition
 
-  object Box {
-    case class Id(bytes: Array[Byte])
-    case class Datum(data: Option[Metadata])
+  // For each Proposition there is a corresponding Proof that can be constructed to satisfy the given Proposition
+  sealed abstract class Proof(val tag: String, val bindToTransaction: TxBind)
 
-    sealed abstract class Value
-    object Values {
-      case class Lvl(quantity: Int, datum: Box.Datum) extends Value
-      case class Topl(quantity: Int, datum: Box.Datum) extends Value
+  // The operations offered via the Quivr DSL
+  object Operations {
+    trait Locked
+
+    trait Digest
+
+    trait DigitalSignature
+
+    trait HeightRange
+
+    trait TickRange
+
+    trait MustInclude
+
+    trait ExactMatch
+
+    trait LessThan
+
+    trait GreaterThan
+
+    trait EqualTo
+
+    trait Threshold
+
+    trait Not
+
+    trait And
+
+    trait Or
+  }
+
+  object Models {
+
+    object Primitive {
+
+      object Locked {
+        val token: String = "locked"
+
+        final case class Proposition(
+          data: Option[common.Data] = None
+        ) extends quivr.Proposition
+            with quivr.Operations.Locked
+
+        final case class Proof() extends quivr.Proof(token, Array(0: Byte)) with quivr.Operations.Locked
+      }
+
+      object Digest {
+        val token: String = "digest"
+
+        final case class Proposition(
+          routine: String,
+          digest:  common.Models.Digest
+        ) extends quivr.Proposition
+            with quivr.Operations.Digest
+
+        final case class Proof(
+          preimage:        common.Models.Preimage,
+          transactionBind: TxBind
+        ) extends quivr.Proof(token, transactionBind)
+            with quivr.Operations.Digest
+      }
+
+      object DigitalSignature {
+        val token: String = "digital_signature"
+
+        final case class Proposition(
+          routine: String,
+          vk:      common.Models.VerificationKey
+        ) extends quivr.Proposition
+            with quivr.Operations.DigitalSignature
+
+        final case class Proof(
+          witness:         common.Models.Witness,
+          transactionBind: TxBind
+        ) extends quivr.Proof(token, transactionBind)
+            with quivr.Operations.DigitalSignature
+      }
     }
-  }
 
-  case class SecretKey(bytes: Array[Byte])
-  case class VerificationKey(bytes: Array[Byte])
-  case class KeyPair(sk: SecretKey, vk: VerificationKey)
-  case class Signature(bytes: Array[Byte])
+    object Contextual {
 
-  case class Accumulator()
+      object HeightRange {
+        val token: String = "height_range"
 
-  case class TypedEvidence(prefix: Array[Byte], bytes: Array[Byte])
+        final case class Proposition(
+          chain: String,
+          min:   Long,
+          max:   Long
+        ) extends quivr.Proposition
+            with quivr.Operations.HeightRange
 
-  case class Metadata(prefix: Array[Byte], value: Array[Byte])
+        final case class Proof(
+          transactionBind: TxBind
+        ) extends quivr.Proof(token, transactionBind)
+            with quivr.Operations.HeightRange
+      }
 
-  case class Contract(propositions: Set[Proposal[_]], threshold: Int)
+      object TickRange {
+        val token: String = "tick_range"
 
-  case class Attestation(proofs: Set[Proof[_]])
+        final case class Proposition(
+          min: Long,
+          max: Long
+        ) extends quivr.Proposition
+            with quivr.Operations.TickRange
 
-  abstract class HasEval[E] {
-    val eval: E
-  }
+        final case class Proof(
+          transactionBind: TxBind
+        ) extends quivr.Proof(token, transactionBind)
+            with quivr.Operations.TickRange
+      }
 
-  trait Proposal[E] extends HasEval[E]
-  trait Proof[E] extends HasEval[E]
-  trait Verification[E] extends HasEval[E]
-  trait Signatory[E] extends HasEval[E]
+      object ExactMatch {
+        val token: String = "exact_match"
 
-  trait IoTransaction[I[_], O[_]] {
-    val inputs: List[I[_]]
-    val outputs: List[O[_]]
-  }
+        final case class Proposition(location: String, compareTo: Array[Byte])
+            extends quivr.Proposition
+            with quivr.Operations.ExactMatch
 
-  trait SpentTransactionOutput[V] {
-    val value: V
-    val utxoReference: Box.Id
-    val contract: Contract
-    val attestation: Attestation
-  }
+        final case class Proof(transactionBind: TxBind)
+            extends quivr.Proof(token, transactionBind)
+            with quivr.Operations.ExactMatch
+      }
 
-  trait UnspentTransactionOutput[V] {
-    val value: V
-    val spendEvidence: TypedEvidence
+      object LessThan {
+        val token: String = "less_than"
+
+        final case class Proposition(location: String, compareTo: Long)
+            extends quivr.Proposition
+            with quivr.Operations.LessThan
+
+        final case class Proof(transactionBind: TxBind)
+            extends quivr.Proof(token, transactionBind)
+            with quivr.Operations.LessThan
+      }
+
+      object GreaterThan {
+        val token: String = "greater_than"
+
+        final case class Proposition(location: String, compareTo: Long)
+            extends quivr.Proposition
+            with quivr.Operations.GreaterThan
+
+        final case class Proof(transactionBind: TxBind)
+            extends quivr.Proof(token, transactionBind)
+            with quivr.Operations.GreaterThan
+      }
+
+      object EqualTo {
+        val token: String = "equal_to"
+
+        final case class Proposition(location: String, compareTo: Long)
+            extends quivr.Proposition
+            with quivr.Operations.EqualTo
+
+        final case class Proof(transactionBind: TxBind)
+            extends quivr.Proof(token, transactionBind)
+            with quivr.Operations.EqualTo
+      }
+
+    }
+
+    object Compositional {
+
+      object Threshold {
+        val token: String = "threshold"
+
+        final case class Proposition(
+          challenges: Set[quivr.Proposition],
+          threshold:  Int
+        ) extends quivr.Proposition
+            with quivr.Operations.Threshold
+
+        final case class Proof(
+          responses:       Set[Option[quivr.Proof]],
+          transactionBind: TxBind
+        ) extends quivr.Proof(token, transactionBind)
+            with quivr.Operations.Threshold
+      }
+
+      object Not {
+        val token: String = "not"
+
+        final case class Proposition(
+          proposition: quivr.Proposition
+        ) extends quivr.Proposition
+            with quivr.Operations.Not
+
+        final case class Proof(
+          proof:           quivr.Proof,
+          transactionBind: TxBind
+        ) extends quivr.Proof(token, transactionBind)
+            with quivr.Operations.Not
+      }
+
+      object And {
+        val token: String = "and"
+
+        final case class Proposition(
+          left:  quivr.Proposition,
+          right: quivr.Proposition
+        ) extends quivr.Proposition
+            with quivr.Operations.And
+
+        final case class Proof(
+          left:            quivr.Proof,
+          right:           quivr.Proof,
+          transactionBind: TxBind
+        ) extends quivr.Proof(token, transactionBind)
+            with quivr.Operations.And
+      }
+
+      object Or {
+        val token: String = "or"
+
+        final case class Proposition(
+          left:  quivr.Proposition,
+          right: quivr.Proposition
+        ) extends quivr.Proposition
+            with quivr.Operations.Or
+
+        final case class Proof(
+          left:            quivr.Proof,
+          right:           quivr.Proof,
+          transactionBind: TxBind
+        ) extends quivr.Proof(token, transactionBind)
+            with quivr.Operations.Or
+      }
+    }
   }
 }
