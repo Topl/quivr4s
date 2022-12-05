@@ -1,5 +1,6 @@
 package co.topl.brambl
 
+import co.topl.brambl.Models.Indices
 import co.topl.common.Models.Digest
 import co.topl.node.box.{Blob, Lock, Locks, Values}
 import co.topl.node.transaction.IoTransaction.Schedule
@@ -41,19 +42,19 @@ object TransactionBuilder {
 
     val value = Values.Token(1, blobs)
 
-    val datumRefs = KnownReferences.Predicate32(
-      reference.network,
-      reference.ledger,
-      List(reference.index), // Why is this a list. Maybe I am misunderstanding this field
-      ??? // Not sure where this should come from
-    )
-
-    val datum = DatumBuilder.constructSpentOutputDatum(
-      List(datumRefs), // Why is this a list. Maybe I am misunderstanding this field
-      metadata
-    )
+//    val datumRefs = KnownReferences.Predicate32(
+//      reference.network,
+//      reference.ledger,
+//      List(reference.index), // Why is this a list. Maybe I am misunderstanding this field
+//      ??? // Not sure where this should come from
+//    )
+//
+//    val datum = DatumBuilder.constructSpentOutputDatum(
+//      List(datumRefs), // Why is this a list. Maybe I am misunderstanding this field
+//      metadata
+//    )
     val opts = ???
-    SpentTransactionOutput(reference, attestation, value, datum, opts)
+    SpentTransactionOutput(reference, attestation, value, datum = ???, opts)
   }
 
   // Construct output. Mostly hardcoded for now
@@ -63,9 +64,9 @@ object TransactionBuilder {
     val address = Address(0, 0, Identifiers.boxLock32(lock))
     val value = Values.Token(1, List())
     // TODO
-    val datum = DatumBuilder.constructUnspentOutputDatum(List(), Array())
+//    val datum = DatumBuilder.constructUnspentOutputDatum(List(), Array())
     val opts = ???
-    UnspentTransactionOutput(address, value, datum, opts)
+    UnspentTransactionOutput(address, value, datum = ???, opts)
   }
 
 
@@ -79,35 +80,35 @@ object TransactionBuilder {
 
                             ): IoTransaction  = {
     val inputs = inputRefs.map(constructInput(_))
-    val datum = DatumBuilder.constructIoTxDatum(schedule, inputRefs, txMeta)
-    IoTransaction(inputs, outputs, datum)
+//    val datum = DatumBuilder.constructIoTxDatum(schedule, inputRefs, txMeta)
+    IoTransaction(inputs, outputs, datum = ???)
   }
 }
 
-private object DatumBuilder {
-  def constructIoTxDatum(schedule: Schedule, refs: List[KnownIdentifiers.TransactionOutput32], metadata: SmallData): Datum[Events.IoTransaction] =
-    Datums.ioTransactionDatum(
-      Events.IoTransaction(
-        schedule,
-        refs,
-        List(),
-        metadata
-      )
-    )
-  def constructSpentOutputDatum(refs: List[KnownReferences.Predicate32], metadata: SmallData): Datum[Events.SpentTransactionOutput] =
-    Datums.spentOutputDatum(
-      Events.SpentTransactionOutput(
-        refs,
-        List(),
-        metadata
-      )
-    )
-  def constructUnspentOutputDatum(refs: List[KnownReferences.Blob32], metadata: SmallData): Datum[Events.UnspentTransactionOutput] =
-    Datums.unspentOutputDatum(
-      Events.UnspentTransactionOutput(
-        refs,
-        List(),
-        metadata
-      )
-    )
-}
+//private object DatumBuilder {
+//  def constructIoTxDatum(schedule: Schedule, refs: List[KnownIdentifiers.TransactionOutput32], metadata: SmallData): Datum[Events.IoTransaction] =
+//    Datums.ioTransactionDatum(
+//      Events.IoTransaction(
+//        schedule,
+//        refs,
+//        List(),
+//        metadata
+//      )
+//    )
+//  def constructSpentOutputDatum(refs: List[KnownReferences.Predicate32], metadata: SmallData): Datum[Events.SpentTransactionOutput] =
+//    Datums.spentOutputDatum(
+//      Events.SpentTransactionOutput(
+//        refs,
+//        List(),
+//        metadata
+//      )
+//    )
+//  def constructUnspentOutputDatum(refs: List[KnownReferences.Blob32], metadata: SmallData): Datum[Events.UnspentTransactionOutput] =
+//    Datums.unspentOutputDatum(
+//      Events.UnspentTransactionOutput(
+//        refs,
+//        List(),
+//        metadata
+//      )
+//    )
+//}

@@ -1,5 +1,6 @@
 package co.topl.brambl
 
+import co.topl.brambl.Models.Indices
 import co.topl.node.transaction.{Attestations, IoTransaction, SpentTransactionOutput}
 import co.topl.node.typeclasses.ContainsSignable.instances.ioTransactionSignable
 import co.topl.common.Models.{Digest, DigestVerification, Preimage}
