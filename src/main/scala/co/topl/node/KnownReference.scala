@@ -9,38 +9,21 @@ sealed abstract class KnownReference[O] {
 
 object KnownReferences {
 
-  case class Predicate32(
+  case class Predicate(
     network:   Int,
     ledger:    Int,
     indices:   List[Int],
     reference: Reference[Events.SpentTransactionOutput]
   ) extends KnownReference[Events.SpentTransactionOutput]
 
-  case class Predicate64(
-    network:   Int,
-    ledger:    Int,
-    indices:   List[Int],
-    reference: Reference[Events.SpentTransactionOutput]
-  ) extends KnownReference[Events.SpentTransactionOutput]
-
-  case class Blob32(
+  case class Blob(
     network:   Int,
     ledger:    Int,
     indices:   List[Int],
     reference: Reference[Events.UnspentTransactionOutput]
   ) extends KnownReference[Events.UnspentTransactionOutput]
 
-  case class Blob64(
-    network:   Int,
-    ledger:    Int,
-    indices:   List[Int],
-    reference: Reference[Events.UnspentTransactionOutput]
-  ) extends KnownReference[Events.UnspentTransactionOutput]
-
-  case class Leaf32(network: Int, ledger: Int, indices: List[Int], reference: Reference[Events.Root])
-      extends KnownReference[Events.Root]
-
-  case class Leaf64(network: Int, ledger: Int, indices: List[Int], reference: Reference[Events.Root])
+  case class Leaf(network: Int, ledger: Int, indices: List[Int], reference: Reference[Events.Root])
       extends KnownReference[Events.Root]
 
 }

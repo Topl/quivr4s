@@ -168,51 +168,27 @@ object ContainsSignable {
         knownId.id.signable
 
     implicit def knownReferenceSignable[T: ContainsSignable]: ContainsSignable[KnownReference[T]] = {
-      case k: KnownReferences.Predicate32 => knownPredicate32ReferenceSignable.signableBytes(k)
-      case k: KnownReferences.Predicate64 => knownPredicate64ReferenceSignable.signableBytes(k)
-      case k: KnownReferences.Blob32      => knownBlob32ReferenceSignable.signableBytes(k)
-      case k: KnownReferences.Blob64      => knownBlob64ReferenceSignable.signableBytes(k)
-      case k: KnownReferences.Leaf32      => knownLeaf32ReferenceSignable.signableBytes(k)
-      case k: KnownReferences.Leaf64      => knownLeaf64ReferenceSignable.signableBytes(k)
+      case k: KnownReferences.Predicate => knownPredicateReferenceSignable.signableBytes(k)
+      case k: KnownReferences.Blob      => knownBlobReferenceSignable.signableBytes(k)
+      case k: KnownReferences.Leaf      => knownLeafReferenceSignable.signableBytes(k)
     }
 
-    implicit val knownPredicate32ReferenceSignable: ContainsSignable[KnownReferences.Predicate32] =
-      (known: KnownReferences.Predicate32) =>
+    implicit val knownPredicateReferenceSignable: ContainsSignable[KnownReferences.Predicate] =
+      (known: KnownReferences.Predicate) =>
         known.network.signable ++
         known.ledger.signable ++
         known.indices.signable ++
         known.reference.signable
 
-    implicit val knownPredicate64ReferenceSignable: ContainsSignable[KnownReferences.Predicate64] =
-      (known: KnownReferences.Predicate64) =>
+    implicit val knownBlobReferenceSignable: ContainsSignable[KnownReferences.Blob] =
+      (known: KnownReferences.Blob) =>
         known.network.signable ++
         known.ledger.signable ++
         known.indices.signable ++
         known.reference.signable
 
-    implicit val knownBlob32ReferenceSignable: ContainsSignable[KnownReferences.Blob32] =
-      (known: KnownReferences.Blob32) =>
-        known.network.signable ++
-        known.ledger.signable ++
-        known.indices.signable ++
-        known.reference.signable
-
-    implicit val knownBlob64ReferenceSignable: ContainsSignable[KnownReferences.Blob64] =
-      (known: KnownReferences.Blob64) =>
-        known.network.signable ++
-        known.ledger.signable ++
-        known.indices.signable ++
-        known.reference.signable
-
-    implicit val knownLeaf32ReferenceSignable: ContainsSignable[KnownReferences.Leaf32] =
-      (known: KnownReferences.Leaf32) =>
-        known.network.signable ++
-        known.ledger.signable ++
-        known.indices.signable ++
-        known.reference.signable
-
-    implicit val knownLeaf64ReferenceSignable: ContainsSignable[KnownReferences.Leaf64] =
-      (known: KnownReferences.Leaf64) =>
+    implicit val knownLeafReferenceSignable: ContainsSignable[KnownReferences.Leaf] =
+      (known: KnownReferences.Leaf) =>
         known.network.signable ++
         known.ledger.signable ++
         known.indices.signable ++
@@ -339,12 +315,12 @@ object ContainsSignable {
 
     implicit val stxoEventSignable: ContainsSignable[Events.SpentTransactionOutput] =
       (event: Events.SpentTransactionOutput) =>
-        event.references32.signable ++
+        event.references.signable ++
         event.metadata.signable
 
     implicit val utxoEventSignable: ContainsSignable[Events.UnspentTransactionOutput] =
       (event: Events.UnspentTransactionOutput) =>
-        event.references32.signable ++
+        event.references.signable ++
         event.metadata.signable
 
     implicit val proofSignable: ContainsSignable[Proof] = {

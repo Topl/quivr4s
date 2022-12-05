@@ -3,6 +3,10 @@ package co.topl.node.transaction
 import co.topl.node.box.{Lock, Locks}
 import co.topl.quivr.{Proof, Proposition}
 
+/**
+ * Attestation reveals responses to a specified Lock. An attestation is verified to ensure the veracity of the attestation.
+ * A list of options is provided to facilitate multi-signature verification methods where only some proods are known.
+ */
 sealed abstract class Attestation {
   val lock: Lock
   val responses: List[Option[Proof]]
