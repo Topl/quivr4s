@@ -107,6 +107,6 @@ val iotx1of2Proven = Credentials.prove(iotx1of2Unproven)
 val iotx2of2Proven = Credentials.prove(iotx2of2Unproven)
 
 printTxResult(iotx1of2Unproven)
-//printTxResult(iotx1of2Proven)
+printTxResult(iotx1of2Proven)
 printTxResult(iotx2of2Unproven)
-//printTxResult(iotx2of2Proven)
+printTxResult(iotx2of2Proven)

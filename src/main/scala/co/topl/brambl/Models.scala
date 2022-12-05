@@ -27,7 +27,7 @@ object Models {
     case _ => "???"
 
   }
-  implicit val showOptionProof: Show[Option[Proof]] = Show.show(p => if(p.isDefined) p.show else "X")
+  implicit val showOptionProof: Show[Option[Proof]] = Show.show(p => if(p.isDefined) (p.get:Proof).show else "X")
   implicit val showAttestation: Show[Attestation] = Show.show(att =>
     s"Att(\n\t${att.lock.show}\n\t${att.responses.map(_.show)}\n)"
   )
