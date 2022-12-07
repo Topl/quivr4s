@@ -23,18 +23,22 @@ def signableBytesAreNotMutated(unprovenTx: IoTransaction, provenTx: IoTransactio
 // Helper for manual testing
 def runTest(label: String, unprovenTx: IoTransaction,
             expectedPass: Boolean, curTick: Long, headerHeight: Long): Unit = {
-  println("==========================")
   println(label)
-//  println(unprovenTx.show)
   val proven = Credentials.prove(unprovenTx)
-//  println(proven.show)
   val bytesSame = signableBytesAreNotMutated(unprovenTx, proven)
-  println(s"Signable bytes stayed the same: ${bytesSame}")
   implicit val ctx: DynamicContext[Option, String] = Context.getContext(proven, Some(curTick),
     Map("header" -> Some(Datums.headerDatum(Events.Header(headerHeight)))))
   val isAuthorized = Credentials.validate(proven)
-  println(s"Is authorized? ${isAuthorized}")
-  println(s"Test ${if(isAuthorized == expectedPass && bytesSame) "passed" else "failed" }")
+  val testPassed = isAuthorized == expectedPass && bytesSame
+  println(s"Test ${if(testPassed) "passed" else "failed" }")
+  if(!testPassed) {
+    println(proven.show)
+    println(s"Signable bytes stayed the same: ${bytesSame}")
+    println(s"ctx.currentTick: ${ctx.currentTick.get}")
+    println(s"ctx heightOf header: ${ctx.heightOf("header").get}")
+    println(s"Is authorized? ${isAuthorized}")
+  }
+  println("==========================")
 }
 
 

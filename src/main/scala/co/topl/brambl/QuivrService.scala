@@ -35,12 +35,12 @@ object QuivrService {
   }
 
   def heightProposition(min: Long, max: Long, chain: String = "header"): Contextual.HeightRange.Proposition =
-    Proposer.heightProposer[Option, (String, Digest)].propose((chain, min, max)).get
+    Proposer.heightProposer[Option, (String, Long, Long)].propose((chain, min, max)).get
   def heightProof(msg: SignableBytes): Contextual.HeightRange.Proof =
     Prover.heightProver[Option].prove((), msg).get
 
   def tickProposition(min: Long, max: Long): Contextual.TickRange.Proposition =
-    Proposer.tickProposer[Option, (String, Digest)].propose((min, max)).get
+    Proposer.tickProposer[Option, (Long, Long)].propose((min, max)).get
   def tickProof(msg: SignableBytes): Contextual.TickRange.Proof =
     Prover.tickProver[Option].prove((), msg).get
 
