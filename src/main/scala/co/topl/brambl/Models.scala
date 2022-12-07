@@ -2,6 +2,7 @@ package co.topl.brambl
 
 import cats.Show
 import cats.implicits.toShow
+import co.topl.common.Models.VerificationKey
 import co.topl.node.box.{Lock, Locks}
 import co.topl.node.{Address, Identifier, KnownIdentifier}
 import co.topl.node.transaction.{Attestation, IoTransaction, SpentTransactionOutput, UnspentTransactionOutput}
@@ -10,6 +11,9 @@ import co.topl.quivr.{Proof, Proposition}
 
 
 object Models {
+  case class SigningKey(value: Array[Byte]) // To mirror VerificationKey
+  case class KeyPair(sk: SigningKey, vk: VerificationKey)
+
   case class Indices(x: Int, y: Int, z: Int)
   implicit val showIndices: Show[Indices] = Show.show(idx => s"(${idx.x},${idx.y},${idx.z})")
 

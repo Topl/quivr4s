@@ -1,27 +1,44 @@
 package co.topl.brambl
 
-import co.topl.brambl.Models.Indices
-import co.topl.crypto.hash.digest.{Digest32, Digest64}
-import co.topl.node.box.Locks
-import co.topl.node.typeclasses.ContainsEvidence.SignableOps
-import co.topl.node.typeclasses.ContainsSignable.instances.predicateLockSignable
-import co.topl.node.{Evidence, Identifiers, KnownIdentifier, KnownIdentifiers}
+import co.topl.brambl.Crypto.{Curve25519}
+import co.topl.brambl.Models.{Indices, KeyPair}
+import co.topl.common.Models.Preimage
+import co.topl.node.transaction.IoTransaction.Schedule
+import co.topl.node.transaction.{Datums, IoTransaction}
+import co.topl.node.{Events, Identifiers, KnownIdentifier, KnownIdentifiers}
 
 // Wallet storage api. Will just return dummy values
 
 object Wallet {
 
-  val txEvidence =
-    Locks.Predicate(List(), 1) // Should actually be a reference to an existing TX, but for the sake of running the examples
-    .blake2bEvidence.sized32Evidence
-  val dummyId = KnownIdentifiers.TransactionOutput32(0, 0, 0, Identifiers.IoTransaction32(txEvidence))
-  val idToIdx: Map[KnownIdentifier, Indices] = Map(dummyId -> Indices(0, 0, 0))
-  val idxToId: Map[Indices, KnownIdentifier] = Map(Indices(0, 0, 0) -> dummyId)
-  def getIndicesByIdentifier(id: KnownIdentifier): Indices = idToIdx(id)
-  def getKnownIdentifierByIndices(idx: Indices): KnownIdentifier = idxToId(idx)
+  // Arbitrary Transaction that any new transaction can reference
+  private val dummyTx1 = IoTransaction(List(), List(),
+    Datums.ioTransactionDatum(Events.IoTransaction(Schedule(0, 5, 100), List(), List(), Array())))
+  private val dummyTxIdentifier1 = KnownIdentifiers.TransactionOutput32(0, 0, 0, Identifiers.transaction32(dummyTx1))
+  private val dummyTx2 = IoTransaction(List(), List(),
+    Datums.ioTransactionDatum(Events.IoTransaction(Schedule(10, 50, 100), List(), List(), Array())))
+  private val dummyTxIdentifier2 = KnownIdentifiers.TransactionOutput32(0, 0, 0, Identifiers.transaction32(dummyTx2))
 
-  // Somehow fetch predicate from KnownIdentifier
-  def getPredicateByIdentifier(id: KnownIdentifier): Locks.Predicate = ???
+  // Static mappings to provide the Wallet with data
+  val idToIdx: Map[KnownIdentifier, Indices] = Map(
+    dummyTxIdentifier1 -> Indices(0, 0, 0),
+    dummyTxIdentifier2 -> Indices(0, 1, 0)
+  )
+  val idxToId: Map[Indices, KnownIdentifier] = Map(
+    Indices(0, 0, 0) -> dummyTxIdentifier1,
+    Indices(0, 1, 0) -> dummyTxIdentifier2
+  )
 
-  def getSecret(idx: Indices): Array[Byte] = s"${idx.x},${idx.y},${idx.z}".getBytes
+  def getIndicesByIdentifier(id: KnownIdentifier): Option[Indices] = idToIdx.get(id)
+  def getKnownIdentifierByIndices(idx: Indices): Option[KnownIdentifier] = idxToId.get(idx)
+
+  private def getSecret(idx: Indices): Array[Byte] = s"${idx.x},${idx.y},${idx.z}".getBytes
+  def getPreimage(idx: Indices): Option[Preimage] =
+    if(idx.x == 0 && idx.y == 0 && idx.z == 0) // Mocking that we only have access to secrets associated with idx 0,0,0
+        Some(Preimage(getSecret(idx), "salt".getBytes))
+    else None
+  def getKeyPair(idx: Indices): Option[KeyPair] =
+    if(idx.x == 0 && idx.y == 0 && idx.z == 0) // Mocking that we only have access to secrets associated with idx 0,0,0
+      Some(Curve25519.getKeyPair(getSecret(idx)))
+    else None
 }
