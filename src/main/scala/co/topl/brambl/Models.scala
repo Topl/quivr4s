@@ -6,7 +6,7 @@ import co.topl.common.Models.VerificationKey
 import co.topl.node.box.{Lock, Locks}
 import co.topl.node.{Address, Identifier, KnownIdentifier}
 import co.topl.node.transaction.{Attestation, IoTransaction, SpentTransactionOutput, UnspentTransactionOutput}
-import co.topl.quivr.Models.Primitive
+import co.topl.quivr.Models.{Primitive, Contextual}
 import co.topl.quivr.{Proof, Proposition}
 
 
@@ -19,21 +19,27 @@ object Models {
 
 
   implicit val showProposition: Show[Proposition] = Show.show {
-    case _: Primitive.Locked.Proposition => "LockedProposition"
-    case d: Primitive.Digest.Proposition => s"DigestProposition(${d.digest.value.hashCode}))"
+    case _: Primitive.Locked.Proposition => "Locked"
+    case d: Primitive.Digest.Proposition => s"Digest(${d.digest.value.hashCode}))"
+    case d: Primitive.DigitalSignature.Proposition => s"Signature(${d.vk.value.hashCode}))"
+    case d: Contextual.HeightRange.Proposition => s"Height(${d.min},${d.max}))"
+    case d: Contextual.TickRange.Proposition => s"Tick(${d.min},${d.max}))"
   }
   implicit val showLock: Show[Lock] = Show.show {
     case p: Locks.Predicate => s"Predicate(${p.challenges.map(_.show)},${p.threshold})"
   }
   implicit val showProof: Show[Proof] = Show.show {
-    case _: Primitive.Locked.Proof => "LockedProof"
-    case d: Primitive.Digest.Proof => s"DigestProof(${d.preimage.input.hashCode})"
+    case _: Primitive.Locked.Proof => "Locked"
+    case d: Primitive.Digest.Proof => s"Digest(${d.preimage.input.hashCode})"
+    case d: Primitive.DigitalSignature.Proof => s"Signature(${d.witness.value.hashCode})"
+    case _: Contextual.HeightRange.Proof => s"Height"
+    case _: Contextual.TickRange.Proof => s"Tick"
     case _ => "???"
 
   }
   implicit val showOptionProof: Show[Option[Proof]] = Show.show(p => if(p.isDefined) (p.get:Proof).show else "X")
   implicit val showAttestation: Show[Attestation] = Show.show(att =>
-    s"Att(\n\t${att.lock.show}\n\t${att.responses.map(_.show)}\n)"
+    s"Att(\n\t${att.lock.show}\n\tresponses: ${att.responses.map(_.show)}\n)"
   )
   implicit val showIdentifier: Show[Identifier] = Show.show(id => s"Id(${id.tag}: ${id.evidence.value.hashCode})")
   implicit val showAddress: Show[Address] = Show.show(addr =>

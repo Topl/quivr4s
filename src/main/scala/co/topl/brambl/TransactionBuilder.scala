@@ -15,7 +15,7 @@ import co.topl.quivr.runtime.Datum
 
 object TransactionBuilder {
 
-  // Helper to get N of 5 predicate
+  // Helper to get N of 5 predicate. only used in constructTestInput
   // Propositions in predicate are: Locked, Digest, Signature, Height, and Tick
   private def getPredicate(threshold: Int, idx: Indices): Locks.Predicate = Locks.Predicate(
     List(
@@ -43,11 +43,12 @@ object TransactionBuilder {
    *
    * @return The unproven input
    */
-  def constructTestInput(threshold: Int, idx: Indices): SpentTransactionOutput = {
+  private def constructTestInput(threshold: Int, idx: Indices): SpentTransactionOutput = {
     val knownIdentifier = Wallet.getKnownIdentifierByIndices(idx).get
+    val predicate = getPredicate(threshold, idx)
     val attestation = Attestations.Predicate(
-      getPredicate(threshold, idx),
-      List(None, None) // Its unproven
+      predicate,
+      List.fill(predicate.challenges.length)(None) // Its unproven
     )
     val value = Values.Token(
       1,
@@ -68,7 +69,7 @@ object TransactionBuilder {
    * @param threshold
    * @return The transaction output
    */
-  def constructTestOutput(threshold: Int): UnspentTransactionOutput = {
+  private def constructTestOutput(threshold: Int): UnspentTransactionOutput = {
     val address = Address(0, 0, Identifiers.boxLock32(
       Locks.Predicate(List(QuivrService.lockedProposition), 1)
     ))

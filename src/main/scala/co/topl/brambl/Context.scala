@@ -1,7 +1,6 @@
 package co.topl.brambl
 
-import co.topl.node.Events
-import co.topl.node.transaction.{Datums, IoTransaction}
+import co.topl.node.transaction.{IoTransaction}
 import co.topl.node.typeclasses.ContainsSignable.instances.ioTransactionSignable
 import co.topl.quivr.SignableBytes
 import co.topl.quivr.runtime.{Datum, DynamicContext}
@@ -50,19 +49,11 @@ object Context {
 
     // The following 2
     override def currentTick: Option[Long] = curTick
-
-    private val heightData: Map[String, Datum[_]] = Map(
-      "eon" -> Datums.eonDatum(Events.Eon(10, 2)), // <- not sure what "beginSlot" is referring to. First slot of the eon?
-      "era" -> Datums.eraDatum(Events.Era(22, 4)),
-      "epoch" -> Datums.epochDatum(Events.Epoch(34, 6)),
-      "header" -> Datums.headerDatum(Events.Header(24)),
-      "root" -> Datums.rootDatum(Events.Root(Array(0: Byte)))
-    )
     // Needed for height
     override val datums: String => Option[Datum[_]] = heightDatums
   }
 
-  def getContext(tx: IoTransaction)(implicit curTick: Option[Long],
+  def getContext(tx: IoTransaction, curTick: Option[Long],
                                     heightDatums: String => Option[Datum[_]]): DynamicContext[Option, String] =
     ToplContext(tx, curTick, heightDatums)
 }
