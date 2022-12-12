@@ -5,13 +5,13 @@
 import cats.implicits.toShow
 import co.topl.brambl.{Context, Credentials, QuivrService, TransactionBuilder, Wallet}
 import co.topl.brambl.Models._
-import co.topl.common.Models.Digest
 import co.topl.node.{Address, Events, Identifiers}
-import co.topl.node.box.{Locks, Values}
-import co.topl.node.transaction.{Attestations, Datums, IoTransaction, SpentTransactionOutput, UnspentTransactionOutput}
-import co.topl.quivr.runtime.{Datum, DynamicContext}
-import co.topl.crypto.hash.blake2b256
+import co.topl.node.transaction.{Datums, IoTransaction, SpentTransactionOutput, UnspentTransactionOutput}
+import co.topl.quivr.runtime.{DynamicContext}
+import co.topl.node.box.Locks.Predicate
 import co.topl.node.typeclasses.ContainsSignable.instances.ioTransactionSignable
+import co.topl.quivr.api.Verifier
+import co.topl.quivr.{Proof, Proposition}
 
 
 def signableBytesAreNotMutated(unprovenTx: IoTransaction, provenTx: IoTransaction): Boolean = {
@@ -37,6 +37,20 @@ def runTest(label: String, unprovenTx: IoTransaction,
     println(s"ctx.currentTick: ${ctx.currentTick.get}")
     println(s"ctx heightOf header: ${ctx.heightOf("header").get}")
     println(s"Is authorized? ${isAuthorized}")
+    println("here")
+    proven.inputs.map(_.attestation).foreach(att => {
+      val props: List[Proposition] = att.lock match {
+        case p: Predicate => p.challenges
+        case _ => List()
+      }
+      val resps: List[Option[Proof]] = att.responses
+      val defined = ((props zip resps) filter (_._2.isDefined)) map (x => (x._1, x._2.get))
+      defined.foreach(x => {
+        println(x._1, x._2)
+        val res = Verifier.instances.verifierInstance[Option].evaluate(x._1, x._2, ctx)
+        println(res.get)
+      })
+    })
   }
   println("==========================")
 }
