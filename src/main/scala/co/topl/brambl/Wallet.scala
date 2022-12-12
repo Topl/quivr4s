@@ -1,8 +1,8 @@
 package co.topl.brambl
 
-import co.topl.brambl.Crypto.{Curve25519}
-import co.topl.brambl.Models.{Indices, KeyPair}
-import co.topl.common.Models.Preimage
+import co.topl.brambl.Models.{Indices, KeyPair, SigningKey}
+import co.topl.common.Models.{Preimage, VerificationKey}
+import co.topl.crypto.signatures
 import co.topl.node.transaction.IoTransaction.Schedule
 import co.topl.node.transaction.{Datums, IoTransaction}
 import co.topl.node.{Events, Identifiers, KnownIdentifier, KnownIdentifiers}
@@ -38,7 +38,8 @@ object Wallet {
         Some(Preimage(getSecret(idx), "salt".getBytes))
     else None
   def getKeyPair(idx: Indices): Option[KeyPair] =
-    if(idx.x == 0 && idx.y == 0 && idx.z == 0) // Mocking that we only have access to secrets associated with idx 0,0,0
-      Some(Curve25519.getKeyPair(getSecret(idx)))
-    else None
+    if(idx.x == 0 && idx.y == 0 && idx.z == 0){ // Mocking that we only have access to secrets associated with idx 0,0,0
+      val (sk, vk) = signatures.Curve25519.createKeyPair(getSecret(idx))
+      Some(KeyPair(SigningKey(sk.value), VerificationKey(vk.value)))
+    } else None
 }

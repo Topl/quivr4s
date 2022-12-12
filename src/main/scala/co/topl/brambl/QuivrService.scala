@@ -1,9 +1,10 @@
 package co.topl.brambl
 
-import co.topl.brambl.Crypto.{Blake2b256, Curve25519}
 import co.topl.brambl.Models.SigningKey
 import co.topl.common.Data
 import co.topl.common.Models.{Digest, Preimage, VerificationKey, Witness}
+import co.topl.crypto.{PrivateKey, signatures}
+import co.topl.crypto.hash.blake2b256
 import co.topl.quivr.Models.{Contextual, Primitive}
 import co.topl.quivr.api.{Proposer, Prover}
 import co.topl.quivr.SignableBytes
@@ -19,7 +20,7 @@ object QuivrService {
 
   // Hardcoding "blake2b256"
   def digestProposition(preimage: Preimage): Primitive.Digest.Proposition = {
-    val digest: Digest = Digest(Blake2b256.hash(preimage.input ++ preimage.salt))
+    val digest: Digest = Digest(blake2b256.hash(preimage.input ++ preimage.salt).value)
     Proposer.digestProposer[Option, (String, Digest)].propose(("blake2b256", digest)).get
   }
 
@@ -30,7 +31,7 @@ object QuivrService {
   def signatureProposition(vk: VerificationKey): Primitive.DigitalSignature.Proposition =
     Proposer.signatureProposer[Option, (String, VerificationKey)].propose(("curve25519", vk)).get
   def signatureProof(msg: SignableBytes, sk: SigningKey): Primitive.DigitalSignature.Proof = {
-    val witness: Witness = Curve25519.sign(sk, msg)
+    val witness: Witness = Witness(signatures.Curve25519.sign(PrivateKey(sk.value), msg).value)
     Prover.signatureProver[Option].prove(witness, msg).get
   }
 
