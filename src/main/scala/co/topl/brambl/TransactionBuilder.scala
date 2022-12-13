@@ -37,31 +37,32 @@ object TransactionBuilder {
 
   /**
    * Construct an unproven input.
-   * The output is an N of 2 attestation with a locked and digest operation
    *
-   * Precondition: We have access to
-   *
+   * @param threshold The threshold of the input's attestation
+   * @param idx   indices of the known identifier that the input will be referencing.
+   *               If the wallet does not have a known identifier at these indices, then None is returned
    * @return The unproven input
    */
-  private def constructTestInput(threshold: Int, idx: Indices): SpentTransactionOutput = {
-    val knownIdentifier = Wallet.getKnownIdentifierByIndices(idx).get
-    val predicate = getPredicate(threshold, idx)
-    val attestation = Attestations.Predicate(
-      predicate,
-      List.fill(predicate.challenges.length)(None) // Its unproven
-    )
-    val value = Values.Token(
-      1,
-      List() // blobs does not seem necessary to credentialler
-    )
-    val datum: Datum[Events.SpentTransactionOutput] = Datums.spentOutputDatum(
-      Events.SpentTransactionOutput(
-        List(), // references does not seem necessary to credentialler
-        Array() // metadata is trivial to credentialler
+  private def constructTestInput(threshold: Int, idx: Indices): Option[SpentTransactionOutput] = {
+    Wallet.getKnownIdentifierByIndices(idx).map {knownIdentifier =>
+      val predicate = getPredicate(threshold, idx)
+      val attestation = Attestations.Predicate(
+        predicate,
+        List.fill(predicate.challenges.length)(None) // Its unproven
       )
-    )
-    val opts = List() // opts does not seem necessary to credentialler
-    SpentTransactionOutput(knownIdentifier, attestation, value, datum, opts)
+      val value = Values.Token(
+        1,
+        List() // blobs does not seem necessary to credentialler
+      )
+      val datum: Datum[Events.SpentTransactionOutput] = Datums.spentOutputDatum(
+        Events.SpentTransactionOutput(
+          List(), // references does not seem necessary to credentialler
+          Array() // metadata is trivial to credentialler
+        )
+      )
+      val opts = List() // opts does not seem necessary to credentialler
+      SpentTransactionOutput(knownIdentifier, attestation, value, datum, opts)
+    }
   }
 
   /**

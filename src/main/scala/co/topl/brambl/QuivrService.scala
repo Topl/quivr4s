@@ -13,36 +13,36 @@ import co.topl.quivr.SignableBytes
 
 object QuivrService {
 
-  def lockedProposition: Primitive.Locked.Proposition =
-    Proposer.LockedProposer[Option, Option[Data]].propose(None).get
-  def lockedProof(msg: SignableBytes): Primitive.Locked.Proof =
-    Prover.lockedProver[Option].prove((), msg).get
+  def lockedProposition: Option[Primitive.Locked.Proposition] =
+    Proposer.LockedProposer[Option, Option[Data]].propose(None)
+  def lockedProof(msg: SignableBytes): Option[Primitive.Locked.Proof] =
+    Prover.lockedProver[Option].prove((), msg)
 
   // Hardcoding "blake2b256"
-  def digestProposition(preimage: Preimage): Primitive.Digest.Proposition = {
+  def digestProposition(preimage: Preimage): Option[Primitive.Digest.Proposition] = {
     val digest: Digest = Digest(blake2b256.hash(preimage.input ++ preimage.salt).value)
-    Proposer.digestProposer[Option, (String, Digest)].propose(("blake2b256", digest)).get
+    Proposer.digestProposer[Option, (String, Digest)].propose(("blake2b256", digest))
   }
 
-  def digestProof(msg: SignableBytes, preimage: Preimage): Primitive.Digest.Proof =
-    Prover.digestProver[Option].prove(preimage, msg).get
+  def digestProof(msg: SignableBytes, preimage: Preimage): Option[Primitive.Digest.Proof] =
+    Prover.digestProver[Option].prove(preimage, msg)
 
   // Hardcoding "curve25519"
-  def signatureProposition(vk: VerificationKey): Primitive.DigitalSignature.Proposition =
-    Proposer.signatureProposer[Option, (String, VerificationKey)].propose(("curve25519", vk)).get
-  def signatureProof(msg: SignableBytes, sk: SigningKey): Primitive.DigitalSignature.Proof = {
+  def signatureProposition(vk: VerificationKey): Option[Primitive.DigitalSignature.Proposition] =
+    Proposer.signatureProposer[Option, (String, VerificationKey)].propose(("curve25519", vk))
+  def signatureProof(msg: SignableBytes, sk: SigningKey): Option[Primitive.DigitalSignature.Proof] = {
     val witness: Witness = Witness(signatures.Curve25519.sign(PrivateKey(sk.value), msg).value)
-    Prover.signatureProver[Option].prove(witness, msg).get
+    Prover.signatureProver[Option].prove(witness, msg)
   }
 
-  def heightProposition(min: Long, max: Long, chain: String = "header"): Contextual.HeightRange.Proposition =
-    Proposer.heightProposer[Option, (String, Long, Long)].propose((chain, min, max)).get
-  def heightProof(msg: SignableBytes): Contextual.HeightRange.Proof =
-    Prover.heightProver[Option].prove((), msg).get
+  def heightProposition(min: Long, max: Long, chain: String = "header"): Option[Contextual.HeightRange.Proposition] =
+    Proposer.heightProposer[Option, (String, Long, Long)].propose((chain, min, max))
+  def heightProof(msg: SignableBytes): Option[Contextual.HeightRange.Proof] =
+    Prover.heightProver[Option].prove((), msg)
 
-  def tickProposition(min: Long, max: Long): Contextual.TickRange.Proposition =
-    Proposer.tickProposer[Option, (Long, Long)].propose((min, max)).get
-  def tickProof(msg: SignableBytes): Contextual.TickRange.Proof =
-    Prover.tickProver[Option].prove((), msg).get
+  def tickProposition(min: Long, max: Long): Option[Contextual.TickRange.Proposition] =
+    Proposer.tickProposer[Option, (Long, Long)].propose((min, max))
+  def tickProof(msg: SignableBytes): Option[Contextual.TickRange.Proof] =
+    Prover.tickProver[Option].prove((), msg)
 
 }

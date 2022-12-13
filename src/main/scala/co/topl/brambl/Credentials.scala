@@ -29,18 +29,10 @@ object Credentials {
       case _: Primitive.Locked.Proposition => Some(
         QuivrService.lockedProof(msg)
       )
-      case _: Primitive.Digest.Proposition => {
-        val preimage = Wallet.getPreimage(idx)
-        if(preimage.isDefined)
-          Some(QuivrService.digestProof(msg, preimage.get))
-        else None
-      }
-      case _: Primitive.DigitalSignature.Proposition => {
-        val keyPair = Wallet.getKeyPair(idx)
-        if(keyPair.isDefined)
-          Some(QuivrService.signatureProof(msg, keyPair.get.sk))
-        else None
-      }
+      case _: Primitive.Digest.Proposition =>
+        Wallet.getPreimage(idx).map(QuivrService.digestProof(msg, _))
+      case _: Primitive.DigitalSignature.Proposition =>
+        Wallet.getKeyPair(idx).map(keyPair => QuivrService.signatureProof(msg, keyPair.sk))
       case _: Contextual.HeightRange.Proposition => Some(
         QuivrService.heightProof(msg)
       )
@@ -53,23 +45,29 @@ object Credentials {
 
   /***
    * Prove an input. That is, to prove all the propositions within the attestation
-   * @param input Input to prove
+   *
+   * If the wallet is unaware of the input's identifier, the input will remain unproven
+   *
+   * @param input Input to prove. Once proven, the input can be spent
+   *              Although the input is not yet spent, it is of type SpentTransactionOutput to denote its state
+   *              after the transaction is accepted into the blockchain.
    * @param msg signable bytes to bind to the proofs
    * @return The same input, but proven
    */
-  private def proveInput(input: SpentTransactionOutput, msg: SignableBytes): SpentTransactionOutput = {
-    val idx = Wallet.getIndicesByIdentifier(input.knownIdentifier).get
+  private def proveInput(input: SpentTransactionOutput, msg: SignableBytes): SpentTransactionOutput =
+    Wallet.getIndicesByIdentifier(input.knownIdentifier).map { idx =>
+      val attestations = input.attestation match {
+        case Attestations.Predicate(predLock, _) => Attestations.Predicate(
+          predLock,
+          predLock.challenges.map(prop => getProof(msg, prop, idx))
+        )
+        case _ => ??? // We are not handling other types of Attestations at this moment in time
+      }
 
-    val attestations = input.attestation match {
-      case Attestations.Predicate(predLock, _) => Attestations.Predicate(
-        predLock,
-        predLock.challenges.map(prop => getProof(msg, prop, idx))
-      )
-      case _ => ??? // We are not handling other types of Attestations at this moment in time
-    }
+      SpentTransactionOutput(input.knownIdentifier, attestations, input.value, input.datum, input.opts)
+    }.getOrElse(input)
 
-    SpentTransactionOutput(input.knownIdentifier, attestations, input.value, input.datum, input.opts)
-  }
+
 
   /**
    * Prove a transaction. That is, to prove all the inputs within the transaction
@@ -78,9 +76,9 @@ object Credentials {
    */
   def prove(unprovenTx: IoTransaction): IoTransaction = {
     val signable = ioTransactionSignable.signableBytes(unprovenTx)
-    val inputs = unprovenTx.inputs.map(proveInput(_, signable))
+    val provenInputs = unprovenTx.inputs.map(proveInput(_, signable))
 
-    IoTransaction(inputs, unprovenTx.outputs, unprovenTx.datum)
+    IoTransaction(provenInputs, unprovenTx.outputs, unprovenTx.datum)
   }
 
   /**
@@ -94,8 +92,7 @@ object Credentials {
     ValidationInterpreter
       .make[Option]()
       .validate(ctx)(tx)
-      .get
-      .isRight
+      .exists(_.isRight)
   }
 
   /**

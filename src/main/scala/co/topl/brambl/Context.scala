@@ -16,10 +16,10 @@ object Context {
   private case class Blake2b256Validator() extends DigestVerifier[Option] {
     override def validate(v: DigestVerification): Option[Either[QuivrRuntimeError, DigestVerification]] = {
       val test = blake2b256.hash(v.preimage.input ++ v.preimage.salt).value
-      val expected = v.digest.value
-
-      Option(
-        if (expected sameElements test) Right(v)
+      Some(
+        if(
+          v.digest.value.sameElements(test)
+        ) Right(v)
         else Left(QuivrRuntimeErrors.ValidationError.LockedPropositionIsUnsatisfiable)
       )
     }
@@ -27,22 +27,18 @@ object Context {
 
   // Curve25519 Signature validator
   private case class Curve25519Validator() extends SignatureVerifier[Option] {
-    override def validate(v: SignatureVerification): Option[Either[QuivrRuntimeError, SignatureVerification]] = {
-      val test = signatures.Curve25519.verify(
-        signatures.Signature(v.sig.value),
-        v.msg.value,
-        PublicKey(v.vk.value)
-      )
-
-      Option(
-        if (test) Right(v)
+    override def validate(v: SignatureVerification): Option[Either[QuivrRuntimeError, SignatureVerification]] =
+      Some(
+        if(
+          signatures.Curve25519.verify(signatures.Signature(v.sig.value), v.msg.value, PublicKey(v.vk.value))
+        ) Right(v)
         else Left(QuivrRuntimeErrors.ValidationError.LockedPropositionIsUnsatisfiable)
       )
-    }
   }
 
-  // An Opinionated Verification Context. signableBytes, currentTick and the datums are dynamic
-  case class ToplContext(tx: IoTransaction, curTick: Option[Long], heightDatums: String => Option[Datum[_]])
+  // A Verification Context opinionated to the Topl context.
+  // signableBytes, currentTick and the datums are dynamic
+  case class ToplContext(tx: IoTransaction, curTick: Long, heightDatums: String => Option[Datum[_]])
     extends DynamicContext[Option, String] {
     override val hashingRoutines: Map[String, DigestVerifier[Option]] = Map("blake2b256" -> Blake2b256Validator())
     override val signingRoutines: Map[String, SignatureVerifier[Option]] = Map("curve25519" -> Curve25519Validator())
@@ -50,7 +46,7 @@ object Context {
 
 
     override def signableBytes: Option[SignableBytes] = Option(ioTransactionSignable.signableBytes(tx))
-    override def currentTick: Option[Long] = curTick
+    override def currentTick: Option[Long] = Some(curTick)
     // Needed for height
     override val datums: String => Option[Datum[_]] = heightDatums
   }

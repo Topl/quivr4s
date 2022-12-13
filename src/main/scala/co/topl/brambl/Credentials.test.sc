@@ -21,7 +21,7 @@ def getInvalidContext(tx: IoTransaction): DynamicContext[Option, String] = Conte
 def checkSignableBytesAreNotMutated(unprovenTx: IoTransaction, provenTx: IoTransaction): Boolean = {
   val unprovenSig = ioTransactionSignable.signableBytes(unprovenTx)
   val provenSig = ioTransactionSignable.signableBytes(provenTx)
-  provenSig sameElements unprovenSig
+  provenSig.sameElements(unprovenSig)
 }
 
 def runTest(unprovenTx: IoTransaction, expectedPass: Boolean, createCtx: IoTransaction => DynamicContext[Option, String]): Unit = {
