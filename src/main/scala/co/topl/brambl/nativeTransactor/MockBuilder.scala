@@ -41,7 +41,7 @@ case class MockBuilder(store: IStorage) extends IBuilder{
   private def buildUnprovenAttestation(lock: Lock): Attestation = lock match {
     case p: Locks.Predicate => Attestations.Predicate(
       p,
-      List() // Its unproven
+      List.fill(p.challenges.length)(None) // Its unproven
     )
     case _ => ??? // Only considering Predicate locks for now
   }
