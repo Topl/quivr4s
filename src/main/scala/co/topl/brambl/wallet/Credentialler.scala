@@ -10,7 +10,7 @@ import co.topl.quivr.api.Verifier
 import co.topl.quivr.runtime.DynamicContext
 import co.topl.quivr.{Proof, Proposition, SignableBytes}
 
-case class Credentials(store: IStorage) {
+case class Credentialler(store: IStorage) extends ICredentialler {
 
   /**
    * Return a Proof (if possible) that will satisfy a Proposition and signable bytes
@@ -71,7 +71,7 @@ case class Credentials(store: IStorage) {
    * @param unprovenTx The unproven transaction to prove
    * @return The proven version of the transaction. If not possible, errors for the unprovable inputs are returned
    */
-  def prove(unprovenTx: IoTransaction): Either[List[CredentiallerError], IoTransaction] = {
+  override def prove(unprovenTx: IoTransaction): Either[List[CredentiallerError], IoTransaction] = {
     val signable = ioTransactionSignable.signableBytes(unprovenTx)
     val (errs, provenInputs) = unprovenTx.inputs
       .partitionMap(proveInput(_, signable))
@@ -86,7 +86,7 @@ case class Credentials(store: IStorage) {
    * @param ctx Context to validate the transaction in
    * @return Iff transaction is authorized
    */
-  def validate(tx: IoTransaction)(implicit ctx: DynamicContext[Option, String]): Boolean = {
+  override def validate(tx: IoTransaction)(implicit ctx: DynamicContext[Option, String]): Boolean = {
     implicit val verifier: Verifier[Option] = Verifier.instances.verifierInstance
     ValidationInterpreter
       .make[Option]()
@@ -101,7 +101,7 @@ case class Credentials(store: IStorage) {
    * @param unprovenTx The unproven transaction to prove
    * @return The proven version of the input is successfully proven. Else a validation error
    */
-  def proveAndValidate(unprovenTx: IoTransaction)(implicit ctx: DynamicContext[Option, String]): Either[ValidationError, IoTransaction] =
+  override def proveAndValidate(unprovenTx: IoTransaction)(implicit ctx: DynamicContext[Option, String]): Either[ValidationError, IoTransaction] =
     prove(unprovenTx) match {
       case Right(provenTx) => if(validate(provenTx)) Right(provenTx) else Left(ValidationErrors.ValidationFailed)
       case _ => Left(ValidationErrors.ValidationFailed)

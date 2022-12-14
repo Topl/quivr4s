@@ -5,7 +5,7 @@
 import co.topl.brambl.Context
 import co.topl.brambl.Models._
 import co.topl.brambl.nativeTransactor.MockBuilder
-import co.topl.brambl.wallet.Credentials
+import co.topl.brambl.wallet.Credentialler
 import co.topl.node.Events
 import co.topl.node.transaction.{Datums, IoTransaction}
 import co.topl.quivr.runtime.DynamicContext
@@ -28,9 +28,9 @@ def checkSignableBytesAreNotMutated(unprovenTx: IoTransaction, provenTx: IoTrans
 
 def runTest(unprovenTx: IoTransaction, expectedPass: Boolean, createCtx: IoTransaction => DynamicContext[Option, String]): Unit = {
   implicit val ctx: DynamicContext[Option, String] = createCtx(unprovenTx)
-  val proven = Credentials.prove(unprovenTx)
+  val proven = Credentialler.prove(unprovenTx)
   val bytesSame = checkSignableBytesAreNotMutated(unprovenTx, proven)
-  val isAuthorized = Credentials.validate(proven)
+  val isAuthorized = Credentialler.validate(proven)
   val testPassed = isAuthorized == expectedPass && bytesSame
   println(s"Test ${if(testPassed) "passed" else "failed" }")
 }
