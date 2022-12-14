@@ -76,8 +76,8 @@ case class Credentials(store: IStorage) {
     val (errs, provenInputs) = unprovenTx.inputs
       .partitionMap(proveInput(_, signable))
 
-    if(errs.isEmpty) Left(errs)
-    else Right(IoTransaction(provenInputs, unprovenTx.outputs, unprovenTx.datum))
+    if(errs.isEmpty && provenInputs.nonEmpty) Right(IoTransaction(provenInputs, unprovenTx.outputs, unprovenTx.datum))
+    else Left(errs)
   }
 
   /**
@@ -94,19 +94,16 @@ case class Credentials(store: IStorage) {
       .exists(_.isRight)
   }
 
-//  /**
-//   * Prove a transaction. That is, to prove all the inputs within the transaction
-//   *
-//   * @param unprovenTx The unproven transaction to prove
-//   * @return The proven version of the input
-//   */
-//  def proveAndValidate(unprovenTx: IoTransaction)(implicit ctx: DynamicContext[Option, String]): Either[ValidationError, IoTransaction] = {
-//    val signable = ioTransactionSignable.signableBytes(unprovenTx)
-//    val inputs = unprovenTx.inputs.map(proveInput(_, signable))
-//
-//    val tx = IoTransaction(inputs, unprovenTx.outputs, unprovenTx.datum)
-//    if(validate(tx))
-//      Right(tx)
-//    else Left(ValidationErrors.ValidationFailed)
-//  }
+  /**
+   * Prove and validate a transaction.
+   * That is, attempt to prove all the inputs within the transaction and validate if the transaction is successfully proven
+   *
+   * @param unprovenTx The unproven transaction to prove
+   * @return The proven version of the input is successfully proven. Else a validation error
+   */
+  def proveAndValidate(unprovenTx: IoTransaction)(implicit ctx: DynamicContext[Option, String]): Either[ValidationError, IoTransaction] =
+    prove(unprovenTx) match {
+      case Right(provenTx) => if(validate(provenTx)) Right(provenTx) else Left(ValidationErrors.ValidationFailed)
+      case _ => Left(ValidationErrors.ValidationFailed)
+    }
 }
