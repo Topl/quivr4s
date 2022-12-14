@@ -1,10 +1,10 @@
 package co.topl.brambl
 
 import co.topl.brambl.Models.SigningKey
+import co.topl.brambl.digests.Hash
+import co.topl.brambl.signatures.Signing
 import co.topl.common.Data
 import co.topl.common.Models.{Digest, Preimage, VerificationKey, Witness}
-import co.topl.crypto.{PrivateKey, signatures}
-import co.topl.crypto.hash.blake2b256
 import co.topl.quivr.Models.{Contextual, Primitive}
 import co.topl.quivr.api.{Proposer, Prover}
 import co.topl.quivr.SignableBytes
@@ -18,22 +18,18 @@ object QuivrService {
   def lockedProof(msg: SignableBytes): Option[Primitive.Locked.Proof] =
     Prover.lockedProver[Option].prove((), msg)
 
-  // Hardcoding "blake2b256"
-  def digestProposition(preimage: Preimage): Option[Primitive.Digest.Proposition] = {
-    val digest: Digest = Digest(blake2b256.hash(preimage.input ++ preimage.salt).value)
-    Proposer.digestProposer[Option, (String, Digest)].propose(("blake2b256", digest))
-  }
+  def digestProposition(preimage: Preimage, routine: Hash):
+  Option[Primitive.Digest.Proposition] =
+    Proposer.digestProposer[Option, (String, Digest)].propose((routine.routine, routine.hash(preimage)))
 
   def digestProof(msg: SignableBytes, preimage: Preimage): Option[Primitive.Digest.Proof] =
     Prover.digestProver[Option].prove(preimage, msg)
 
   // Hardcoding "curve25519"
-  def signatureProposition(vk: VerificationKey): Option[Primitive.DigitalSignature.Proposition] =
-    Proposer.signatureProposer[Option, (String, VerificationKey)].propose(("curve25519", vk))
-  def signatureProof(msg: SignableBytes, sk: SigningKey): Option[Primitive.DigitalSignature.Proof] = {
-    val witness: Witness = Witness(signatures.Curve25519.sign(PrivateKey(sk.value), msg).value)
-    Prover.signatureProver[Option].prove(witness, msg)
-  }
+  def signatureProposition(vk: VerificationKey, routine: Signing): Option[Primitive.DigitalSignature.Proposition] =
+    Proposer.signatureProposer[Option, (String, VerificationKey)].propose((routine.routine, vk))
+  def signatureProof(msg: SignableBytes, sk: SigningKey, routine: Signing):
+  Option[Primitive.DigitalSignature.Proof] = Prover.signatureProver[Option].prove(routine.sign(sk, msg), msg)
 
   def heightProposition(min: Long, max: Long, chain: String = "header"): Option[Contextual.HeightRange.Proposition] =
     Proposer.heightProposer[Option, (String, Long, Long)].propose((chain, min, max))

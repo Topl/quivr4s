@@ -1,7 +1,7 @@
 package co.topl.brambl.wallet
 
 import co.topl.brambl.Models.Indices
-import co.topl.brambl.QuivrService
+import co.topl.brambl.{Context, QuivrService}
 import co.topl.node.transaction.authorization.{ValidationError, ValidationErrors, ValidationInterpreter}
 import co.topl.node.transaction.{Attestations, IoTransaction, SpentTransactionOutput}
 import co.topl.node.typeclasses.ContainsSignable.instances.ioTransactionSignable
@@ -10,7 +10,7 @@ import co.topl.quivr.api.Verifier
 import co.topl.quivr.runtime.DynamicContext
 import co.topl.quivr.{Proof, Proposition, SignableBytes}
 
-case class Credentialler(store: IStorage) extends ICredentialler {
+case class Credentialler(store: IStorage)(implicit ctx: Context) extends ICredentialler {
 
   /**
    * Return a Proof (if possible) that will satisfy a Proposition and signable bytes
@@ -29,8 +29,9 @@ case class Credentialler(store: IStorage) extends ICredentialler {
       case _: Primitive.Locked.Proposition => QuivrService.lockedProof(msg)
       case _: Primitive.Digest.Proposition =>
         store.getPreimage(idx).flatMap(QuivrService.digestProof(msg, _))
-      case _: Primitive.DigitalSignature.Proposition =>
-        store.getKeyPair(idx).flatMap(keyPair => QuivrService.signatureProof(msg, keyPair.sk))
+      case p: Primitive.DigitalSignature.Proposition => ctx.signingRoutines.get(p.routine).flatMap(r => {
+        store.getKeyPair(idx, r).flatMap(keyPair => QuivrService.signatureProof(msg, keyPair.sk, r))
+      })
       case _: Contextual.HeightRange.Proposition => QuivrService.heightProof(msg)
       case _: Contextual.TickRange.Proposition => QuivrService.tickProof(msg)
       case _ => None
@@ -86,7 +87,7 @@ case class Credentialler(store: IStorage) extends ICredentialler {
    * @param ctx Context to validate the transaction in
    * @return Iff transaction is authorized
    */
-  override def validate(tx: IoTransaction)(implicit ctx: DynamicContext[Option, String]): Boolean = {
+  override def validate(tx: IoTransaction): Boolean = {
     implicit val verifier: Verifier[Option] = Verifier.instances.verifierInstance
     ValidationInterpreter
       .make[Option]()
@@ -101,7 +102,7 @@ case class Credentialler(store: IStorage) extends ICredentialler {
    * @param unprovenTx The unproven transaction to prove
    * @return The proven version of the input is successfully proven. Else a validation error
    */
-  override def proveAndValidate(unprovenTx: IoTransaction)(implicit ctx: DynamicContext[Option, String]): Either[ValidationError, IoTransaction] =
+  override def proveAndValidate(unprovenTx: IoTransaction): Either[ValidationError, IoTransaction] =
     prove(unprovenTx) match {
       case Right(provenTx) => if(validate(provenTx)) Right(provenTx) else Left(ValidationErrors.ValidationFailed)
       case _ => Left(ValidationErrors.ValidationFailed)

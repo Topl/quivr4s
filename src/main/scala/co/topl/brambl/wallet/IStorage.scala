@@ -1,6 +1,7 @@
 package co.topl.brambl.wallet
 
 import co.topl.brambl.Models.{Indices, KeyPair}
+import co.topl.brambl.signatures.Signing
 import co.topl.common.Models.Preimage
 import co.topl.node.{Address, KnownIdentifier}
 import co.topl.node.box.Box
@@ -17,5 +18,5 @@ trait IStorage {
   // Return the preimage associated to indices
   def getPreimage(idx: Indices): Option[Preimage]
   // Return the key pair associated to indices
-  def getKeyPair(idx: Indices): Option[KeyPair]
+  def getKeyPair(idx: Indices, routine: Signing): Option[KeyPair]
 }
