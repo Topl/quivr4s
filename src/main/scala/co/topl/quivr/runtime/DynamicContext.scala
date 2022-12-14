@@ -15,7 +15,7 @@ import co.topl.quivr.runtime.QuivrRuntimeErrors.{ContextError, ValidationError}
  * @tparam K the key type that will be used to lookup values in the generic interface maps
  */
 trait DynamicContext[F[_], K] {
-  val datums: Map[K, Datum[_]]
+  val datums: K => Option[Datum[_]]
 
   val interfaces: Map[K, ParsableDataInterface]
   val signingRoutines: Map[K, SignatureVerifier[F]]
@@ -28,7 +28,7 @@ trait DynamicContext[F[_], K] {
   def heightOf(label: K)(implicit monad: Monad[F]): F[Either[QuivrRuntimeError, Long]] =
     EitherT
       .fromEither[F](
-        datums.get(label) match {
+        datums(label) match {
           case Some(v: IncludesHeight[_]) => Right(v.height)
           case _                          => Left(ContextError.FailedToFindDatum: QuivrRuntimeError)
         }
