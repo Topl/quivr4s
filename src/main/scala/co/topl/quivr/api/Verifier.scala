@@ -46,6 +46,16 @@ object Verifier {
     )
   } yield res
 
+  /**
+   * Collect the result of verification. Does the proof satisfy the proposition.
+   * Both msgResult and evalResult need to indicate success
+   *
+   * @param proposition The proposition that the proof was verified against
+   * @param proof The proof that was verified
+   * @param msgResult Result of message validation. Success is denoted by Right(true)
+   * @param evalResult Result of proposition and proof evaluation. Success is denoted by Right(_)
+   * @return The result of verification. If successful, Right(true). Else Left(QuivrRuntimeError)
+   */
   private def collectResult(proposition: Proposition, proof: Proof)(
     msgResult:                           Either[QuivrRuntimeError, Boolean],
     evalResult:                          Either[QuivrRuntimeError, _]
