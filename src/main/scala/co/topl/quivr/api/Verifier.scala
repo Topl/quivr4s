@@ -117,7 +117,11 @@ object Verifier {
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
       msgResult   <- Verifier.evaluateBlake2b256Bind(Models.Contextual.HeightRange.token, proof, context)
       chainHeight <- context.heightOf(proposition.chain)
-      evalResult = chainHeight.map(h => proposition.min <= h && h <= proposition.max)
+      evalResult = chainHeight.map(h =>
+        if(proposition.min <= h && h <= proposition.max)
+          Right(true)
+        else Left(EvaluationAuthorizationFailed(proposition, proof))
+      )
       res = collectResult(proposition, proof)(msgResult, evalResult)
     } yield res
 
@@ -127,7 +131,11 @@ object Verifier {
       context:     DynamicContext[F, String]
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
       msgResult  <- Verifier.evaluateBlake2b256Bind(Models.Contextual.TickRange.token, proof, context)
-      evalResult <- context.currentTick.map(t => Right(proposition.min <= t && t <= proposition.max))
+      evalResult <- context.currentTick.map(t =>
+        if(proposition.min <= t && t <= proposition.max)
+          Right(true)
+        else Left(EvaluationAuthorizationFailed(proposition, proof))
+      )
       res = collectResult(proposition, proof)(msgResult, evalResult)
     } yield res
 
