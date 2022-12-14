@@ -40,15 +40,15 @@ case class Credentials(store: IStorage) {
   /***
    * Prove an input. That is, to prove all the propositions within the attestation
    *
-   * If the wallet is unaware of the input's identifier, the input will remain unproven
+   * If the wallet is unaware of the input's identifier, an error is returned
    *
    * @param input Input to prove. Once proven, the input can be spent
    *              Although the input is not yet spent, it is of type SpentTransactionOutput to denote its state
    *              after the transaction is accepted into the blockchain.
    * @param msg signable bytes to bind to the proofs
-   * @return The same input, but proven
+   * @return The same input, but proven. If the input is unprovable, an error is returned.
    */
-  private def proveInput(input: SpentTransactionOutput, msg: SignableBytes): SpentTransactionOutput =
+  private def proveInput(input: SpentTransactionOutput, msg: SignableBytes): Either[CredentiallerError, SpentTransactionOutput] =
     store.getIndicesByIdentifier(input.knownIdentifier).map { idx =>
       val attestations = input.attestation match {
         case Attestations.Predicate(predLock, _) => Attestations.Predicate(
@@ -59,20 +59,25 @@ case class Credentials(store: IStorage) {
       }
 
       SpentTransactionOutput(input.knownIdentifier, attestations, input.value, input.datum, input.opts)
-    }.getOrElse(input)
+    }.toRight(CredentiallerErrors.KnownIdentifierUnknown(input.knownIdentifier))
 
 
 
   /**
-   * Prove a transaction. That is, to prove all the inputs within the transaction
+   * Prove a transaction. That is, prove all the inputs within the transaction if possible
+   *
+   * If not possible, errors for the unprovable inputs are returned
+   *
    * @param unprovenTx The unproven transaction to prove
-   * @return The proven version of the input
+   * @return The proven version of the transaction. If not possible, errors for the unprovable inputs are returned
    */
-  def prove(unprovenTx: IoTransaction): IoTransaction = {
+  def prove(unprovenTx: IoTransaction): Either[List[CredentiallerError], IoTransaction] = {
     val signable = ioTransactionSignable.signableBytes(unprovenTx)
-    val provenInputs = unprovenTx.inputs.map(proveInput(_, signable))
+    val (errs, provenInputs) = unprovenTx.inputs
+      .partitionMap(proveInput(_, signable))
 
-    IoTransaction(provenInputs, unprovenTx.outputs, unprovenTx.datum)
+    if(errs.isEmpty) Left(errs)
+    else Right(IoTransaction(provenInputs, unprovenTx.outputs, unprovenTx.datum))
   }
 
   /**
@@ -89,19 +94,19 @@ case class Credentials(store: IStorage) {
       .exists(_.isRight)
   }
 
-  /**
-   * Prove a transaction. That is, to prove all the inputs within the transaction
-   *
-   * @param unprovenTx The unproven transaction to prove
-   * @return The proven version of the input
-   */
-  def proveAndValidate(unprovenTx: IoTransaction)(implicit ctx: DynamicContext[Option, String]): Either[ValidationError, IoTransaction] = {
-    val signable = ioTransactionSignable.signableBytes(unprovenTx)
-    val inputs = unprovenTx.inputs.map(proveInput(_, signable))
-
-    val tx = IoTransaction(inputs, unprovenTx.outputs, unprovenTx.datum)
-    if(validate(tx))
-      Right(tx)
-    else Left(ValidationErrors.ValidationFailed)
-  }
+//  /**
+//   * Prove a transaction. That is, to prove all the inputs within the transaction
+//   *
+//   * @param unprovenTx The unproven transaction to prove
+//   * @return The proven version of the input
+//   */
+//  def proveAndValidate(unprovenTx: IoTransaction)(implicit ctx: DynamicContext[Option, String]): Either[ValidationError, IoTransaction] = {
+//    val signable = ioTransactionSignable.signableBytes(unprovenTx)
+//    val inputs = unprovenTx.inputs.map(proveInput(_, signable))
+//
+//    val tx = IoTransaction(inputs, unprovenTx.outputs, unprovenTx.datum)
+//    if(validate(tx))
+//      Right(tx)
+//    else Left(ValidationErrors.ValidationFailed)
+//  }
 }
