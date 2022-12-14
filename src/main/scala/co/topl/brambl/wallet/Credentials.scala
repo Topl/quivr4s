@@ -1,16 +1,16 @@
-package co.topl.brambl
+package co.topl.brambl.wallet
 
 import co.topl.brambl.Models.Indices
-import co.topl.node.transaction.authorization.ValidationInterpreter
+import co.topl.brambl.QuivrService
+import co.topl.node.transaction.authorization.{ValidationError, ValidationErrors, ValidationInterpreter}
 import co.topl.node.transaction.{Attestations, IoTransaction, SpentTransactionOutput}
 import co.topl.node.typeclasses.ContainsSignable.instances.ioTransactionSignable
 import co.topl.quivr.Models.{Contextual, Primitive}
 import co.topl.quivr.api.Verifier
 import co.topl.quivr.runtime.DynamicContext
 import co.topl.quivr.{Proof, Proposition, SignableBytes}
-import co.topl.node.transaction.authorization.{ValidationErrors, ValidationError}
 
-object Credentials {
+case class Credentials(store: IStorage) {
 
   /**
    * Return a Proof (if possible) that will satisfy a Proposition and signable bytes
@@ -26,19 +26,13 @@ object Credentials {
    */
   private def getProof(msg: SignableBytes, proposition: Proposition, idx: Indices): Option[Proof] = {
     proposition match {
-      case _: Primitive.Locked.Proposition => Some(
-        QuivrService.lockedProof(msg)
-      )
+      case _: Primitive.Locked.Proposition => QuivrService.lockedProof(msg)
       case _: Primitive.Digest.Proposition =>
-        Wallet.getPreimage(idx).map(QuivrService.digestProof(msg, _))
+        store.getPreimage(idx).flatMap(QuivrService.digestProof(msg, _))
       case _: Primitive.DigitalSignature.Proposition =>
-        Wallet.getKeyPair(idx).map(keyPair => QuivrService.signatureProof(msg, keyPair.sk))
-      case _: Contextual.HeightRange.Proposition => Some(
-        QuivrService.heightProof(msg)
-      )
-      case _: Contextual.TickRange.Proposition => Some(
-        QuivrService.tickProof(msg)
-      )
+        store.getKeyPair(idx).flatMap(keyPair => QuivrService.signatureProof(msg, keyPair.sk))
+      case _: Contextual.HeightRange.Proposition => QuivrService.heightProof(msg)
+      case _: Contextual.TickRange.Proposition => QuivrService.tickProof(msg)
       case _ => None
     }
   }
@@ -55,7 +49,7 @@ object Credentials {
    * @return The same input, but proven
    */
   private def proveInput(input: SpentTransactionOutput, msg: SignableBytes): SpentTransactionOutput =
-    Wallet.getIndicesByIdentifier(input.knownIdentifier).map { idx =>
+    store.getIndicesByIdentifier(input.knownIdentifier).map { idx =>
       val attestations = input.attestation match {
         case Attestations.Predicate(predLock, _) => Attestations.Predicate(
           predLock,

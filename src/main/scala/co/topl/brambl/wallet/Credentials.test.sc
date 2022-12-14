@@ -2,11 +2,13 @@
 * A worksheet for using the Credentialler
 * How the IoTransaction is created is irrelevant
 * */
-import co.topl.brambl.{Context, Credentials, TransactionBuilder}
+import co.topl.brambl.Context
 import co.topl.brambl.Models._
-import co.topl.node.{Events}
+import co.topl.brambl.nativeTransactor.MockBuilder
+import co.topl.brambl.wallet.Credentials
+import co.topl.node.Events
 import co.topl.node.transaction.{Datums, IoTransaction}
-import co.topl.quivr.runtime.{DynamicContext}
+import co.topl.quivr.runtime.DynamicContext
 import co.topl.node.typeclasses.ContainsSignable.instances.ioTransactionSignable
 
 // A "Valid" context is one where the hardcoded Height and Tick propositions will be satisfied (value of 5).
@@ -44,7 +46,7 @@ val idxWithoutData = Indices(0, 1, 0) // Secrets are not available, thus some pr
 
 // 3 of 5 Attestation. Credentialler has no access to secrets so only Height and Tick can possibly pass
 // => Always fail since 3 is required
-val tx3of5NoData = TransactionBuilder.constructTestTransaction(3, idxWithoutData)
+val tx3of5NoData = MockBuilder.constructTestTransaction(3, idxWithoutData)
 // Valid context := Height and Tick pass, but Tx invalid since does not meet threshold
 runTest(tx3of5NoData, false, getValidContext)
 // Invalid context := all proofs fail
@@ -53,7 +55,7 @@ runTest(tx3of5NoData,false, getInvalidContext)
 
 // 2 of 5 Attestation. Credentialler has no access to secrets so only Height and Tick can possibly pass
 // => Will pass when context is valid. Will fail when context is invalid
-val tx2of5NoData = TransactionBuilder.constructTestTransaction(2, idxWithoutData)
+val tx2of5NoData = MockBuilder.constructTestTransaction(2, idxWithoutData)
 // Valid context := Height and Tick pass thus threshold is satisfied
 runTest(tx2of5NoData,true, getValidContext)
 // Invalid context := all proofs fail
@@ -61,13 +63,13 @@ runTest(tx2of5NoData,false, getInvalidContext)
 
 
 // 5 of 5 Attestation. => Will always fail since Locked is one of the propositions
-val tx5of5WithData = TransactionBuilder.constructTestTransaction(5, idxWithData)
+val tx5of5WithData = MockBuilder.constructTestTransaction(5, idxWithData)
 runTest(tx5of5WithData,false, getValidContext)
 
 
 // 4 of 5 Attestation. Credentialler has access to all secrets
 // => Will pass when context is valid. Will fail when context is invalid
-val tx4of5WithData = TransactionBuilder.constructTestTransaction(4, idxWithData)
+val tx4of5WithData = MockBuilder.constructTestTransaction(4, idxWithData)
 // Valid context := All proofs pass
 runTest(tx4of5WithData,true, getValidContext)
 // Invalid context := Height and Tick fail thus threshold is not met
@@ -75,7 +77,7 @@ runTest(tx4of5WithData,false, getInvalidContext)
 
 // 2 of 5 Attestation. Credentialler has access to all secrets
 // => Will always pass
-val tx2of5WithData = TransactionBuilder.constructTestTransaction(2, idxWithData)
+val tx2of5WithData = MockBuilder.constructTestTransaction(2, idxWithData)
 // Valid context := All proofs pass
 runTest(tx2of5WithData,true, getValidContext)
 // Invalid context := Height and Tick fail, but Digest and Signature pass, thus threshold is met

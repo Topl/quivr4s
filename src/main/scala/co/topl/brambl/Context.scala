@@ -8,7 +8,6 @@ import co.topl.common.Models.{DigestVerification, SignatureVerification}
 import co.topl.quivr.algebras.{DigestVerifier, SignatureVerifier}
 import co.topl.quivr.runtime.{QuivrRuntimeError, QuivrRuntimeErrors}
 import co.topl.crypto.hash.blake2b256
-import co.topl.crypto.signatures.{Curve25519, Signature}
 import co.topl.crypto.{PublicKey, signatures}
 
 object Context {
