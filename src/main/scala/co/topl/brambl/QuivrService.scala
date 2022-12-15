@@ -4,7 +4,7 @@ import co.topl.brambl.Models.SigningKey
 import co.topl.brambl.digests.Hash
 import co.topl.brambl.signatures.Signing
 import co.topl.common.Data
-import co.topl.common.Models.{Digest, Preimage, VerificationKey, Witness}
+import co.topl.common.Models.{Digest, Preimage, VerificationKey}
 import co.topl.quivr.Models.{Contextual, Primitive}
 import co.topl.quivr.api.{Proposer, Prover}
 import co.topl.quivr.SignableBytes

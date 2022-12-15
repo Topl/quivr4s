@@ -1,7 +1,6 @@
 package co.topl.brambl.wallet
 
 import co.topl.brambl.wallet.CredentiallerErrors.{ProverError, ValidationError}
-import co.topl.brambl.wallet.CredentiallerError
 import co.topl.node.transaction.IoTransaction
 
 trait ICredentialler {

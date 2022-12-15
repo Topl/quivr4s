@@ -3,7 +3,7 @@ package co.topl.brambl.wallet
 import co.topl.brambl.Models.{Indices, KeyPair, SigningKey}
 import co.topl.brambl.digests.Blake2b256Digest
 import co.topl.brambl.signatures.{Curve25519Signature, Signing}
-import co.topl.brambl.{Context, QuivrService}
+import co.topl.brambl.{QuivrService}
 import co.topl.common.Models.{Preimage, VerificationKey}
 import co.topl.node.box.{Box, Locks, Values}
 import co.topl.node.transaction.IoTransaction.Schedule

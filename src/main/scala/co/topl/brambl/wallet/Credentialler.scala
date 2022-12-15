@@ -1,7 +1,7 @@
 package co.topl.brambl.wallet
 
 import co.topl.brambl.Models.Indices
-import co.topl.brambl.wallet.CredentiallerErrors.{ValidationError, ProverError, KnownIdentifierUnknown}
+import co.topl.brambl.wallet.CredentiallerErrors.{ValidationError, ProverError}
 import co.topl.brambl.{Context, QuivrService}
 import co.topl.node.transaction.authorization.ValidationInterpreter
 import co.topl.node.transaction.{Attestations, IoTransaction, SpentTransactionOutput}
