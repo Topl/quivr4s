@@ -1,13 +1,13 @@
 package co.topl.brambl.wallet
 
 import co.topl.brambl.Models.Indices
+import co.topl.brambl.wallet.CredentiallerErrors.{ValidationError, ProverError, KnownIdentifierUnknown}
 import co.topl.brambl.{Context, QuivrService}
-import co.topl.node.transaction.authorization.{ValidationError, ValidationErrors, ValidationInterpreter}
+import co.topl.node.transaction.authorization.ValidationInterpreter
 import co.topl.node.transaction.{Attestations, IoTransaction, SpentTransactionOutput}
 import co.topl.node.typeclasses.ContainsSignable.instances.ioTransactionSignable
 import co.topl.quivr.Models.{Contextual, Primitive}
 import co.topl.quivr.api.Verifier
-import co.topl.quivr.runtime.DynamicContext
 import co.topl.quivr.{Proof, Proposition, SignableBytes}
 
 case class Credentialler(store: IStorage)(implicit ctx: Context) extends ICredentialler {
@@ -49,7 +49,7 @@ case class Credentialler(store: IStorage)(implicit ctx: Context) extends ICreden
    * @param msg signable bytes to bind to the proofs
    * @return The same input, but proven. If the input is unprovable, an error is returned.
    */
-  private def proveInput(input: SpentTransactionOutput, msg: SignableBytes): Either[CredentiallerError, SpentTransactionOutput] =
+  private def proveInput(input: SpentTransactionOutput, msg: SignableBytes): Either[ProverError, SpentTransactionOutput] =
     store.getIndicesByIdentifier(input.knownIdentifier).map { idx =>
       val attestations = input.attestation match {
         case Attestations.Predicate(predLock, _) => Attestations.Predicate(
@@ -72,7 +72,7 @@ case class Credentialler(store: IStorage)(implicit ctx: Context) extends ICreden
    * @param unprovenTx The unproven transaction to prove
    * @return The proven version of the transaction. If not possible, errors for the unprovable inputs are returned
    */
-  override def prove(unprovenTx: IoTransaction): Either[List[CredentiallerError], IoTransaction] = {
+  override def prove(unprovenTx: IoTransaction): Either[List[ProverError], IoTransaction] = {
     val signable = ioTransactionSignable.signableBytes(unprovenTx)
     val (errs, provenInputs) = unprovenTx.inputs
       .partitionMap(proveInput(_, signable))
@@ -87,12 +87,16 @@ case class Credentialler(store: IStorage)(implicit ctx: Context) extends ICreden
    * @param ctx Context to validate the transaction in
    * @return Iff transaction is authorized
    */
-  override def validate(tx: IoTransaction): Boolean = {
+  override def validate(tx: IoTransaction): List[ValidationError] = {
     implicit val verifier: Verifier[Option] = Verifier.instances.verifierInstance
     ValidationInterpreter
       .make[Option]()
       .validate(ctx)(tx)
-      .exists(_.isRight)
+      .flatMap({
+        case Left(err) => Some(ValidationError(err))
+        case _ => None
+      })
+      .toList
   }
 
   /**
@@ -102,9 +106,12 @@ case class Credentialler(store: IStorage)(implicit ctx: Context) extends ICreden
    * @param unprovenTx The unproven transaction to prove
    * @return The proven version of the input is successfully proven. Else a validation error
    */
-  override def proveAndValidate(unprovenTx: IoTransaction): Either[ValidationError, IoTransaction] =
+  override def proveAndValidate(unprovenTx: IoTransaction): Either[List[CredentiallerError], IoTransaction] =
     prove(unprovenTx) match {
-      case Right(provenTx) => if(validate(provenTx)) Right(provenTx) else Left(ValidationErrors.ValidationFailed)
-      case _ => Left(ValidationErrors.ValidationFailed)
+      case Right(provenTx) => validate(provenTx) match {
+        case Nil => Right(provenTx)
+        case errs: List[ValidationError] => Left(errs)
+      }
+      case Left(errs) => Left(errs)
     }
 }

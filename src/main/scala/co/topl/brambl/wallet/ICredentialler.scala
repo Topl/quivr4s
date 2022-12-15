@@ -1,12 +1,13 @@
 package co.topl.brambl.wallet
 
+import co.topl.brambl.wallet.CredentiallerErrors.{ProverError, ValidationError}
+import co.topl.brambl.wallet.CredentiallerError
 import co.topl.node.transaction.IoTransaction
-import co.topl.node.transaction.authorization.ValidationError
 
 trait ICredentialler {
-  def prove(unprovenTx: IoTransaction): Either[List[CredentiallerError], IoTransaction]
-  def validate(tx: IoTransaction): Boolean
-  def proveAndValidate(unprovenTx: IoTransaction): Either[ValidationError, IoTransaction]
+  def prove(unprovenTx: IoTransaction): Either[List[ProverError], IoTransaction]
+  def validate(tx: IoTransaction): List[ValidationError]
+  def proveAndValidate(unprovenTx: IoTransaction): Either[List[CredentiallerError], IoTransaction]
 }
 
 

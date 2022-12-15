@@ -32,7 +32,7 @@ def runTest(unprovenTx: IoTransaction, expectedPass: Boolean, createCtx: IoTrans
     case Left(l) => println(s"Unable to prove tx: ${l}")
     case Right(r) => {
       val bytesSame = checkSignableBytesAreNotMutated(unprovenTx, r)
-      val isAuthorized = Credentialler(MockStorage).validate(r)
+      val isAuthorized = Credentialler(MockStorage).validate(r).isEmpty
       val testPassed = isAuthorized == expectedPass && bytesSame
       println(s"Test ${if (testPassed) "passed" else "failed"}")
     }
