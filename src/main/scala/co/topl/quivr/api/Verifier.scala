@@ -46,6 +46,16 @@ object Verifier {
     )
   } yield res
 
+  /**
+   * Collect the result of verification. Does the proof satisfy the proposition.
+   * Both msgResult and evalResult need to indicate success
+   *
+   * @param proposition The proposition that the proof was verified against
+   * @param proof The proof that was verified
+   * @param msgResult Result of message validation. Success is denoted by Right(true)
+   * @param evalResult Result of proposition and proof evaluation. Success is denoted by Right(_)
+   * @return The result of verification. If successful, Right(true). Else Left(QuivrRuntimeError)
+   */
   private def collectResult(proposition: Proposition, proof: Proof)(
     msgResult:                           Either[QuivrRuntimeError, Boolean],
     evalResult:                          Either[QuivrRuntimeError, _]
@@ -117,7 +127,11 @@ object Verifier {
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
       msgResult   <- Verifier.evaluateBlake2b256Bind(Models.Contextual.HeightRange.token, proof, context)
       chainHeight <- context.heightOf(proposition.chain)
-      evalResult = chainHeight.map(h => proposition.min <= h && h <= proposition.max)
+      evalResult = chainHeight.map(h =>
+        if(proposition.min <= h && h <= proposition.max)
+          Right(true)
+        else Left(EvaluationAuthorizationFailed(proposition, proof))
+      )
       res = collectResult(proposition, proof)(msgResult, evalResult)
     } yield res
 
@@ -127,7 +141,11 @@ object Verifier {
       context:     DynamicContext[F, String]
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
       msgResult  <- Verifier.evaluateBlake2b256Bind(Models.Contextual.TickRange.token, proof, context)
-      evalResult <- context.currentTick.map(t => Right(proposition.min <= t && t <= proposition.max))
+      evalResult <- context.currentTick.map(t =>
+        if(proposition.min <= t && t <= proposition.max)
+          Right(true)
+        else Left(EvaluationAuthorizationFailed(proposition, proof))
+      )
       res = collectResult(proposition, proof)(msgResult, evalResult)
     } yield res
 
