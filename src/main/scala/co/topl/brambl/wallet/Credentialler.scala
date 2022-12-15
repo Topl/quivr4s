@@ -10,7 +10,7 @@ import co.topl.quivr.Models.{Contextual, Primitive}
 import co.topl.quivr.api.Verifier
 import co.topl.quivr.{Proof, Proposition, SignableBytes}
 
-case class Credentialler(store: IStorage)(implicit ctx: Context) extends ICredentialler {
+case class Credentialler(store: Storage)(implicit ctx: Context) extends Credentials {
 
   /**
    * Return a Proof (if possible) that will satisfy a Proposition and signable bytes

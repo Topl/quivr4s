@@ -14,7 +14,7 @@ import co.topl.node.{Address, Events, Identifiers, KnownIdentifier, KnownIdentif
 
 // TODO: Make a map of Address => KnownId and KnownId => Box. Each address will have a different lock
 
-object MockStorage extends IStorage {
+object MockStorage extends Storage {
 
   // Arbitrary Transaction that any new transaction can reference
   private val dummyTx2a = IoTransaction(List(), List(),

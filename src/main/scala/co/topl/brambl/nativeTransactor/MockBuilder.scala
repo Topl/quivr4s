@@ -1,6 +1,6 @@
 package co.topl.brambl.nativeTransactor
 
-import co.topl.brambl.wallet.IStorage
+import co.topl.brambl.wallet.Storage
 import co.topl.node.box.{Lock, Locks, Values}
 import co.topl.node.transaction._
 import co.topl.node.{Address, Events, KnownIdentifier}
@@ -12,7 +12,7 @@ import co.topl.quivr.runtime.Datum
 // For now it creates the hardcoded simple transactions that are needed for the credential examples
 // Although the following won't represent exactly what the transaction builder will do, it will inform what's needed
 
-case class MockBuilder(store: IStorage) extends IBuilder{
+case class MockBuilder(store: Storage) extends Builder{
   /**
    * Construct an unproven input.
    *
