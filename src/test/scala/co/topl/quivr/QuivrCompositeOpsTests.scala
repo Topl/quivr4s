@@ -20,7 +20,7 @@ class QuivrCompositeOpsTests extends munit.FunSuite with MockHelpers {
 
   implicit val applicativeId:Monad[Id] = cats.catsInstancesForId
   
-    test("andProposer must evaluate to true when both propositions are true") {
+    test("An and proposition must evaluate to true when both the verification of both proofs is true") {
       val (sk1, vk1) = Curve25519.createKeyPair
       val (sk2, vk2) = Curve25519.createKeyPair
       val signatureProposition1 = signatureProposer.propose("Curve25519", Models.VerificationKey(vk1.value))
@@ -33,10 +33,9 @@ class QuivrCompositeOpsTests extends munit.FunSuite with MockHelpers {
       val andProverProof = andProver.prove((signatureProverProof1, signatureProverProof2), signableBytes)
       val result = verifierInstance.evaluate(andProposition, andProverProof, dynamicContext(andProposition, andProverProof))
       assertEquals(result.isRight, true)
-      assertEquals(result.right.toOption.getOrElse(false), true)
     }
  
-    test("andProposer must evaluate to false when one proposition is false") {
+    test("An and proposition must evaluate to false when one of the proofs evaluates to false") {
       val (sk1, vk1) = Curve25519.createKeyPair
       val (_, vk2) = Curve25519.createKeyPair
       val (sk2, _) = Curve25519.createKeyPair
@@ -53,7 +52,7 @@ class QuivrCompositeOpsTests extends munit.FunSuite with MockHelpers {
       assertEquals(result.left.toOption.collect({case QuivrRuntimeErrors.ValidationError.EvaluationAuthorizationFailed(_, _) => true}).isDefined, true)
     }
 
-    test("orProposer must evaluate to true when one proposition is true") {
+    test("An or proposition must evaluate to true when one of the proofs evaluates to true") {
       val (sk1, vk1) = Curve25519.createKeyPair
       val (_, vk2) = Curve25519.createKeyPair
       val (sk2, _) = Curve25519.createKeyPair
@@ -69,7 +68,7 @@ class QuivrCompositeOpsTests extends munit.FunSuite with MockHelpers {
       assertEquals(result.isRight, true)
     }
     
-    test("orProposer must evaluate to false when both propositions are false") {
+    test("An or proposition must evaluate to false when both proofs evaluate to false") {
       val (_, vk1) = Curve25519.createKeyPair
       val (sk1, _) = Curve25519.createKeyPair
       val (_, vk2) = Curve25519.createKeyPair
@@ -87,7 +86,7 @@ class QuivrCompositeOpsTests extends munit.FunSuite with MockHelpers {
       assertEquals(result.left.toOption.collect({case QuivrRuntimeErrors.ValidationError.EvaluationAuthorizationFailed(_, _) => true}).isDefined, true)
     }
 
-    test("A notProposer must evaluate to false when the parameter is true") {
+    test("A not proposition must evaluate to false when the proof in the parameter is true") {
       val heightProposition = heightProposer.propose("height", 900, 1000)
       val heightProverProof = heightProver.prove((), signableBytes)
       val notProposition = notProposer.propose(heightProposition)
@@ -97,7 +96,7 @@ class QuivrCompositeOpsTests extends munit.FunSuite with MockHelpers {
       assertEquals(result.left.toOption.collect({case QuivrRuntimeErrors.ValidationError.EvaluationAuthorizationFailed(_, _) => true}).isDefined, true)
     }
 
-    test("A notProposer must evaluate to true when the parameter is false") {
+    test("A not proposition must evaluate to true when the proof in the parameter is false") {
       val heightProposition = heightProposer.propose("height", 1, 10)
       val heightProverProof = heightProver.prove((), signableBytes)
       val notProposition = notProposer.propose(heightProposition)
@@ -106,7 +105,7 @@ class QuivrCompositeOpsTests extends munit.FunSuite with MockHelpers {
       assertEquals(result.isRight, true)
     }
 
-    test("thresholdProposer must evaluate to true when the threshold is passed") {
+    test("A threshold proposition must evaluate to true when the threshold is passed") {
       val (sk1, vk1) = Curve25519.createKeyPair
       val (_, vk2) = Curve25519.createKeyPair
       val (sk2, _) = Curve25519.createKeyPair
@@ -126,7 +125,7 @@ class QuivrCompositeOpsTests extends munit.FunSuite with MockHelpers {
       assertEquals(result.isRight, true)
     }
 
-    test("thresholdProposer must evaluate to false when the threshold is not passed") {
+    test("A threshold proposition must evaluate to false when the threshold is not passed") {
       val (sk1, vk1) = Curve25519.createKeyPair
       val (_, vk2) = Curve25519.createKeyPair
       val (sk2, _) = Curve25519.createKeyPair

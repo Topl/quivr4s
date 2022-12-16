@@ -29,15 +29,14 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
       assertEquals(result.left.toOption.collect({case QuivrRuntimeErrors.ValidationError.LockedPropositionIsUnsatisfiable => true}).isDefined, true)
     }
 
-    test("A tickProposer must evaluate to true when tick is in range") {
+    test("A tick proposition must evaluate to true when tick is in range") {
       val tickProposition = tickProposer.propose(900, 1000)
       val tickProverProof = tickProver.prove((), signableBytes)
       val result = verifierInstance.evaluate(tickProposition, tickProverProof, dynamicContext(tickProposition, tickProverProof))
       assertEquals(result.isRight, true)
-      assertEquals(result.right.toOption.getOrElse(false), true)
     }
 
-    test("A tickProposer must evaluate to false when tick is not in range") {
+    test("A tick position must evaluate to false when the tick is not in range") {
       val tickProposition = tickProposer.propose(1, 10)
       val tickProverProof = tickProver.prove((), signableBytes)
       val result = verifierInstance.evaluate(tickProposition, tickProverProof, dynamicContext(tickProposition, tickProverProof))
@@ -46,15 +45,14 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
     }
 
 
-    test("A heightProposer must evaluate to true when height is in range") {
+    test("A height proposition must evaluate to true when height is in range") {
       val heightProposition = heightProposer.propose("height", 900, 1000)
       val heightProverProof = heightProver.prove((), signableBytes)
       val result = verifierInstance.evaluate(heightProposition, heightProverProof, dynamicContext(heightProposition, heightProverProof))
       assertEquals(result.isRight, true)
-      assertEquals(result.right.toOption.getOrElse(false), true)
     }
 
-    test("A heightProposer must evaluate to false when height is not in range") {
+    test("A height proposition must evaluate to false when height is not in range") {
       val heightProposition = heightProposer.propose("height", 1, 10)
       val heightProverProof = heightProver.prove((), signableBytes)
       val result = verifierInstance.evaluate(heightProposition, heightProverProof, dynamicContext(heightProposition, heightProverProof))
@@ -62,17 +60,16 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
       assertEquals(result.left.toOption.collect({case QuivrRuntimeErrors.ValidationError.EvaluationAuthorizationFailed(_, _) => true}).isDefined, true)
     }
 
-    test("A signatureProposer must evaluate to true when the signature is correct") {
+    test("A signature proposition must evaluate to true when the signature proof is correct") {
       val (sk, vk) = Curve25519.createKeyPair
       val signatureProposition = signatureProposer.propose("Curve25519", Models.VerificationKey(vk.value))
       val signature = Curve25519.sign(sk, signableBytes)
       val signatureProverProof = signatureProver.prove(Models.Witness(signature.value), signableBytes)
       val result = verifierInstance.evaluate(signatureProposition, signatureProverProof, dynamicContext(signatureProposition, signatureProverProof))
       assertEquals(result.isRight, true)
-      assertEquals(result.right.toOption.getOrElse(false), true)
     }
     
-    test("A signatureProposer must evaluate to false when the signature is not correct") {
+    test("A signature proposition must evaluate to false when the signature proof is not correct") {
       val (_, vk) = Curve25519.createKeyPair
       val (sk, _) = Curve25519.createKeyPair
       val signatureProposition = signatureProposer.propose("Curve25519", Models.VerificationKey(vk.value))
@@ -83,7 +80,7 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
       assertEquals(result.left.toOption.collect({case QuivrRuntimeErrors.ValidationError.EvaluationAuthorizationFailed(_, _) => true}).isDefined, true)
     }
     
-    test("A digestProposer must evaluate to true when the digest is correct") {
+    test("A digest proposition must evaluate to true when the digest is correct") {
       val mySalt = "I am a digest".getBytes()
       val myPreimage = Models.Preimage("I am a preimage".getBytes(), mySalt)
       val myDigest = Blake2b256Digest.hash(myPreimage)
@@ -93,7 +90,7 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
       assertEquals(result.isRight, true)
     }
     
-    test("A digestProposer must evaluate to false when the digest is incorrect") {
+    test("A digest proposition must evaluate to false when the digest is incorrect") {
       val mySalt = "I am a digest".getBytes()
       val myPreimage = Models.Preimage("I am a preimage".getBytes(), mySalt)
       val myDigest = Blake2b256Digest.hash(myPreimage)
