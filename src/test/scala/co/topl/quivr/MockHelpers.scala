@@ -14,6 +14,9 @@ import co.topl.quivr.runtime.DynamicContext
 import co.topl.quivr.runtime.IncludesHeight
 import co.topl.quivr.runtime.QuivrRuntimeError
 import co.topl.quivr.runtime.QuivrRuntimeErrors
+import co.topl.brambl.digests.Blake2b256Digest
+import co.topl.brambl.digests.Hash
+import co.topl.crypto.hash.blake2b256
 
 trait MockHelpers {
 
@@ -40,7 +43,20 @@ trait MockHelpers {
 
     })
 
-    val mapOfHashingRoutines: Map[String, DigestVerifier[Id]] = Map()
+    val mapOfHashingRoutines: Map[String, DigestVerifier[Id]] = Map(
+      Blake2b256Digest.routine -> new DigestVerifier[Id] with Hash {
+        override val routine: String = "blake2b256"
+
+        override def hash(preimage: Models.Preimage): Models.Digest =
+          Models.Digest(blake2b256.hash(preimage.input ++ preimage.salt).value)
+
+        override def validate(v: Models.DigestVerification): Either[QuivrRuntimeError, Models.DigestVerification] = {
+          val test = blake2b256.hash(v.preimage.input ++ v.preimage.salt).value
+          if (v.digest.value.sameElements(test)) Right(v)
+          else Left(QuivrRuntimeErrors.ValidationError.LockedPropositionIsUnsatisfiable)
+        }
+      }
+    )
 
     override val datums = mapOfDatums.get _
 

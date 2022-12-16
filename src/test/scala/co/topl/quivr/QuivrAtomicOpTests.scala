@@ -5,6 +5,8 @@ import cats.Monad
 import co.topl.common.Models
 import co.topl.crypto.signatures.Curve25519
 import co.topl.quivr.runtime.QuivrRuntimeErrors
+import co.topl.quivr.Operations
+import co.topl.brambl.digests.Blake2b256Digest
 
 /**
   * Set of tests for the Quivr Atomic Operations.
@@ -77,6 +79,28 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
       val signature = Curve25519.sign(sk, signableBytes)
       val signatureProverProof = signatureProver.prove(Models.Witness(signature.value), signableBytes)
       val result = verifierInstance.evaluate(signatureProposition, signatureProverProof, dynamicContext(signatureProposition, signatureProverProof))
+      assertEquals(result.isLeft, true)
+      assertEquals(result.left.toOption.collect({case QuivrRuntimeErrors.ValidationError.EvaluationAuthorizationFailed(_, _) => true}).isDefined, true)
+    }
+    
+    test("A digestProposer must evaluate to true when the digest is correct") {
+      val mySalt = "I am a digest".getBytes()
+      val myPreimage = Models.Preimage("I am a preimage".getBytes(), mySalt)
+      val myDigest = Blake2b256Digest.hash(myPreimage)
+      val digestProposition = digestProposer.propose(("blake2b256", myDigest))
+      val digestProverProof = digestProver.prove(myPreimage, signableBytes)
+      val result = verifierInstance.evaluate(digestProposition, digestProverProof, dynamicContext(digestProposition, digestProverProof))
+      assertEquals(result.isRight, true)
+    }
+    
+    test("A digestProposer must evaluate to false when the digest is incorrect") {
+      val mySalt = "I am a digest".getBytes()
+      val myPreimage = Models.Preimage("I am a preimage".getBytes(), mySalt)
+      val myDigest = Blake2b256Digest.hash(myPreimage)
+      val wrongPreImage = Models.Preimage("I am a wrong preimage".getBytes(), mySalt)
+      val digestProposition = digestProposer.propose(("blake2b256", myDigest))
+      val digestProverProof = digestProver.prove(wrongPreImage, signableBytes)
+      val result = verifierInstance.evaluate(digestProposition, digestProverProof, dynamicContext(digestProposition, digestProverProof))
       assertEquals(result.isLeft, true)
       assertEquals(result.left.toOption.collect({case QuivrRuntimeErrors.ValidationError.EvaluationAuthorizationFailed(_, _) => true}).isDefined, true)
     }
