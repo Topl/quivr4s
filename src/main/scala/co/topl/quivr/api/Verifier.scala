@@ -5,7 +5,11 @@ import cats.implicits._
 import co.topl.common.Models.{DigestVerification, Message, SignatureVerification}
 import co.topl.crypto.hash.blake2b256
 import co.topl.quivr._
-import co.topl.quivr.runtime.QuivrRuntimeErrors.ValidationError.{EvaluationAuthorizationFailed, LockedPropositionIsUnsatisfiable, MessageAuthorizationFailed}
+import co.topl.quivr.runtime.QuivrRuntimeErrors.ValidationError.{
+  EvaluationAuthorizationFailed,
+  LockedPropositionIsUnsatisfiable,
+  MessageAuthorizationFailed
+}
 import co.topl.quivr.runtime.{DynamicContext, QuivrRuntimeError}
 
 import java.nio.charset.StandardCharsets
@@ -61,7 +65,7 @@ object Verifier {
     evalResult:                          Either[QuivrRuntimeError, _]
   ): Either[QuivrRuntimeError, Boolean] = (msgResult, evalResult) match {
     case (Right(true), Right(_)) => Right[QuivrRuntimeError, Boolean](true)
-    case _ => Left[QuivrRuntimeError, Boolean](EvaluationAuthorizationFailed(proposition, proof))
+    case _                       => Left[QuivrRuntimeError, Boolean](EvaluationAuthorizationFailed(proposition, proof))
   }
 
   trait Implicits {
@@ -127,11 +131,13 @@ object Verifier {
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
       msgResult   <- Verifier.evaluateBlake2b256Bind(Models.Contextual.HeightRange.token, proof, context)
       chainHeight <- context.heightOf(proposition.chain)
-      evalResult = chainHeight.map(h =>
-        if(proposition.min <= h && h <= proposition.max)
-          Right(true)
-        else Left(EvaluationAuthorizationFailed(proposition, proof))
-      )
+      evalResult = chainHeight match {
+        case Right(h) =>
+          if (proposition.min <= h && h <= proposition.max)
+            Right(true)
+          else Left(EvaluationAuthorizationFailed(proposition, proof))
+        case Left(e) => Left(e)
+      }
       res = collectResult(proposition, proof)(msgResult, evalResult)
     } yield res
 
@@ -140,9 +146,9 @@ object Verifier {
       proof:       Models.Contextual.TickRange.Proof,
       context:     DynamicContext[F, String]
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
-      msgResult  <- Verifier.evaluateBlake2b256Bind(Models.Contextual.TickRange.token, proof, context)
+      msgResult <- Verifier.evaluateBlake2b256Bind(Models.Contextual.TickRange.token, proof, context)
       evalResult <- context.currentTick.map(t =>
-        if(proposition.min <= t && t <= proposition.max)
+        if (proposition.min <= t && t <= proposition.max)
           Right(true)
         else Left(EvaluationAuthorizationFailed(proposition, proof))
       )
@@ -197,29 +203,32 @@ object Verifier {
       for {
         msgResult <- Verifier.evaluateBlake2b256Bind(Models.Compositional.Threshold.token, proof, context)
         evalResult <-
-          if (proposition.threshold === 0) true.pure[F]
-          else if (proposition.threshold >= proposition.challenges.size) false.pure[F]
-          else if (proof.responses.isEmpty) false.pure[F]
+          if (proposition.threshold === 0) Right(true).pure[F]
+          else if (proposition.threshold >= proposition.challenges.size)
+            Left(EvaluationAuthorizationFailed(proposition, proof)).pure[F]
+          else if (proof.responses.isEmpty) Left(EvaluationAuthorizationFailed(proposition, proof)).pure[F]
           // We assume a one-to-one pairing of sub-proposition to sub-proof with the assumption that some of the proofs
           // may be Proofs.False
-          else if (proof.responses.size =!= proposition.challenges.size) false.pure[F]
+          else if (proof.responses.size =!= proposition.challenges.size)
+            Left(EvaluationAuthorizationFailed(proposition, proof)).pure[F]
           else {
             proposition.challenges.toList
               .zip(proof.responses)
-              .foldLeftM(0L) {
+              .foldLeftM(0L)({
                 case (successCount, _) if successCount >= proposition.threshold =>
                   successCount.pure[F]
                 case (successCount, (_, None)) =>
                   successCount.pure[F]
                 case (successCount, (prop: Proposition, Some(proof: Proof))) =>
                   verifier.evaluate(prop, proof, context).map {
-                    case Right(true) => successCount + 1
+                    case Right(true) => (successCount + 1)
                     case _           => successCount
                   }
-              }
-              .map(_ >= proposition.threshold)
+              }).map(_ >= proposition.threshold).map(b =>
+                  if (b) Right(true) else  Left(EvaluationAuthorizationFailed(proposition, proof))
+              )
           }
-        res = collectResult(proposition, proof)(msgResult, Right(evalResult))
+        res = collectResult(proposition, proof)(msgResult, evalResult)
       } yield res
 
     private def notVerifier[F[_]: Monad](
@@ -232,7 +241,10 @@ object Verifier {
       msgResult  <- Verifier.evaluateBlake2b256Bind(Models.Compositional.Not.token, proof, context)
       evalResult <- verifier.evaluate(proposition.proposition, proof.proof, context)
       res = collectResult(proposition, proof)(msgResult, evalResult)
-    } yield res
+    } yield res match {
+      case Right(true)                               => Left(EvaluationAuthorizationFailed(proposition, proof))
+      case Left(EvaluationAuthorizationFailed(_, _)) => Right(true)
+    }
 
     private def andVerifier[F[_]: Monad](
       proposition: Models.Compositional.And.Proposition,
@@ -247,8 +259,8 @@ object Verifier {
       res = (msgResult, aResult, bResult) match {
 
         case (Right(true), Right(_), Right(_)) => Right[QuivrRuntimeError, Boolean](true)
-        case (_, aError, Right(_))   => aError
-        case (_, Right(_), bError)   => bError
+        case (_, aError, Right(_))             => aError
+        case (_, Right(_), bError)             => bError
         case _ => Left[QuivrRuntimeError, Boolean](EvaluationAuthorizationFailed(proposition, proof))
       }
     } yield res
@@ -264,10 +276,10 @@ object Verifier {
       aResult   <- verifier.evaluate(proposition.left, proof.left, context)
       bResult   <- verifier.evaluate(proposition.right, proof.right, context)
       res = (msgResult, aResult, bResult) match {
-        case (Right(true), Right(_), _)      => Right[QuivrRuntimeError, Boolean](true)
-        case (Right(true), _, Right(_))      => Right[QuivrRuntimeError, Boolean](true)
-        case (_, aError, Right(_))   => aError
-        case (_, Right(_), bError)   => bError
+        case (Right(true), Right(_), _) => Right[QuivrRuntimeError, Boolean](true)
+        case (Right(true), _, Right(_)) => Right[QuivrRuntimeError, Boolean](true)
+        case (_, aError, Right(_))      => aError
+        case (_, Right(_), bError)      => bError
         case _ => Left[QuivrRuntimeError, Boolean](EvaluationAuthorizationFailed(proposition, proof))
       }
     } yield res
