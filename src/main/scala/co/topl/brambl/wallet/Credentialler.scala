@@ -1,10 +1,10 @@
 package co.topl.brambl.wallet
 
 import co.topl.brambl.Models.Indices
-import co.topl.brambl.wallet.CredentiallerErrors.{ValidationError, ProverError}
+import co.topl.brambl.wallet.CredentiallerErrors.{ProverError, ValidationError}
 import co.topl.brambl.{Context, QuivrService}
 import co.topl.node.transaction.authorization.ValidationInterpreter
-import co.topl.node.transaction.{Attestations, IoTransaction, SpentTransactionOutput}
+import co.topl.node.transaction.{Attestation, Attestations, IoTransaction, SpentTransactionOutput}
 import co.topl.node.typeclasses.ContainsSignable.instances.ioTransactionSignable
 import co.topl.quivr.Models.{Contextual, Primitive}
 import co.topl.quivr.api.Verifier
@@ -24,14 +24,19 @@ case class Credentialler(store: Storage)(implicit ctx: Context) extends Credenti
    * @param idx Indices for which the proof's secret data can be obtained from
    * @return The Proof (if possible)
    */
-  private def getProof(msg: SignableBytes, proposition: Proposition, idx: Indices): Option[Proof] = {
+  private def getProof(msg: SignableBytes, proposition: Proposition, idx: Option[Indices]): Option[Proof] = {
     proposition match {
       case _: Primitive.Locked.Proposition => QuivrService.lockedProof(msg)
       case _: Primitive.Digest.Proposition =>
-        store.getPreimage(idx).flatMap(QuivrService.digestProof(msg, _))
-      case p: Primitive.DigitalSignature.Proposition => ctx.signingRoutines.get(p.routine).flatMap(r => {
-        store.getKeyPair(idx, r).flatMap(keyPair => QuivrService.signatureProof(msg, keyPair.sk, r))
-      })
+        idx.flatMap(store.getPreimage(_).flatMap(QuivrService.digestProof(msg, _)))
+      case p: Primitive.DigitalSignature.Proposition =>
+        ctx.signingRoutines
+          .get(p.routine)
+          .flatMap(r =>
+            idx
+              .flatMap(i => store.getKeyPair(i, r))
+              .flatMap(keyPair => QuivrService.signatureProof(msg, keyPair.sk, r))
+          )
       case _: Contextual.HeightRange.Proposition => QuivrService.heightProof(msg)
       case _: Contextual.TickRange.Proposition => QuivrService.tickProof(msg)
       case _ => None
@@ -49,19 +54,21 @@ case class Credentialler(store: Storage)(implicit ctx: Context) extends Credenti
    * @param msg signable bytes to bind to the proofs
    * @return The same input, but proven. If the input is unprovable, an error is returned.
    */
-  private def proveInput(input: SpentTransactionOutput, msg: SignableBytes): Either[ProverError, SpentTransactionOutput] =
-    store.getIndicesByIdentifier(input.knownIdentifier).map { idx =>
-      val attestations = input.attestation match {
-        case Attestations.Predicate(predLock, _) => Attestations.Predicate(
-          predLock,
-          predLock.challenges.map(prop => getProof(msg, prop, idx))
+  private def proveInput(input: SpentTransactionOutput, msg: SignableBytes): Either[ProverError, SpentTransactionOutput] = {
+    val idx: Option[Indices] = store.getIndicesByIdentifier(input.knownIdentifier)
+    val attestations: Either[ProverError, Attestation] = input.attestation match {
+      case Attestations.Predicate(predLock, responses) => {
+        if(predLock.challenges.length != responses.length) Left(CredentiallerErrors.AttestationMalformed(input.attestation))
+        else Right(
+          Attestations.Predicate(predLock, predLock.challenges.map(getProof(msg, _, idx)))
         )
-        case _ => ??? // We are not handling other types of Attestations at this moment in time
       }
 
-      SpentTransactionOutput(input.knownIdentifier, attestations, input.value, input.datum, input.opts)
-    }.toRight(CredentiallerErrors.KnownIdentifierUnknown(input.knownIdentifier))
+      case _ => ??? // We are not handling other types of Attestations at this moment in time
+    }
 
+    attestations.map(SpentTransactionOutput(input.knownIdentifier, _, input.value, input.datum, input.opts))
+  }
 
 
   /**
