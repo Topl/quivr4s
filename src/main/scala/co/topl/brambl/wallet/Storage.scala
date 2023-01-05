@@ -1,10 +1,11 @@
 package co.topl.brambl.wallet
 
 import co.topl.brambl.Models.{Indices, KeyPair}
+import co.topl.brambl.models.Address
+import co.topl.brambl.models.KnownIdentifier
+import co.topl.brambl.models.box.Box
 import co.topl.brambl.signatures.Signing
-import co.topl.common.Models.Preimage
-import co.topl.node.{Address, KnownIdentifier}
-import co.topl.node.box.Box
+import quivr.models.Preimage
 
 trait Storage {
   // Return the indices associated to a known identifier

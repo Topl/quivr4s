@@ -1,7 +1,6 @@
 package co.topl.brambl
 
-import co.topl.common.Models.VerificationKey
-
+import quivr.models.VerificationKey
 
 object Models {
   case class SigningKey(value: Array[Byte]) // To mirror VerificationKey

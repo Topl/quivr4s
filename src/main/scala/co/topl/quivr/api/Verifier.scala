@@ -2,7 +2,6 @@ package co.topl.quivr.api
 
 import cats._
 import cats.implicits._
-import co.topl.common.Models.{DigestVerification, Message, SignatureVerification}
 import co.topl.crypto.hash.blake2b256
 import co.topl.quivr._
 import co.topl.quivr.runtime.QuivrRuntimeErrors.ValidationError.{
@@ -11,6 +10,7 @@ import co.topl.quivr.runtime.QuivrRuntimeErrors.ValidationError.{
   MessageAuthorizationFailed
 }
 import co.topl.quivr.runtime.{DynamicContext, QuivrRuntimeError}
+import quivr.models._
 
 import java.nio.charset.StandardCharsets
 
@@ -22,9 +22,9 @@ trait Verifier[F[_]] {
   /**
    * Does the given `proof` satisfy the given `proposition` using the given `data`?
    */
-  def evaluate[C <: Proposition, R <: Proof](
-    proposition: C,
-    proof:       R,
+  def evaluate(
+    proposition: Proposition,
+    proof:       Proof,
     context:     DynamicContext[F, String]
   ): F[Either[QuivrRuntimeError, Boolean]]
 }
@@ -37,14 +37,15 @@ object Verifier {
    * @return an array of bytes that is similar to a "signature" for the proof
    */
   private def evaluateBlake2b256Bind[F[_]: Monad, A](
-    tag:     String,
-    proof:   Proof,
-    context: DynamicContext[F, A]
+    tag:         String,
+    proof:       Proof,
+    proofTxBind: TxBind,
+    context:     DynamicContext[F, A]
   ): F[Either[QuivrRuntimeError, Boolean]] = for {
     sb             <- context.signableBytes
-    verifierTxBind <- blake2b256.hash(tag.getBytes(StandardCharsets.UTF_8) ++ sb).value.pure[F]
+    verifierTxBind <- blake2b256.hash(tag.getBytes(StandardCharsets.UTF_8) ++ sb.value.toByteArray).value.pure[F]
     res = Either.cond(
-      verifierTxBind sameElements proof.bindToTransaction,
+      verifierTxBind sameElements proofTxBind.value.toByteArray,
       true,
       MessageAuthorizationFailed(proof)
     )
@@ -92,8 +93,8 @@ object Verifier {
   trait Instances {
 
     private def lockedVerifier[F[_]: Monad](
-      proposition: Models.Primitive.Locked.Proposition,
-      proof:       Models.Primitive.Locked.Proof,
+      proposition: Proposition.Locked,
+      proof:       Proof.Locked,
       context:     DynamicContext[F, String]
     ): F[Either[QuivrRuntimeError, Boolean]] =
       // should always fail, the Locked Proposition is unsatisfiable
@@ -102,225 +103,259 @@ object Verifier {
         .pure[F]
 
     private def digestVerifier[F[_]: Monad](
-      proposition: Models.Primitive.Digest.Proposition,
-      proof:       Models.Primitive.Digest.Proof,
+      proposition: Proposition.Digest,
+      proof:       Proof.Digest,
       context:     DynamicContext[F, String]
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
-      msgResult <- Verifier.evaluateBlake2b256Bind(Models.Primitive.Digest.token, proof, context)
+      wrappedProposition <- Proposition().withDigest(proposition).pure[F]
+      wrappedProof       <- Proof().withDigest(proof).pure[F]
+      msgResult <- Verifier.evaluateBlake2b256Bind(Tokens.Digest, wrappedProof, proof.transactionBind.get, context)
       verification = DigestVerification(proposition.digest, proof.preimage)
       evalResult <- context.digestVerify(proposition.routine)(verification).value
-      res = collectResult(proposition, proof)(msgResult, evalResult)
+      res = collectResult(wrappedProposition, wrappedProof)(msgResult, evalResult)
     } yield res
 
     private def signatureVerifier[F[_]: Monad](
-      proposition: Models.Primitive.DigitalSignature.Proposition,
-      proof:       Models.Primitive.DigitalSignature.Proof,
+      proposition: Proposition.DigitalSignature,
+      proof:       Proof.DigitalSignature,
       context:     DynamicContext[F, String]
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
-      msgResult     <- Verifier.evaluateBlake2b256Bind(Models.Primitive.DigitalSignature.token, proof, context)
+      wrappedProposition <- Proposition().withDigitalSignature(proposition).pure[F]
+      wrappedProof       <- Proof().withDigitalSignature(proof).pure[F]
+      msgResult <- Verifier.evaluateBlake2b256Bind(
+        Tokens.DigitalSignature,
+        wrappedProof,
+        proof.transactionBind.get,
+        context
+      )
       signedMessage <- context.signableBytes
-      verification = SignatureVerification(proposition.vk, proof.witness, Message(signedMessage))
+      verification = SignatureVerification(
+        proposition.verificationKey,
+        proof.witness,
+        Message(signedMessage.value).some
+      )
       evalResult <- context.signatureVerify(proposition.routine)(verification).value
-      res = collectResult(proposition, proof)(msgResult, evalResult)
+      res = collectResult(wrappedProposition, wrappedProof)(msgResult, evalResult)
     } yield res
 
     private def heightVerifier[F[_]: Monad](
-      proposition: Models.Contextual.HeightRange.Proposition,
-      proof:       Models.Contextual.HeightRange.Proof,
+      proposition: Proposition.HeightRange,
+      proof:       Proof.HeightRange,
       context:     DynamicContext[F, String]
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
-      msgResult   <- Verifier.evaluateBlake2b256Bind(Models.Contextual.HeightRange.token, proof, context)
-      chainHeight <- context.heightOf(proposition.chain)
+      wrappedProposition <- Proposition().withHeightRange(proposition).pure[F]
+      wrappedProof       <- Proof().withHeightRange(proof).pure[F]
+      msgResult <- Verifier.evaluateBlake2b256Bind(Tokens.HeightRange, wrappedProof, proof.transactionBind.get, context)
+      chainHeight = 0L.asRight[QuivrRuntimeError] // TODO
       evalResult = chainHeight match {
         case Right(h) =>
           if (proposition.min <= h && h <= proposition.max)
             Right(true)
-          else Left(EvaluationAuthorizationFailed(proposition, proof))
+          else Left(EvaluationAuthorizationFailed(wrappedProposition, wrappedProof))
         case Left(e) => Left(e)
       }
-      res = collectResult(proposition, proof)(msgResult, evalResult)
+      res = collectResult(wrappedProposition, wrappedProof)(msgResult, evalResult)
     } yield res
 
     private def tickVerifier[F[_]: Monad](
-      proposition: Models.Contextual.TickRange.Proposition,
-      proof:       Models.Contextual.TickRange.Proof,
+      proposition: Proposition.TickRange,
+      proof:       Proof.TickRange,
       context:     DynamicContext[F, String]
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
-      msgResult <- Verifier.evaluateBlake2b256Bind(Models.Contextual.TickRange.token, proof, context)
+      wrappedProposition <- Proposition().withTickRange(proposition).pure[F]
+      wrappedProof       <- Proof().withTickRange(proof).pure[F]
+      msgResult <- Verifier.evaluateBlake2b256Bind(Tokens.TickRange, wrappedProof, proof.transactionBind.get, context)
       evalResult <- context.currentTick.map(t =>
         if (proposition.min <= t && t <= proposition.max)
           Right(true)
-        else Left(EvaluationAuthorizationFailed(proposition, proof))
+        else Left(EvaluationAuthorizationFailed(wrappedProposition, wrappedProof))
       )
-      res = collectResult(proposition, proof)(msgResult, evalResult)
+      res = collectResult(wrappedProposition, wrappedProof)(msgResult, evalResult)
     } yield res
 
     private def exactMatchVerifier[F[_]: Monad](
-      proposition: Models.Contextual.ExactMatch.Proposition,
-      proof:       Models.Contextual.ExactMatch.Proof,
+      proposition: Proposition.ExactMatch,
+      proof:       Proof.ExactMatch,
       context:     DynamicContext[F, String]
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
-      msgResult  <- Verifier.evaluateBlake2b256Bind(Models.Contextual.ExactMatch.token, proof, context)
-      evalResult <- context.exactMatch(proposition.location, proposition.compareTo).value
-      res = collectResult(proposition, proof)(msgResult, evalResult)
+      wrappedProposition <- Proposition().withExactMatch(proposition).pure[F]
+      wrappedProof       <- Proof().withExactMatch(proof).pure[F]
+      msgResult  <- Verifier.evaluateBlake2b256Bind(Tokens.ExactMatch, wrappedProof, proof.transactionBind.get, context)
+      evalResult <- context.exactMatch(proposition.location, proposition.compareTo.toByteArray).value
+      res = collectResult(wrappedProposition, wrappedProof)(msgResult, evalResult)
     } yield res
 
     private def lessThanVerifier[F[_]: Monad](
-      proposition: Models.Contextual.LessThan.Proposition,
-      proof:       Models.Contextual.LessThan.Proof,
+      proposition: Proposition.LessThan,
+      proof:       Proof.LessThan,
       context:     DynamicContext[F, String]
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
-      msgResult  <- Verifier.evaluateBlake2b256Bind(Models.Contextual.LessThan.token, proof, context)
-      evalResult <- context.lessThan(proposition.location, proposition.compareTo).value
-      res = collectResult(proposition, proof)(msgResult, evalResult)
+      wrappedProposition <- Proposition().withLessThan(proposition).pure[F]
+      wrappedProof       <- Proof().withLessThan(proof).pure[F]
+      msgResult  <- Verifier.evaluateBlake2b256Bind(Tokens.LessThan, wrappedProof, proof.transactionBind.get, context)
+      evalResult <- context.lessThan(proposition.location, BigInt(proposition.compareTo.get.value.toByteArray)).value
+      res = collectResult(wrappedProposition, wrappedProof)(msgResult, evalResult)
     } yield res
 
     private def greaterThanVerifier[F[_]: Monad](
-      proposition: Models.Contextual.GreaterThan.Proposition,
-      proof:       Models.Contextual.GreaterThan.Proof,
+      proposition: Proposition.GreaterThan,
+      proof:       Proof.GreaterThan,
       context:     DynamicContext[F, String]
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
-      msgResult  <- Verifier.evaluateBlake2b256Bind(Models.Contextual.GreaterThan.token, proof, context)
-      evalResult <- context.greaterThan(proposition.location, proposition.compareTo).value
-      res = collectResult(proposition, proof)(msgResult, evalResult)
+      wrappedProposition <- Proposition().withGreaterThan(proposition).pure[F]
+      wrappedProof       <- Proof().withGreaterThan(proof).pure[F]
+      msgResult <- Verifier.evaluateBlake2b256Bind(Tokens.GreaterThan, wrappedProof, proof.transactionBind.get, context)
+      evalResult <- context.greaterThan(proposition.location, BigInt(proposition.compareTo.get.value.toByteArray)).value
+      res = collectResult(wrappedProposition, wrappedProof)(msgResult, evalResult)
     } yield res
 
     private def equalToVerifier[F[_]: Monad](
-      proposition: Models.Contextual.EqualTo.Proposition,
-      proof:       Models.Contextual.EqualTo.Proof,
+      proposition: Proposition.EqualTo,
+      proof:       Proof.EqualTo,
       context:     DynamicContext[F, String]
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
-      msgResult  <- Verifier.evaluateBlake2b256Bind(Models.Contextual.EqualTo.token, proof, context)
-      evalResult <- context.equalTo(proposition.location, proposition.compareTo).value
-      res = collectResult(proposition, proof)(msgResult, evalResult)
+      wrappedProposition <- Proposition().withEqualTo(proposition).pure[F]
+      wrappedProof       <- Proof().withEqualTo(proof).pure[F]
+      msgResult  <- Verifier.evaluateBlake2b256Bind(Tokens.LessThan, wrappedProof, proof.transactionBind.get, context)
+      evalResult <- context.equalTo(proposition.location, BigInt(proposition.compareTo.get.value.toByteArray)).value
+      res = collectResult(wrappedProposition, wrappedProof)(msgResult, evalResult)
     } yield res
 
     private def thresholdVerifier[F[_]: Monad](
-      proposition:       Models.Compositional.Threshold.Proposition,
-      proof:             Models.Compositional.Threshold.Proof,
+      proposition:       Proposition.Threshold,
+      proof:             Proof.Threshold,
       context:           DynamicContext[F, String]
     )(implicit verifier: Verifier[F]): F[Either[QuivrRuntimeError, Boolean]] =
       for {
-        msgResult <- Verifier.evaluateBlake2b256Bind(Models.Compositional.Threshold.token, proof, context)
+        wrappedProposition <- Proposition().withThreshold(proposition).pure[F]
+        wrappedProof       <- Proof().withThreshold(proof).pure[F]
+        msgResult <- Verifier.evaluateBlake2b256Bind(Tokens.Threshold, wrappedProof, proof.transactionBind.get, context)
         evalResult <-
           if (proposition.threshold === 0) Right(true).pure[F]
           else if (proposition.threshold >= proposition.challenges.size)
-            Left(EvaluationAuthorizationFailed(proposition, proof)).pure[F]
-          else if (proof.responses.isEmpty) Left(EvaluationAuthorizationFailed(proposition, proof)).pure[F]
+            Left(EvaluationAuthorizationFailed(wrappedProposition, wrappedProof)).pure[F]
+          else if (proof.responses.isEmpty)
+            Left(EvaluationAuthorizationFailed(wrappedProposition, wrappedProof)).pure[F]
           // We assume a one-to-one pairing of sub-proposition to sub-proof with the assumption that some of the proofs
           // may be Proofs.False
           else if (proof.responses.size =!= proposition.challenges.size)
-            Left(EvaluationAuthorizationFailed(proposition, proof)).pure[F]
+            Left(EvaluationAuthorizationFailed(wrappedProposition, wrappedProof)).pure[F]
           else {
             proposition.challenges.toList
               .zip(proof.responses)
-              .foldLeftM(0L)({
+              .foldLeftM(0L) {
                 case (successCount, _) if successCount >= proposition.threshold =>
                   successCount.pure[F]
-                case (successCount, (_, None)) =>
+                case (successCount, (_, proof)) if proof.value.isEmpty =>
                   successCount.pure[F]
-                case (successCount, (prop: Proposition, Some(proof: Proof))) =>
+                case (successCount, (prop: Proposition, proof)) =>
                   verifier.evaluate(prop, proof, context).map {
                     case Right(true) => (successCount + 1)
                     case _           => successCount
                   }
-              }).map(_ >= proposition.threshold).map(b =>
-                  if (b) Right(true) else  Left(EvaluationAuthorizationFailed(proposition, proof))
-              )
+              }
+              .map(_ >= proposition.threshold)
+              .map(b => if (b) Right(true) else Left(EvaluationAuthorizationFailed(wrappedProposition, wrappedProof)))
           }
-        res = collectResult(proposition, proof)(msgResult, evalResult)
+        res = collectResult(wrappedProposition, wrappedProof)(msgResult, evalResult)
       } yield res
 
     private def notVerifier[F[_]: Monad](
-      proposition: Models.Compositional.Not.Proposition,
-      proof:       Models.Compositional.Not.Proof,
+      proposition: Proposition.Not,
+      proof:       Proof.Not,
       context:     DynamicContext[F, String]
     )(implicit
       verifier: Verifier[F]
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
-      msgResult  <- Verifier.evaluateBlake2b256Bind(Models.Compositional.Not.token, proof, context)
-      evalResult <- verifier.evaluate(proposition.proposition, proof.proof, context)
-      res = collectResult(proposition, proof)(msgResult, evalResult)
+      wrappedProposition <- Proposition().withNot(proposition).pure[F]
+      wrappedProof       <- Proof().withNot(proof).pure[F]
+      msgResult  <- Verifier.evaluateBlake2b256Bind(Tokens.Not, wrappedProof, proof.transactionBind.get, context)
+      evalResult <- verifier.evaluate(proposition.proposition.get, proof.proof.get, context)
+      res = collectResult(wrappedProposition, wrappedProof)(msgResult, evalResult)
     } yield res match {
-      case Right(true)                               => Left(EvaluationAuthorizationFailed(proposition, proof))
+      case Right(true) => Left(EvaluationAuthorizationFailed(wrappedProposition, wrappedProof))
       case Left(EvaluationAuthorizationFailed(_, _)) => Right(true)
     }
 
     private def andVerifier[F[_]: Monad](
-      proposition: Models.Compositional.And.Proposition,
-      proof:       Models.Compositional.And.Proof,
+      proposition: Proposition.And,
+      proof:       Proof.And,
       context:     DynamicContext[F, String]
     )(implicit
       verifier: Verifier[F]
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
-      msgResult <- Verifier.evaluateBlake2b256Bind(Models.Compositional.And.token, proof, context)
-      aResult   <- verifier.evaluate(proposition.left, proof.left, context)
-      bResult   <- verifier.evaluate(proposition.right, proof.right, context)
+      wrappedProposition <- Proposition().withAnd(proposition).pure[F]
+      wrappedProof       <- Proof().withAnd(proof).pure[F]
+      msgResult <- Verifier.evaluateBlake2b256Bind(Tokens.And, wrappedProof, proof.transactionBind.get, context)
+      aResult   <- verifier.evaluate(proposition.left.get, proof.left.get, context)
+      bResult   <- verifier.evaluate(proposition.right.get, proof.right.get, context)
       res = (msgResult, aResult, bResult) match {
 
         case (Right(true), Right(_), Right(_)) => Right[QuivrRuntimeError, Boolean](true)
         case (_, aError, Right(_))             => aError
         case (_, Right(_), bError)             => bError
-        case _ => Left[QuivrRuntimeError, Boolean](EvaluationAuthorizationFailed(proposition, proof))
+        case _ => Left[QuivrRuntimeError, Boolean](EvaluationAuthorizationFailed(wrappedProposition, wrappedProof))
       }
     } yield res
 
     private def orVerifier[F[_]: Monad](
-      proposition: Models.Compositional.Or.Proposition,
-      proof:       Models.Compositional.Or.Proof,
+      proposition: Proposition.Or,
+      proof:       Proof.Or,
       context:     DynamicContext[F, String]
     )(implicit
       verifier: Verifier[F]
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
-      msgResult <- Verifier.evaluateBlake2b256Bind(Models.Compositional.Or.token, proof, context)
-      aResult   <- verifier.evaluate(proposition.left, proof.left, context)
-      bResult   <- verifier.evaluate(proposition.right, proof.right, context)
+      wrappedProposition <- Proposition().withOr(proposition).pure[F]
+      wrappedProof       <- Proof().withOr(proof).pure[F]
+      msgResult          <- Verifier.evaluateBlake2b256Bind(Tokens.Or, wrappedProof, proof.transactionBind.get, context)
+      aResult            <- verifier.evaluate(proposition.left.get, proof.left.get, context)
+      bResult            <- verifier.evaluate(proposition.right.get, proof.right.get, context)
       res = (msgResult, aResult, bResult) match {
         case (Right(true), Right(_), _) => Right[QuivrRuntimeError, Boolean](true)
         case (Right(true), _, Right(_)) => Right[QuivrRuntimeError, Boolean](true)
         case (_, aError, Right(_))      => aError
         case (_, Right(_), bError)      => bError
-        case _ => Left[QuivrRuntimeError, Boolean](EvaluationAuthorizationFailed(proposition, proof))
+        case _ => Left[QuivrRuntimeError, Boolean](EvaluationAuthorizationFailed(wrappedProposition, wrappedProof))
       }
     } yield res
 
     implicit def verifierInstance[F[_]: Monad]: Verifier[F] =
       new Verifier[F] {
 
-        def evaluate[C <: Proposition, R <: Proof](
-          proposition: C,
-          proof:       R,
+        def evaluate(
+          proposition: Proposition,
+          proof:       Proof,
           context:     DynamicContext[F, String]
         ): F[Either[QuivrRuntimeError, Boolean]] =
-          (proposition, proof) match {
-            case (c: Models.Primitive.Locked.Proposition, r: Models.Primitive.Locked.Proof) =>
+          (proposition.value, proof.value) match {
+            case (Proposition.Value.Locked(c), Proof.Value.Locked(r)) =>
               lockedVerifier(c, r, context)
-            case (c: Models.Primitive.Digest.Proposition, r: Models.Primitive.Digest.Proof) =>
+            case (Proposition.Value.Digest(c), Proof.Value.Digest(r)) =>
               digestVerifier(c, r, context)
-            case (c: Models.Primitive.DigitalSignature.Proposition, r: Models.Primitive.DigitalSignature.Proof) =>
+            case (Proposition.Value.DigitalSignature(c), Proof.Value.DigitalSignature(r)) =>
               signatureVerifier(c, r, context)
-            case (c: Models.Contextual.HeightRange.Proposition, r: Models.Contextual.HeightRange.Proof) =>
+            case (Proposition.Value.HeightRange(c), Proof.Value.HeightRange(r)) =>
               heightVerifier(c, r, context)
-            case (c: Models.Contextual.TickRange.Proposition, r: Models.Contextual.TickRange.Proof) =>
+            case (Proposition.Value.TickRange(c), Proof.Value.TickRange(r)) =>
               tickVerifier(c, r, context)
-            case (c: Models.Contextual.ExactMatch.Proposition, r: Models.Contextual.ExactMatch.Proof) =>
+            case (Proposition.Value.ExactMatch(c), Proof.Value.ExactMatch(r)) =>
               exactMatchVerifier(c, r, context)
-            case (c: Models.Contextual.LessThan.Proposition, r: Models.Contextual.LessThan.Proof) =>
+            case (Proposition.Value.LessThan(c), Proof.Value.LessThan(r)) =>
               lessThanVerifier(c, r, context)
-            case (c: Models.Contextual.GreaterThan.Proposition, r: Models.Contextual.GreaterThan.Proof) =>
+            case (Proposition.Value.GreaterThan(c), Proof.Value.GreaterThan(r)) =>
               greaterThanVerifier(c, r, context)
-            case (c: Models.Contextual.EqualTo.Proposition, r: Models.Contextual.EqualTo.Proof) =>
+            case (Proposition.Value.EqualTo(c), Proof.Value.EqualTo(r)) =>
               equalToVerifier(c, r, context)
-            case (c: Models.Compositional.Threshold.Proposition, r: Models.Compositional.Threshold.Proof) =>
+            case (Proposition.Value.Threshold(c), Proof.Value.Threshold(r)) =>
               implicit def v: Verifier[F] = verifierInstance[F]
               thresholdVerifier(c, r, context)
-            case (c: Models.Compositional.Not.Proposition, r: Models.Compositional.Not.Proof) =>
+            case (Proposition.Value.Not(c), Proof.Value.Not(r)) =>
               implicit def v: Verifier[F] = verifierInstance[F]
               notVerifier(c, r, context)
-            case (c: Models.Compositional.And.Proposition, r: Models.Compositional.And.Proof) =>
+            case (Proposition.Value.And(c), Proof.Value.And(r)) =>
               implicit def v: Verifier[F] = verifierInstance[F]
               andVerifier(c, r, context)
-            case (c: Models.Compositional.Or.Proposition, r: Models.Compositional.Or.Proof) =>
+            case (Proposition.Value.Or(c), Proof.Value.Or(r)) =>
               implicit def v: Verifier[F] = verifierInstance[F]
               orVerifier(c, r, context)
           }

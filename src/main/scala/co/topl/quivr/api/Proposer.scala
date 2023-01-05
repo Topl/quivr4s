@@ -2,74 +2,61 @@ package co.topl.quivr.api
 
 import cats.Applicative
 import cats.implicits._
-import co.topl.common.Data
-import co.topl.common.Models.{Digest, VerificationKey}
-import co.topl.quivr.{Models, Proposition}
+import com.google.protobuf.ByteString
+import quivr.models.Data
+import quivr.models.Digest
+import quivr.models.Int128
+import quivr.models.Proposition
+import quivr.models.VerificationKey
 
 // Proposers create Propositions from a tuple of arguments (or single argument) of type A.
-trait Proposer[F[_], A, P <: Proposition] {
-  def propose(args: A): F[P]
+trait Proposer[F[_], A] {
+  def propose(args: A): F[Proposition]
 }
 
 // This represents the native apply (constructor) methods for the returned Proposition
 object Proposer {
 
-  def LockedProposer[F[_]: Applicative, A]: Proposer[F, Option[Data], Models.Primitive.Locked.Proposition] =
-    (data: Option[Data]) => Models.Primitive.Locked.Proposition(data).pure[F].widen
+  def LockedProposer[F[_]: Applicative]: Proposer[F, Option[Data]] =
+    (data: Option[Data]) => Proposition().withLocked(Proposition.Locked(data)).pure[F]
 
-  def digestProposer[F[_]: Applicative, A]: Proposer[F, (String, Digest), Models.Primitive.Digest.Proposition] =
-    (args: (String, Digest)) => Models.Primitive.Digest.Proposition(args._1, args._2).pure[F].widen
+  def digestProposer[F[_]: Applicative]: Proposer[F, (String, Digest)] =
+    (args: (String, Digest)) => Proposition().withDigest(Proposition.Digest(args._1, args._2.some)).pure[F]
 
-  def signatureProposer[F[_]: Applicative, A]
-    : Proposer[F, (String, VerificationKey), Models.Primitive.DigitalSignature.Proposition] =
-    (args: (String, VerificationKey)) => Models.Primitive.DigitalSignature.Proposition(args._1, args._2).pure[F].widen
+  def signatureProposer[F[_]: Applicative]: Proposer[F, (String, VerificationKey)] =
+    (args: (String, VerificationKey)) =>
+      Proposition().withDigitalSignature(Proposition.DigitalSignature(args._1, args._2.some)).pure[F]
 
-  def heightProposer[F[_]: Applicative, A]
-    : Proposer[F, (String, Long, Long), Models.Contextual.HeightRange.Proposition] =
-    (args: (String, Long, Long)) => Models.Contextual.HeightRange.Proposition(args._1, args._2, args._3).pure[F].widen
+  def heightProposer[F[_]: Applicative]: Proposer[F, (String, Long, Long)] =
+    (args: (String, Long, Long)) =>
+      Proposition().withHeightRange(Proposition.HeightRange(args._1, args._2, args._3)).pure[F]
 
-  def tickProposer[F[_]: Applicative, A]: Proposer[F, (Long, Long), Models.Contextual.TickRange.Proposition] =
-    (args: (Long, Long)) => Models.Contextual.TickRange.Proposition(args._1, args._2).pure[F].widen
+  def tickProposer[F[_]: Applicative]: Proposer[F, (Long, Long)] =
+    (args: (Long, Long)) => Proposition().withTickRange(Proposition.TickRange(args._1, args._2)).pure[F]
 
-  def exactMatchProposer[F[_]: Applicative, A]
-    : Proposer[F, (String, Array[Byte]), Models.Contextual.ExactMatch.Proposition] =
-    (args: (String, Array[Byte])) => Models.Contextual.ExactMatch.Proposition(args._1, args._2).pure[F].widen
+  def exactMatchProposer[F[_]: Applicative]: Proposer[F, (String, Array[Byte])] =
+    (args: (String, Array[Byte])) =>
+      Proposition().withExactMatch(Proposition.ExactMatch(args._1, ByteString.copyFrom(args._2))).pure[F]
 
-  def lessThanProposer[F[_]: Applicative, A]: Proposer[F, (String, Long), Models.Contextual.LessThan.Proposition] =
-    (args: (String, Long)) => Models.Contextual.LessThan.Proposition(args._1, args._2).pure[F].widen
+  def lessThanProposer[F[_]: Applicative]: Proposer[F, (String, Int128)] =
+    (args: (String, Int128)) => Proposition().withLessThan(Proposition.LessThan(args._1, args._2.some)).pure[F]
 
-  def greaterThan[F[_]: Applicative, A]: Proposer[F, (String, Long), Models.Contextual.GreaterThan.Proposition] =
-    (args: (String, Long)) => Models.Contextual.GreaterThan.Proposition(args._1, args._2).pure[F].widen
+  def greaterThan[F[_]: Applicative]: Proposer[F, (String, Int128)] =
+    (args: (String, Int128)) => Proposition().withGreaterThan(Proposition.GreaterThan(args._1, args._2.some)).pure[F]
 
-  def equalTo[F[_]: Applicative, A]: Proposer[F, (String, Long), Models.Contextual.EqualTo.Proposition] =
-    (args: (String, Long)) => Models.Contextual.EqualTo.Proposition(args._1, args._2).pure[F].widen
+  def equalTo[F[_]: Applicative]: Proposer[F, (String, Int128)] =
+    (args: (String, Int128)) => Proposition().withEqualTo(Proposition.EqualTo(args._1, args._2.some)).pure[F]
 
-  def thresholdProposer[F[_]: Applicative, A]
-    : Proposer[F, (Set[Proposition], Int), Models.Compositional.Threshold.Proposition] =
+  def thresholdProposer[F[_]: Applicative]: Proposer[F, (Set[Proposition], Int)] =
     (args: (Set[Proposition], Int)) =>
-      Models.Compositional.Threshold
-        .Proposition(args._1, args._2)
-        .pure[F]
-        .widen
+      Proposition().withThreshold(Proposition.Threshold(args._1.toSeq, args._2)).pure[F]
 
-  def notProposer[F[_]: Applicative]: Proposer[F, Proposition, Models.Compositional.Not.Proposition] =
-    (proposition: Proposition) =>
-      Models.Compositional.Not
-        .Proposition(proposition)
-        .pure[F]
-        .widen
+  def notProposer[F[_]: Applicative]: Proposer[F, Proposition] =
+    (args: Proposition) => Proposition().withNot(Proposition.Not(args.some)).pure[F]
 
-  def andProposer[F[_]: Applicative]: Proposer[F, (Proposition, Proposition), Models.Compositional.And.Proposition] =
-    (args: (Proposition, Proposition)) =>
-      Models.Compositional.And
-        .Proposition(args._1, args._2)
-        .pure[F]
-        .widen
+  def andProposer[F[_]: Applicative]: Proposer[F, (Proposition, Proposition)] =
+    (args: (Proposition, Proposition)) => Proposition().withAnd(Proposition.And(args._1.some, args._2.some)).pure[F]
 
-  def orProposer[F[_]: Applicative]: Proposer[F, (Proposition, Proposition), Models.Compositional.Or.Proposition] =
-    (args: (Proposition, Proposition)) =>
-      Models.Compositional.Or
-        .Proposition(args._1, args._2)
-        .pure[F]
-        .widen
+  def orProposer[F[_]: Applicative]: Proposer[F, (Proposition, Proposition)] =
+    (args: (Proposition, Proposition)) => Proposition().withOr(Proposition.Or(args._1.some, args._2.some)).pure[F]
 }

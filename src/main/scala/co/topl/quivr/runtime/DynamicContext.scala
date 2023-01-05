@@ -2,11 +2,11 @@ package co.topl.quivr.runtime
 
 import cats.Monad
 import cats.data.EitherT
-import co.topl.common.Models.{DigestVerification, SignatureVerification}
-import co.topl.common.{Data, ParsableDataInterface}
-import co.topl.quivr.SignableBytes
+import co.topl.brambl.models.Datum
+import co.topl.common.ParsableDataInterface
 import co.topl.quivr.algebras.{DigestVerifier, SignatureVerifier}
 import co.topl.quivr.runtime.QuivrRuntimeErrors.{ContextError, ValidationError}
+import quivr.models._
 
 /**
  * The context that will be provided during evaluation of Quivr protocols. This context provides generic interfaces for digest and signature verificiation
@@ -15,7 +15,7 @@ import co.topl.quivr.runtime.QuivrRuntimeErrors.{ContextError, ValidationError}
  * @tparam K the key type that will be used to lookup values in the generic interface maps
  */
 trait DynamicContext[F[_], K] {
-  val datums: K => Option[Datum[_]]
+  val datums: K => Option[Datum]
 
   val interfaces: Map[K, ParsableDataInterface]
   val signingRoutines: Map[K, SignatureVerifier[F]]
@@ -25,20 +25,10 @@ trait DynamicContext[F[_], K] {
 
   def currentTick: F[Long]
 
-  def heightOf(label: K)(implicit monad: Monad[F]): F[Either[QuivrRuntimeError, Long]] =
-    EitherT
-      .fromEither[F](
-        datums(label) match {
-          case Some(v: IncludesHeight[_]) => Right(v.height)
-          case _                          => Left(ContextError.FailedToFindDatum: QuivrRuntimeError)
-        }
-      )
-      .value
-
   def digestVerify(routine: K)(verification: DigestVerification)(implicit
     monad:                  Monad[F]
   ): EitherT[F, QuivrRuntimeError, DigestVerification] = for {
-    verifier <- EitherT.fromOption(hashingRoutines.get(routine), ContextError.FailedToFindDigestVerifier)
+    verifier <- EitherT.fromOption[F](hashingRoutines.get(routine), ContextError.FailedToFindDigestVerifier)
     res      <- EitherT(verifier.validate(verification))
   } yield res
 
@@ -67,20 +57,22 @@ trait DynamicContext[F[_], K] {
   def exactMatch(label: K, compareTo: Array[Byte])(implicit
     monad:              Monad[F]
   ): EitherT[F, QuivrRuntimeError, Array[Byte]] =
-    useInterface(label)(d => Right(d.value))(b => b sameElements compareTo)(monad)
+    useInterface(label)(d => Right(d.value))(b => b.toByteArray sameElements compareTo)(monad)
+      .map(_.toByteArray)
 
-  def lessThan(label: K, compareTo: Long)(implicit
+  def lessThan(label: K, compareTo: BigInt)(implicit
     monad:            Monad[F]
-  ): EitherT[F, QuivrRuntimeError, Long] =
-    useInterface(label)(d => Right(BigInt(d.value).longValue))(n => n < compareTo)
+  ): EitherT[F, QuivrRuntimeError, BigInt] =
+    useInterface(label)(d => Right(BigInt(d.value.toByteArray)))(n => n < compareTo)
 
-  def greaterThan(label: K, compareTo: Long)(implicit
+  def greaterThan(label: K, compareTo: BigInt)(implicit
     monad:               Monad[F]
-  ): EitherT[F, QuivrRuntimeError, Long] =
-    useInterface(label)(d => Right(BigInt(d.value).longValue))(n => n > compareTo)
+  ): EitherT[F, QuivrRuntimeError, BigInt] =
+    useInterface(label)(d => Right(BigInt(d.value.toByteArray)))(n => n > compareTo)
 
-  def equalTo(label: K, compareTo: Long)(implicit
+  def equalTo(label: K, compareTo: BigInt)(implicit
     monad:           Monad[F]
-  ): EitherT[F, QuivrRuntimeError, Long] =
-    useInterface(label)(d => Right(BigInt(d.value).longValue))(n => n == compareTo)
+  ): EitherT[F, QuivrRuntimeError, BigInt] =
+    useInterface(label)(d => Right(BigInt(d.value.toByteArray)))(n => n == compareTo)
+
 }

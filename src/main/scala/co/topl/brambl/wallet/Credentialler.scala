@@ -1,14 +1,18 @@
 package co.topl.brambl.wallet
 
+import cats.implicits._
 import co.topl.brambl.Models.Indices
+import co.topl.brambl.models.transaction.Attestation
+import co.topl.brambl.models.transaction.IoTransaction
+import co.topl.brambl.models.transaction.SpentTransactionOutput
 import co.topl.brambl.wallet.CredentiallerErrors.{ProverError, ValidationError}
 import co.topl.brambl.{Context, QuivrService}
 import co.topl.node.transaction.authorization.ValidationInterpreter
-import co.topl.node.transaction.{Attestation, Attestations, IoTransaction, SpentTransactionOutput}
 import co.topl.node.typeclasses.ContainsSignable.instances.ioTransactionSignable
-import co.topl.quivr.Models.{Contextual, Primitive}
 import co.topl.quivr.api.Verifier
-import co.topl.quivr.{Proof, Proposition, SignableBytes}
+import quivr.models.Proof
+import quivr.models.Proposition
+import quivr.models.SignableBytes
 
 case class Credentialler(store: Storage)(implicit ctx: Context) extends Credentials {
 
@@ -24,12 +28,12 @@ case class Credentialler(store: Storage)(implicit ctx: Context) extends Credenti
    * @param idx Indices for which the proof's secret data can be obtained from
    * @return The Proof (if possible)
    */
-  private def getProof(msg: SignableBytes, proposition: Proposition, idx: Option[Indices]): Option[Proof] = {
-    proposition match {
-      case _: Primitive.Locked.Proposition => QuivrService.lockedProof(msg)
-      case _: Primitive.Digest.Proposition =>
+  private def getProof(msg: SignableBytes, proposition: Proposition, idx: Option[Indices]): Option[Proof] =
+    proposition.value match {
+      case _: Proposition.Value.Locked => QuivrService.lockedProof(msg)
+      case _: Proposition.Value.Digest =>
         idx.flatMap(store.getPreimage(_).flatMap(QuivrService.digestProof(msg, _)))
-      case p: Primitive.DigitalSignature.Proposition =>
+      case Proposition.Value.DigitalSignature(p) =>
         ctx.signingRoutines
           .get(p.routine)
           .flatMap(r =>
@@ -37,13 +41,13 @@ case class Credentialler(store: Storage)(implicit ctx: Context) extends Credenti
               .flatMap(i => store.getKeyPair(i, r))
               .flatMap(keyPair => QuivrService.signatureProof(msg, keyPair.sk, r))
           )
-      case _: Contextual.HeightRange.Proposition => QuivrService.heightProof(msg)
-      case _: Contextual.TickRange.Proposition => QuivrService.tickProof(msg)
-      case _ => None
+      case _: Proposition.Value.HeightRange => QuivrService.heightProof(msg)
+      case _: Proposition.Value.TickRange   => QuivrService.tickProof(msg)
+      case _                                => None
     }
-  }
 
-  /***
+  /**
+   * *
    * Prove an input. That is, to prove all the propositions within the attestation
    *
    * If the wallet is unaware of the input's identifier, an error is returned
@@ -54,22 +58,30 @@ case class Credentialler(store: Storage)(implicit ctx: Context) extends Credenti
    * @param msg signable bytes to bind to the proofs
    * @return The same input, but proven. If the input is unprovable, an error is returned.
    */
-  private def proveInput(input: SpentTransactionOutput, msg: SignableBytes): Either[ProverError, SpentTransactionOutput] = {
-    val idx: Option[Indices] = store.getIndicesByIdentifier(input.knownIdentifier)
-    val attestations: Either[ProverError, Attestation] = input.attestation match {
-      case Attestations.Predicate(predLock, responses) => {
-        if(predLock.challenges.length != responses.length) Left(CredentiallerErrors.AttestationMalformed(input.attestation))
-        else Right(
-          Attestations.Predicate(predLock, predLock.challenges.map(getProof(msg, _, idx)))
-        )
+  private def proveInput(
+    input: SpentTransactionOutput,
+    msg:   SignableBytes
+  ): Either[ProverError, SpentTransactionOutput] = {
+    val idx: Option[Indices] = input.knownIdentifier.flatMap(store.getIndicesByIdentifier)
+    // TODO: None.get
+    val inputAttestation = input.attestation.get
+    val attestations: Either[ProverError, Attestation] =
+      inputAttestation.value match {
+        case Attestation.Value.Predicate(Attestation.Predicate(Some(predLock), responses, _)) =>
+          if (predLock.challenges.length != responses.length)
+            Left(CredentiallerErrors.AttestationMalformed(inputAttestation))
+          else
+            Right(
+              Attestation().withPredicate(
+                Attestation.Predicate(predLock.some, predLock.challenges.map(getProof(msg, _, idx).getOrElse(Proof())))
+              )
+            )
+
+        case _ => ??? // We are not handling other types of Attestations at this moment in time
       }
 
-      case _ => ??? // We are not handling other types of Attestations at this moment in time
-    }
-
-    attestations.map(SpentTransactionOutput(input.knownIdentifier, _, input.value, input.datum, input.opts))
+    attestations.map(_.some).map(SpentTransactionOutput(input.knownIdentifier, _, input.value, input.datum, input.opts))
   }
-
 
   /**
    * Prove a transaction. That is, prove all the inputs within the transaction if possible
@@ -81,10 +93,10 @@ case class Credentialler(store: Storage)(implicit ctx: Context) extends Credenti
    */
   override def prove(unprovenTx: IoTransaction): Either[List[ProverError], IoTransaction] = {
     val signable = ioTransactionSignable.signableBytes(unprovenTx)
-    val (errs, provenInputs) = unprovenTx.inputs
+    val (errs, provenInputs) = unprovenTx.inputs.toList
       .partitionMap(proveInput(_, signable))
 
-    if(errs.isEmpty && provenInputs.nonEmpty) Right(IoTransaction(provenInputs, unprovenTx.outputs, unprovenTx.datum))
+    if (errs.isEmpty && provenInputs.nonEmpty) Right(IoTransaction(provenInputs, unprovenTx.outputs, unprovenTx.datum))
     else Left(errs)
   }
 
@@ -99,10 +111,10 @@ case class Credentialler(store: Storage)(implicit ctx: Context) extends Credenti
     ValidationInterpreter
       .make[Option]()
       .validate(ctx)(tx)
-      .flatMap({
+      .flatMap {
         case Left(err) => Some(ValidationError(err))
-        case _ => None
-      })
+        case _         => None
+      }
       .toList
   }
 
@@ -115,10 +127,11 @@ case class Credentialler(store: Storage)(implicit ctx: Context) extends Credenti
    */
   override def proveAndValidate(unprovenTx: IoTransaction): Either[List[CredentiallerError], IoTransaction] =
     prove(unprovenTx) match {
-      case Right(provenTx) => validate(provenTx) match {
-        case Nil => Right(provenTx)
-        case errs: List[ValidationError] => Left(errs)
-      }
+      case Right(provenTx) =>
+        validate(provenTx) match {
+          case Nil                         => Right(provenTx)
+          case errs: List[ValidationError] => Left(errs)
+        }
       case Left(errs) => Left(errs)
     }
 }

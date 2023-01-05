@@ -1,48 +1,63 @@
 package co.topl.brambl.nativeTransactor
 
+import cats.implicits._
+import co.topl.brambl.models.Address
+import co.topl.brambl.models.Datum
+import co.topl.brambl.models.Event
+import co.topl.brambl.models.KnownIdentifier
+import co.topl.brambl.models.box.Lock
+import co.topl.brambl.models.box.Value
+import co.topl.brambl.models.transaction.Attestation
+import co.topl.brambl.models.transaction.IoTransaction
+import co.topl.brambl.models.transaction.Schedule
+import co.topl.brambl.models.transaction.SpentTransactionOutput
+import co.topl.brambl.models.transaction.UnspentTransactionOutput
 import co.topl.brambl.wallet.Storage
-import co.topl.node.box.{Lock, Locks, Values}
-import co.topl.node.transaction._
-import co.topl.node.{Address, Events, KnownIdentifier}
-import co.topl.quivr.runtime.Datum
-
+import com.google.protobuf.ByteString
+import quivr.models.Int128
+import quivr.models.Proof
 
 // Create un-proven transactions
 
 // For now it creates the hardcoded simple transactions that are needed for the credential examples
 // Although the following won't represent exactly what the transaction builder will do, it will inform what's needed
 
-case class MockBuilder(store: Storage) extends Builder{
+case class MockBuilder(store: Storage) extends Builder {
+
   /**
    * Construct an unproven input.
    *
    * @param id Known identifier for which the contents of this input is coming from
    * @return The unproven input
    */
-  private def constructTestInput(id: KnownIdentifier): Option[SpentTransactionOutput] = {
-    store.getBoxByKnownIdentifier(id)
-      .map(box => {
-        val datum: Datum[Events.SpentTransactionOutput] = Datums.spentOutputDatum(
-          Events.SpentTransactionOutput(
-            List(), // references does not seem necessary to credentialler
-            Array() // metadata is trivial to credentialler
-          )
+  private def constructTestInput(id: KnownIdentifier): Option[SpentTransactionOutput] =
+    store
+      .getBoxByKnownIdentifier(id)
+      .map { box =>
+        val datum: Datum.SpentOutput = Datum.SpentOutput(
+          Event
+            .SpentTransactionOutput(
+              None // metadata is trivial to credentialler
+            )
+            .some
         )
         SpentTransactionOutput(
-          id,
-          buildUnprovenAttestation(box.lock),
+          id.some,
+          box.lock.map(buildUnprovenAttestation),
           box.value,
-          datum,
+          datum.some,
           List() // opts does not seem necessary to credentialler
         )
-      })
-  }
+      }
 
-  private def buildUnprovenAttestation(lock: Lock): Attestation = lock match {
-    case p: Locks.Predicate => Attestations.Predicate(
-      p,
-      List.fill(p.challenges.length)(None) // Its unproven
-    )
+  private def buildUnprovenAttestation(lock: Lock): Attestation = lock.value match {
+    case Lock.Value.Predicate(p) =>
+      Attestation().withPredicate(
+        Attestation.Predicate(
+          p.some,
+          List.fill(p.challenges.length)(Proof()) // Its unproven
+        )
+      )
     case _ => ??? // Only considering Predicate locks for now
   }
 
@@ -52,18 +67,19 @@ case class MockBuilder(store: Storage) extends Builder{
    * @return The transaction output
    */
   private def constructTestOutput(address: Address): UnspentTransactionOutput = {
-    val value = Values.Token(
-      1,
-      List() // blobs does not seem necessary to credentialler
-    )
-    val datum: Datum[Events.UnspentTransactionOutput] = Datums.unspentOutputDatum(
-      Events.UnspentTransactionOutput(
-        List(), // references does not seem necessary to credentialler
-        Array() // metadata is trivial to credentialler
+    val value = Value().withToken(
+      Value.Token(
+        Int128(ByteString.copyFrom(BigInt(1).toByteArray)).some
       )
     )
-    val opts = List() // opts does not seem necessary to credentialler
-    UnspentTransactionOutput(address, value, datum, opts)
+    val datum: Datum.UnspentOutput = Datum.UnspentOutput(
+      Event
+        .UnspentTransactionOutput(
+          None // metadata is trivial to credentialler
+        )
+        .some
+    )
+    UnspentTransactionOutput(address.some, value.some, datum.some)
   }
 
   /**
@@ -74,17 +90,20 @@ case class MockBuilder(store: Storage) extends Builder{
    * @return The unproven transaction
    */
   override def constructTransaction(inputAddress: Address, outputAddress: Address): Option[IoTransaction] = {
-    val datum: Datum[Events.IoTransaction] = Datums.ioTransactionDatum(
-      Events.IoTransaction(
-        IoTransaction.Schedule(0, 100, 9999), // Arbitrary timestamp
-        List(), // references32 does not seem necessary to credentialler
-        List(), // references 64 does not seem necessary to credentialler
-        Array() // metadata is trivial to credentialler
-      )
+    val datum: Datum.IoTransaction = Datum.IoTransaction(
+      Event
+        .IoTransaction(
+          Schedule(0, 100, 9999).some, // Arbitrary timestamp
+          List(), // references32 does not seem necessary to credentialler
+          List(), // references 64 does not seem necessary to credentialler
+          None // metadata is trivial to credentialler
+        )
+        .some
     )
-    store.getKnownIdentifierByAddress(inputAddress)
+    store
+      .getKnownIdentifierByAddress(inputAddress)
       .flatMap(constructTestInput)
-      .map(input => IoTransaction(List(input), List(constructTestOutput(outputAddress)), datum))
+      .map(input => IoTransaction(List(input), List(constructTestOutput(outputAddress)), datum.some))
 
   }
 }
