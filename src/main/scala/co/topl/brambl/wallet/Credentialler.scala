@@ -2,6 +2,7 @@ package co.topl.brambl.wallet
 
 import cats.implicits._
 import co.topl.brambl.Models.Indices
+import co.topl.brambl.models.Datum
 import co.topl.brambl.models.transaction.Attestation
 import co.topl.brambl.models.transaction.IoTransaction
 import co.topl.brambl.models.transaction.SpentTransactionOutput
@@ -107,7 +108,7 @@ case class Credentialler(store: Storage)(implicit ctx: Context) extends Credenti
    * @return Iff transaction is authorized
    */
   override def validate(tx: IoTransaction): List[ValidationError] = {
-    implicit val verifier: Verifier[Option] = Verifier.instances.verifierInstance
+    implicit val verifier: Verifier[Option, Datum] = Verifier.instances.verifierInstance
     ValidationInterpreter
       .make[Option]()
       .validate(ctx)(tx)

@@ -2,6 +2,7 @@ package co.topl.node.transaction.authorization
 
 import cats.Monad
 import cats.implicits._
+import co.topl.brambl.models.Datum
 import co.topl.brambl.models.Identifier
 import co.topl.brambl.models.transaction.Attestation
 import co.topl.brambl.models.transaction.IoTransaction
@@ -16,13 +17,13 @@ import quivr.models.Proposition
  */
 object ValidationInterpreter {
 
-  def make[F[_]: Monad: Verifier](): ValidationAlgebra[F] =
+  def make[F[_]: Monad]()(implicit verifier: Verifier[F, Datum]): ValidationAlgebra[F] =
     new ValidationAlgebra[F] {
 
       /**
        * Verifies each (Proposition, Proof) pair in the given Transaction
        */
-      override def validate(context: DynamicContext[F, String])(
+      override def validate(context: DynamicContext[F, String, Datum])(
         transaction:                 IoTransaction
       ): F[Either[ValidationError, IoTransaction]] =
         transaction.inputs.zipWithIndex
@@ -59,7 +60,7 @@ object ValidationInterpreter {
         challenges: Seq[Proposition],
         threshold:  Int,
         responses:  Seq[Proof],
-        context:    DynamicContext[F, String]
+        context:    DynamicContext[F, String, Datum]
       ): F[Either[ValidationError, Boolean]] =
         thresholdVerifier(challenges, responses, threshold, context)
 
@@ -68,7 +69,7 @@ object ValidationInterpreter {
         threshold: Int,
         known:     Seq[Proposition],
         responses: Seq[Proof],
-        context:   DynamicContext[F, String]
+        context:   DynamicContext[F, String, Datum]
       ): F[Either[ValidationError, Boolean]] =
         // check that the known Propositions match the leaves?
         thresholdVerifier(known, responses, threshold, context)
@@ -78,7 +79,7 @@ object ValidationInterpreter {
         threshold: Int,
         known:     Seq[Proposition],
         responses: Seq[Proof],
-        context:   DynamicContext[F, String]
+        context:   DynamicContext[F, String, Datum]
       ): F[Either[ValidationError, Boolean]] =
         thresholdVerifier(known, responses, threshold, context)
 
@@ -88,7 +89,7 @@ object ValidationInterpreter {
         threshold: Int,
         known:     Seq[Proposition],
         responses: Seq[Proof],
-        context:   DynamicContext[F, String]
+        context:   DynamicContext[F, String, Datum]
       ): F[Either[ValidationError, Boolean]] =
         thresholdVerifier(known, responses, threshold, context)
 
@@ -97,7 +98,7 @@ object ValidationInterpreter {
         threshold: Int,
         known:     Seq[Proposition],
         responses: Seq[Proof],
-        context:   DynamicContext[F, String]
+        context:   DynamicContext[F, String, Datum]
       ): F[Either[ValidationError, Boolean]] =
         thresholdVerifier(known, responses, threshold, context)
 
@@ -105,8 +106,8 @@ object ValidationInterpreter {
         propositions:      Seq[Proposition],
         proofs:            Seq[Proof],
         threshold:         Int,
-        context:           DynamicContext[F, String]
-      )(implicit verifier: Verifier[F]): F[Either[ValidationError, Boolean]] = for {
+        context:           DynamicContext[F, String, Datum]
+      )(implicit verifier: Verifier[F, Datum]): F[Either[ValidationError, Boolean]] = for {
         evalAuth <-
           if (threshold === 0) true.pure[F]
           else if (threshold >= propositions.size) false.pure[F]

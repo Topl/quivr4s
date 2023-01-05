@@ -2,7 +2,6 @@ package co.topl.quivr.runtime
 
 import cats.Monad
 import cats.data.EitherT
-import co.topl.brambl.models.Datum
 import co.topl.common.ParsableDataInterface
 import co.topl.quivr.algebras.{DigestVerifier, SignatureVerifier}
 import co.topl.quivr.runtime.QuivrRuntimeErrors.{ContextError, ValidationError}
@@ -14,7 +13,7 @@ import quivr.models._
  * @tparam F execution context of the runtime
  * @tparam K the key type that will be used to lookup values in the generic interface maps
  */
-trait DynamicContext[F[_], K] {
+trait DynamicContext[F[_], K, Datum] {
   val datums: K => Option[Datum]
 
   val interfaces: Map[K, ParsableDataInterface]
@@ -24,6 +23,8 @@ trait DynamicContext[F[_], K] {
   def signableBytes: F[SignableBytes]
 
   def currentTick: F[Long]
+
+  def heightOf(label: K): F[Option[Long]]
 
   def digestVerify(routine: K)(verification: DigestVerification)(implicit
     monad:                  Monad[F]
