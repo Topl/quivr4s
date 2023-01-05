@@ -19,7 +19,7 @@ libraryDependencies ++= Seq(
   "co.topl" %% "crypto" % "1.10.2",
   "org.typelevel" %% "simulacrum" % "1.0.1",
   "org.scalameta" %% "munit" % "0.7.29" % Test,
-  "com.github.Topl" % "protobuf-specs" % "be35fa41"
+  "com.github.Topl" % "protobuf-specs" % "dc64de90"
 )
 
 // For Scala 2.13+
