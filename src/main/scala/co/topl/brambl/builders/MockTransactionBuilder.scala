@@ -1,4 +1,4 @@
-package co.topl.brambl.nativeTransactor
+package co.topl.brambl.builders
 
 import cats.implicits._
 import co.topl.brambl.models.Address
@@ -22,7 +22,7 @@ import quivr.models.Proof
 // For now it creates the hardcoded simple transactions that are needed for the credential examples
 // Although the following won't represent exactly what the transaction builder will do, it will inform what's needed
 
-case class MockBuilder(store: Storage) extends Builder {
+case class MockTransactionBuilder(store: Storage) extends TransactionBuilder {
 
   /**
    * Construct an unproven input.
