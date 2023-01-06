@@ -1,12 +1,9 @@
-package co.topl.node.typeclasses
+package co.topl.brambl.typeclasses
 
 import co.topl.brambl.Tags
-import co.topl.brambl.models.Datum
-import co.topl.brambl.models.box.Box
-import co.topl.brambl.models.transaction._
 import co.topl.brambl.models._
-import co.topl.brambl.models.box.Lock
-import co.topl.brambl.models.box.Value
+import co.topl.brambl.models.box.{Box, Lock, Value}
+import co.topl.brambl.models.transaction._
 import co.topl.quivr.Tokens
 import com.google.protobuf.ByteString
 import quivr.models._

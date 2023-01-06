@@ -2,14 +2,14 @@ package co.topl.brambl.wallet
 
 import cats.implicits._
 import co.topl.brambl.Models.Indices
+import co.topl.brambl.authorization.ValidationInterpreter
 import co.topl.brambl.models.Datum
 import co.topl.brambl.models.transaction.Attestation
 import co.topl.brambl.models.transaction.IoTransaction
 import co.topl.brambl.models.transaction.SpentTransactionOutput
 import co.topl.brambl.wallet.CredentiallerErrors.{ProverError, ValidationError}
 import co.topl.brambl.{Context, QuivrService}
-import co.topl.node.transaction.authorization.ValidationInterpreter
-import co.topl.node.typeclasses.ContainsSignable.instances.ioTransactionSignable
+import co.topl.brambl.typeclasses.ContainsSignable.instances.ioTransactionSignable
 import co.topl.quivr.api.Verifier
 import quivr.models.Proof
 import quivr.models.Proposition

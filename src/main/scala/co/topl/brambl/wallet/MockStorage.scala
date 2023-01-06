@@ -15,11 +15,11 @@ import co.topl.brambl.models.box.Lock
 import co.topl.brambl.models.box.Value
 import co.topl.brambl.models.transaction.IoTransaction
 import co.topl.brambl.models.transaction.Schedule
-import co.topl.node.typeclasses.ContainsEvidence
+import co.topl.brambl.typeclasses.ContainsEvidence
 import com.google.protobuf.ByteString
 import quivr.models.Preimage
 import quivr.models.VerificationKey
-import co.topl.node.typeclasses.ContainsSignable.instances._
+import co.topl.brambl.typeclasses.ContainsSignable.instances._
 import ContainsEvidence._
 import quivr.models.Int128
 

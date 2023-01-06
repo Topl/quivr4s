@@ -1,9 +1,9 @@
-package co.topl.node.transaction.authorization
+package co.topl.brambl.authorization
 
 import co.topl.brambl.models.Datum
 import co.topl.brambl.models.transaction.IoTransaction
-import co.topl.quivr.runtime.DynamicContext
 import co.topl.common.ContextualValidation
+import co.topl.quivr.runtime.DynamicContext
 
 trait ValidationAlgebra[F[_]]
     extends ContextualValidation[F, ValidationError, IoTransaction, DynamicContext[F, String, Datum]]
