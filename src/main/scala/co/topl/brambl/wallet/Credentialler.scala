@@ -6,6 +6,7 @@ import co.topl.brambl.models.Datum
 import co.topl.brambl.models.transaction.Attestation
 import co.topl.brambl.models.transaction.IoTransaction
 import co.topl.brambl.models.transaction.SpentTransactionOutput
+import co.topl.brambl.routines.signatures.Curve25519Signature
 import co.topl.brambl.transaction.validators.ValidationError
 import co.topl.brambl.transaction.validators.authorization.{TransactionAuthorizationError, TransactionAuthorizationInterpreter}
 import co.topl.brambl.transaction.validators.syntax.{TransactionSyntaxError, TransactionSyntaxErrors}
@@ -30,13 +31,17 @@ case class Credentialler(store: Storage)(implicit ctx: Context) extends Credenti
    * @param idx Indices for which the proof's secret data can be obtained from
    * @return The Proof (if possible)
    */
-  private def getProof(msg: SignableBytes, proposition: Proposition, idx: Option[Indices]): Option[Proof] =
+  private def getProof(msg: SignableBytes, proposition: Proposition, idx: Option[Indices]): Option[Proof] = {
+    // Temporary until we have a way to map routines strings to the actual Routine
+    val signingRoutines = Map(
+      "curve25519" -> Curve25519Signature
+    )
     proposition.value match {
       case _: Proposition.Value.Locked => QuivrService.lockedProof(msg)
       case _: Proposition.Value.Digest =>
         idx.flatMap(store.getPreimage(_).flatMap(QuivrService.digestProof(msg, _)))
       case Proposition.Value.DigitalSignature(p) =>
-        ctx.signingRoutines
+        signingRoutines
           .get(p.routine)
           .flatMap(r =>
             idx
@@ -47,6 +52,7 @@ case class Credentialler(store: Storage)(implicit ctx: Context) extends Credenti
       case _: Proposition.Value.TickRange   => QuivrService.tickProof(msg)
       case _                                => None
     }
+  }
 
   /**
    * *

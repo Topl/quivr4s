@@ -4,7 +4,7 @@ import co.topl.brambl.Models.{Indices, KeyPair}
 import co.topl.brambl.models.Address
 import co.topl.brambl.models.KnownIdentifier
 import co.topl.brambl.models.box.Box
-import co.topl.brambl.signatures.Signing
+import co.topl.brambl.routines.signatures.Signing
 import quivr.models.Preimage
 
 trait Storage {

@@ -11,10 +11,9 @@ import co.topl.quivr.algebras.SignatureVerifier
 import co.topl.quivr.runtime.DynamicContext
 import co.topl.quivr.runtime.QuivrRuntimeError
 import co.topl.quivr.runtime.QuivrRuntimeErrors
-import co.topl.brambl.digests.Blake2b256Digest
-import co.topl.brambl.digests.Hash
 import co.topl.brambl.models.Datum
 import co.topl.brambl.models.Event
+import co.topl.brambl.routines.digests.{Blake2b256Digest, Hash}
 import co.topl.crypto.hash.blake2b256
 import com.google.protobuf.ByteString
 import quivr.models._
