@@ -1,4 +1,4 @@
-package co.topl.brambl.authorization
+package co.topl.brambl.transaction.validators.authorization
 
 import cats.Monad
 import cats.implicits._
@@ -12,19 +12,19 @@ import quivr.models.{Proof, Proposition}
  * Validates that each Input within a Transaction is properly "authorized".  "Authorized" simply means "does the given
  * Proof satisfy the given Proposition?".
  */
-object ValidationInterpreter {
+object TransactionAuthorizationInterpreter {
 
-  def make[F[_]: Monad]()(implicit verifier: Verifier[F, Datum]): ValidationAlgebra[F] =
-    new ValidationAlgebra[F] {
+  def make[F[_]: Monad]()(implicit verifier: Verifier[F, Datum]): TransactionAuthorizationVerifier[F] =
+    new TransactionAuthorizationVerifier[F] {
 
       /**
        * Verifies each (Proposition, Proof) pair in the given Transaction
        */
       override def validate(context: DynamicContext[F, String, Datum])(
         transaction:                 IoTransaction
-      ): F[Either[ValidationError, IoTransaction]] =
+      ): F[Either[TransactionAuthorizationError, IoTransaction]] =
         transaction.inputs.zipWithIndex
-          .foldLeft(Either.right[ValidationError, IoTransaction](transaction).pure[F]) { case (acc, (input, index)) =>
+          .foldLeft(Either.right[TransactionAuthorizationError, IoTransaction](transaction).pure[F]) { case (acc, (input, index)) =>
             input.attestation.get.value match {
               case Attestation.Value.Predicate(p) =>
                 predicateValidate(p.lock.get.challenges, p.lock.get.threshold, p.responses, context).map(r =>
@@ -58,7 +58,7 @@ object ValidationInterpreter {
         threshold:  Int,
         responses:  Seq[Proof],
         context:    DynamicContext[F, String, Datum]
-      ): F[Either[ValidationError, Boolean]] =
+      ): F[Either[TransactionAuthorizationError, Boolean]] =
         thresholdVerifier(challenges, responses, threshold, context)
 
       private def image32Validate(
@@ -67,7 +67,7 @@ object ValidationInterpreter {
         known:     Seq[Proposition],
         responses: Seq[Proof],
         context:   DynamicContext[F, String, Datum]
-      ): F[Either[ValidationError, Boolean]] =
+      ): F[Either[TransactionAuthorizationError, Boolean]] =
         // check that the known Propositions match the leaves?
         thresholdVerifier(known, responses, threshold, context)
 
@@ -77,7 +77,7 @@ object ValidationInterpreter {
         known:     Seq[Proposition],
         responses: Seq[Proof],
         context:   DynamicContext[F, String, Datum]
-      ): F[Either[ValidationError, Boolean]] =
+      ): F[Either[TransactionAuthorizationError, Boolean]] =
         thresholdVerifier(known, responses, threshold, context)
 
       // commitments need an additional proof of membership to be provided with the proposition
@@ -87,7 +87,7 @@ object ValidationInterpreter {
         known:     Seq[Proposition],
         responses: Seq[Proof],
         context:   DynamicContext[F, String, Datum]
-      ): F[Either[ValidationError, Boolean]] =
+      ): F[Either[TransactionAuthorizationError, Boolean]] =
         thresholdVerifier(known, responses, threshold, context)
 
       private def commitment64Validate(
@@ -96,7 +96,7 @@ object ValidationInterpreter {
         known:     Seq[Proposition],
         responses: Seq[Proof],
         context:   DynamicContext[F, String, Datum]
-      ): F[Either[ValidationError, Boolean]] =
+      ): F[Either[TransactionAuthorizationError, Boolean]] =
         thresholdVerifier(known, responses, threshold, context)
 
       private def thresholdVerifier(
@@ -104,7 +104,7 @@ object ValidationInterpreter {
         proofs:            Seq[Proof],
         threshold:         Int,
         context:           DynamicContext[F, String, Datum]
-      )(implicit verifier: Verifier[F, Datum]): F[Either[ValidationError, Boolean]] = for {
+      )(implicit verifier: Verifier[F, Datum]): F[Either[TransactionAuthorizationError, Boolean]] = for {
         evalAuth <-
           if (threshold === 0) true.pure[F]
           else if (threshold >= propositions.size) false.pure[F]
@@ -128,7 +128,7 @@ object ValidationInterpreter {
               }
               .map(_ >= threshold)
           }
-        res <- Either.cond(evalAuth, evalAuth, ValidationErrors.ValidationFailed).pure[F]
+        res <- Either.cond(evalAuth, evalAuth, TransactionAuthorizationErrors.AuthorizationFailed).pure[F]
       } yield res
     }
 }
