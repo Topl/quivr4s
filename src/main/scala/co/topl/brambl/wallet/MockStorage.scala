@@ -115,24 +115,22 @@ object MockStorage extends Storage {
   // Hardcoding MockStorage to use Blake2b256Digest and Curve25519Signature
   private def buildPredicate(threshold: Int, idx: Indices): Lock.Predicate = Lock.Predicate(
     List(
-      QuivrService.lockedProposition.get,
+      QuivrService.lockedProposition,
       QuivrService
         .digestProposition(
           getPreimage(idx)
             .getOrElse(Preimage(ByteString.copyFromUtf8("unsolvable preimage"), ByteString.copyFromUtf8("salt"))),
           Blake2b256Digest
-        )
-        .get,
+        ),
       QuivrService
         .signatureProposition(
           getKeyPair(idx, Curve25519Signature)
             .getOrElse(KeyPair(SigningKey("fake sk".getBytes), VerificationKey(ByteString.copyFromUtf8("fake vk"))))
             .vk,
           Curve25519Signature
-        )
-        .get,
-      QuivrService.heightProposition(2, 8).get,
-      QuivrService.tickProposition(2, 8).get
+        ),
+      QuivrService.heightProposition(2, 8),
+      QuivrService.tickProposition(2, 8)
     ),
     threshold // N of 5 predicate
   )

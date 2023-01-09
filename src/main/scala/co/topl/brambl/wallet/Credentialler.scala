@@ -1,5 +1,6 @@
 package co.topl.brambl.wallet
 
+import cats.Id
 import cats.implicits._
 import co.topl.brambl.Models.Indices
 import co.topl.brambl.models.Datum
@@ -37,19 +38,19 @@ case class Credentialler(store: Storage)(implicit ctx: Context) extends Credenti
       "curve25519" -> Curve25519Signature
     )
     proposition.value match {
-      case _: Proposition.Value.Locked => QuivrService.lockedProof(msg)
+      case _: Proposition.Value.Locked => Some(QuivrService.lockedProof(msg))
       case _: Proposition.Value.Digest =>
-        idx.flatMap(store.getPreimage(_).flatMap(QuivrService.digestProof(msg, _)))
+        idx.flatMap(store.getPreimage(_).map(QuivrService.digestProof(msg, _)))
       case Proposition.Value.DigitalSignature(p) =>
         signingRoutines
           .get(p.routine)
           .flatMap(r =>
             idx
               .flatMap(i => store.getKeyPair(i, r))
-              .flatMap(keyPair => QuivrService.signatureProof(msg, keyPair.sk, r))
+              .map(keyPair => QuivrService.signatureProof(msg, keyPair.sk, r))
           )
-      case _: Proposition.Value.HeightRange => QuivrService.heightProof(msg)
-      case _: Proposition.Value.TickRange   => QuivrService.tickProof(msg)
+      case _: Proposition.Value.HeightRange => Some(QuivrService.heightProof(msg))
+      case _: Proposition.Value.TickRange   => Some(QuivrService.tickProof(msg))
       case _                                => None
     }
   }
@@ -115,14 +116,11 @@ case class Credentialler(store: Storage)(implicit ctx: Context) extends Credenti
    * @return Iff transaction is authorized
    */
   override def validate(tx: IoTransaction): List[TransactionAuthorizationError] = {
-    implicit val verifier: Verifier[Option, Datum] = Verifier.instances.verifierInstance
+    implicit val verifier: Verifier[Id, Datum] = Verifier.instances.verifierInstance
     TransactionAuthorizationInterpreter
-      .make[Option]()
+      .make[Id]()
       .validate(ctx)(tx)
-      .flatMap {
-        case Left(err) => Some(err)
-        case _         => None
-      }
+      .swap // Swap to get the errors
       .toList
   }
 

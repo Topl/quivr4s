@@ -1,5 +1,6 @@
 package co.topl.brambl
 
+import cats.Id
 import co.topl.brambl.Models.SigningKey
 import co.topl.brambl.routines.digests.Hash
 import co.topl.brambl.routines.signatures.Signing
@@ -10,35 +11,35 @@ import co.topl.quivr.api.{Proposer, Prover}
 
 object QuivrService {
 
-  def lockedProposition: Option[Proposition] =
-    Proposer.LockedProposer[Option].propose(None)
+  def lockedProposition: Id[Proposition] =
+    Proposer.LockedProposer[Id].propose(None)
 
-  def lockedProof(msg: SignableBytes): Option[Proof] =
-    Prover.lockedProver[Option].prove((), msg)
+  def lockedProof(msg: SignableBytes): Id[Proof] =
+    Prover.lockedProver[Id].prove((), msg)
 
-  def digestProposition(preimage: Preimage, routine: Hash): Option[Proposition] =
-    Proposer.digestProposer[Option].propose((routine.routine, routine.hash(preimage)))
+  def digestProposition(preimage: Preimage, routine: Hash): Id[Proposition] =
+    Proposer.digestProposer[Id].propose((routine.routine, routine.hash(preimage)))
 
-  def digestProof(msg: SignableBytes, preimage: Preimage): Option[Proof] =
-    Prover.digestProver[Option].prove(preimage, msg)
+  def digestProof(msg: SignableBytes, preimage: Preimage): Id[Proof] =
+    Prover.digestProver[Id].prove(preimage, msg)
 
   // Hardcoding "curve25519"
-  def signatureProposition(vk: VerificationKey, routine: Signing): Option[Proposition] =
-    Proposer.signatureProposer[Option].propose((routine.routine, vk))
+  def signatureProposition(vk: VerificationKey, routine: Signing): Id[Proposition] =
+    Proposer.signatureProposer[Id].propose((routine.routine, vk))
 
-  def signatureProof(msg: SignableBytes, sk: SigningKey, routine: Signing): Option[Proof] =
-    Prover.signatureProver[Option].prove(routine.sign(sk, msg), msg)
+  def signatureProof(msg: SignableBytes, sk: SigningKey, routine: Signing): Id[Proof] =
+    Prover.signatureProver[Id].prove(routine.sign(sk, msg), msg)
 
-  def heightProposition(min: Long, max: Long, chain: String = "header"): Option[Proposition] =
-    Proposer.heightProposer[Option].propose((chain, min, max))
+  def heightProposition(min: Long, max: Long, chain: String = "header"): Id[Proposition] =
+    Proposer.heightProposer[Id].propose((chain, min, max))
 
-  def heightProof(msg: SignableBytes): Option[Proof] =
-    Prover.heightProver[Option].prove((), msg)
+  def heightProof(msg: SignableBytes): Id[Proof] =
+    Prover.heightProver[Id].prove((), msg)
 
-  def tickProposition(min: Long, max: Long): Option[Proposition] =
-    Proposer.tickProposer[Option].propose((min, max))
+  def tickProposition(min: Long, max: Long): Id[Proposition] =
+    Proposer.tickProposer[Id].propose((min, max))
 
-  def tickProof(msg: SignableBytes): Option[Proof] =
-    Prover.tickProver[Option].prove((), msg)
+  def tickProof(msg: SignableBytes): Id[Proof] =
+    Prover.tickProver[Id].prove((), msg)
 
 }
