@@ -2,11 +2,14 @@ package co.topl.node.transaction.authorization
 
 import cats.Monad
 import cats.implicits._
-import co.topl.node.Identifiers
-import co.topl.node.transaction.{Attestations, IoTransaction}
+import co.topl.brambl.models.Datum
+import co.topl.brambl.models.Identifier
+import co.topl.brambl.models.transaction.Attestation
+import co.topl.brambl.models.transaction.IoTransaction
 import co.topl.quivr.api.Verifier
 import co.topl.quivr.runtime.DynamicContext
-import co.topl.quivr.{Proof, Proposition}
+import quivr.models.Proof
+import quivr.models.Proposition
 
 /**
  * Validates that each Input within a Transaction is properly "authorized".  "Authorized" simply means "does the given
@@ -14,95 +17,97 @@ import co.topl.quivr.{Proof, Proposition}
  */
 object ValidationInterpreter {
 
-  def make[F[_]: Monad: Verifier](): ValidationAlgebra[F] =
+  def make[F[_]: Monad]()(implicit verifier: Verifier[F, Datum]): ValidationAlgebra[F] =
     new ValidationAlgebra[F] {
 
       /**
        * Verifies each (Proposition, Proof) pair in the given Transaction
        */
-      override def validate(context: DynamicContext[F, String])(
+      override def validate(context: DynamicContext[F, String, Datum])(
         transaction:                 IoTransaction
       ): F[Either[ValidationError, IoTransaction]] =
         transaction.inputs.zipWithIndex
           .foldLeft(Either.right[ValidationError, IoTransaction](transaction).pure[F]) { case (acc, (input, index)) =>
-            input.attestation match {
-              case Attestations.Predicate(lock, responses) =>
-                predicateValidate(lock.challenges, lock.threshold, responses, context).map(r => r.map(_ => transaction))
-
-              case Attestations.Image32(lock, known, responses) =>
-                image32Validate(lock.leaves, lock.threshold, known, responses, context).map(r =>
+            input.attestation.get.value match {
+              case Attestation.Value.Predicate(p) =>
+                predicateValidate(p.lock.get.challenges, p.lock.get.threshold, p.responses, context).map(r =>
                   r.map(_ => transaction)
                 )
 
-              case Attestations.Image64(lock, known, responses) =>
-                image64Validate(lock.leaves, lock.threshold, known, responses, context).map(r =>
+              case Attestation.Value.Image32(p) =>
+                image32Validate(p.lock.get.leaves, p.lock.get.threshold, p.known, p.responses, context).map(r =>
                   r.map(_ => transaction)
                 )
 
-              case Attestations.Commitment32(lock, known, responses) =>
-                commitment32Validate(lock.root, lock.threshold, known, responses, context).map(r =>
+              case Attestation.Value.Image64(p) =>
+                image64Validate(p.lock.get.leaves, p.lock.get.threshold, p.known, p.responses, context).map(r =>
                   r.map(_ => transaction)
                 )
 
-              case Attestations.Commitment64(lock, known, responses) =>
-                commitment64Validate(lock.root, lock.threshold, known, responses, context).map(r =>
+              case Attestation.Value.Commitment32(p) =>
+                commitment32Validate(p.lock.get.root.get, p.lock.get.threshold, p.known, p.responses, context).map(r =>
+                  r.map(_ => transaction)
+                )
+
+              case Attestation.Value.Commitment64(p) =>
+                commitment64Validate(p.lock.get.root.get, p.lock.get.threshold, p.known, p.responses, context).map(r =>
                   r.map(_ => transaction)
                 )
             }
           }
 
       private def predicateValidate(
-        challenges: List[Proposition],
+        challenges: Seq[Proposition],
         threshold:  Int,
-        responses:  List[Option[Proof]],
-        context:    DynamicContext[F, String]
+        responses:  Seq[Proof],
+        context:    DynamicContext[F, String, Datum]
       ): F[Either[ValidationError, Boolean]] =
-        thresholdVerifier(challenges.map(Some(_)), responses, threshold, context)
+        thresholdVerifier(challenges, responses, threshold, context)
 
       private def image32Validate(
-        leaves:    List[Identifiers.Lock32],
+        leaves:    Seq[Identifier.Lock32],
         threshold: Int,
-        known:     List[Option[Proposition]],
-        responses: List[Option[Proof]],
-        context:   DynamicContext[F, String]
+        known:     Seq[Proposition],
+        responses: Seq[Proof],
+        context:   DynamicContext[F, String, Datum]
       ): F[Either[ValidationError, Boolean]] =
         // check that the known Propositions match the leaves?
         thresholdVerifier(known, responses, threshold, context)
 
       private def image64Validate(
-        leaves:    List[Identifiers.Lock64],
+        leaves:    Seq[Identifier.Lock64],
         threshold: Int,
-        known:     List[Option[Proposition]],
-        responses: List[Option[Proof]],
-        context:   DynamicContext[F, String]
+        known:     Seq[Proposition],
+        responses: Seq[Proof],
+        context:   DynamicContext[F, String, Datum]
       ): F[Either[ValidationError, Boolean]] =
         thresholdVerifier(known, responses, threshold, context)
 
       // commitments need an additional proof of membership to be provided with the proposition
       private def commitment32Validate(
-        root:      Identifiers.AccumulatorRoot32,
+        root:      Identifier.AccumulatorRoot32,
         threshold: Int,
-        known:     List[Option[Proposition]],
-        responses: List[Option[Proof]],
-        context:   DynamicContext[F, String]
+        known:     Seq[Proposition],
+        responses: Seq[Proof],
+        context:   DynamicContext[F, String, Datum]
       ): F[Either[ValidationError, Boolean]] =
         thresholdVerifier(known, responses, threshold, context)
 
       private def commitment64Validate(
-        root:      Identifiers.AccumulatorRoot64,
+        root:      Identifier.AccumulatorRoot64,
         threshold: Int,
-        known:     List[Option[Proposition]],
-        responses: List[Option[Proof]],
-        context:   DynamicContext[F, String]
+        known:     Seq[Proposition],
+        responses: Seq[Proof],
+        context:   DynamicContext[F, String, Datum]
       ): F[Either[ValidationError, Boolean]] =
         thresholdVerifier(known, responses, threshold, context)
 
       private def thresholdVerifier(
-        propositions:      List[Option[Proposition]],
-        proofs:            List[Option[Proof]],
+        propositions:      Seq[Proposition],
+        proofs:            Seq[Proof],
         threshold:         Int,
-        context:           DynamicContext[F, String]
-      )(implicit verifier: Verifier[F]): F[Either[ValidationError, Boolean]] = for {
+        context:           DynamicContext[F, String, Datum]
+      )(implicit verifier: Verifier[F, Datum]): F[Either[ValidationError, Boolean]] = for {
         evalAuth <-
           if (threshold === 0) true.pure[F]
           else if (threshold >= propositions.size) false.pure[F]
@@ -116,9 +121,9 @@ object ValidationInterpreter {
               .foldLeftM(0L) {
                 case (successCount, _) if successCount >= threshold =>
                   successCount.pure[F]
-                case (successCount, (_, None)) =>
+                case (successCount, (_, proof)) if proof.value.isEmpty =>
                   successCount.pure[F]
-                case (successCount, (Some(prop: Proposition), Some(proof: Proof))) =>
+                case (successCount, (prop, proof)) =>
                   verifier.evaluate(prop, proof, context).map {
                     case Right(true) => successCount + 1
                     case _           => successCount

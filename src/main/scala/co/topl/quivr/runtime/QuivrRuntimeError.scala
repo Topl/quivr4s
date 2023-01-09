@@ -1,6 +1,7 @@
 package co.topl.quivr.runtime
 
-import co.topl.quivr.{Proof, Proposition}
+import quivr.models.Proof
+import quivr.models.Proposition
 
 /**
  * Errors resulting from evaluation of Quivr propositions / proofs

@@ -2,9 +2,10 @@ package co.topl.quivr.api
 
 import cats.Applicative
 import cats.implicits._
-import co.topl.common.Models.{Preimage, Witness}
 import co.topl.crypto.hash.blake2b256
-import co.topl.quivr.{Models, Proof, SignableBytes, TxBind}
+import co.topl.quivr.Tokens
+import com.google.protobuf.ByteString
+import quivr.models._
 
 import java.nio.charset.StandardCharsets
 
@@ -13,14 +14,14 @@ import java.nio.charset.StandardCharsets
 // This provides a generic way to map all computations (single-step or sigma-protocol)
 // into a Fiat-Shamir heuristic if the bind that is used here is unique.
 // This seems like it would promote statelessness but I am unsure how.
-trait Prover[F[_], A, R <: Proof] {
+trait Prover[F[_], A] {
 
   /**
    * @param args A is product type (tuple) of the inputs needed to satisfy a certain Proposition
    * @param message The unique bytes of the message that the instance of the Proof will be bound to
    * @return a Quivr proof that may be paired with a revealed Proposition in a Verification runtime
    */
-  def prove(args: A, message: SignableBytes): F[R]
+  def prove(args: A, message: SignableBytes): F[Proof]
 }
 
 object Prover {
@@ -31,112 +32,109 @@ object Prover {
    * @return an array of bytes that is similar to a "signature" for the proof
    */
   private def blake2b256Bind(tag: String, message: SignableBytes): TxBind =
-    blake2b256.hash(tag.getBytes(StandardCharsets.UTF_8) ++ message).value
+    TxBind(
+      ByteString.copyFrom(
+        blake2b256.hash(tag.getBytes(StandardCharsets.UTF_8) ++ message.value.toByteArray).value
+      )
+    )
 
-  def lockedProver[F[_]: Applicative]: Prover[F, Unit, Models.Primitive.Locked.Proof] =
-    (_: Unit, _: SignableBytes) => Models.Primitive.Locked.Proof().pure[F]
+  def lockedProver[F[_]: Applicative]: Prover[F, Unit] =
+    (_: Unit, _: SignableBytes) => Proof().withLocked(Proof.Locked()).pure[F]
 
-  def digestProver[F[_]: Applicative]: Prover[F, Preimage, Models.Primitive.Digest.Proof] =
+  def digestProver[F[_]: Applicative]: Prover[F, Preimage] =
     (preimage: Preimage, message: SignableBytes) =>
-      Models.Primitive.Digest
-        .Proof(
-          preimage,
-          blake2b256Bind(Models.Primitive.Digest.token, message)
-        )
+      Proof()
+        .withDigest(Proof.Digest(blake2b256Bind(Tokens.Digest, message).some, preimage.some))
         .pure[F]
 
-  def signatureProver[F[_]: Applicative]: Prover[F, Witness, Models.Primitive.DigitalSignature.Proof] =
+  def signatureProver[F[_]: Applicative]: Prover[F, Witness] =
     (witness: Witness, message: SignableBytes) =>
-      Models.Primitive.DigitalSignature
-        .Proof(
-          witness,
-          blake2b256Bind(Models.Primitive.DigitalSignature.token, message)
+      Proof()
+        .withDigitalSignature(
+          Proof.DigitalSignature(blake2b256Bind(Tokens.DigitalSignature, message).some, witness.some)
         )
         .pure[F]
 
-  def heightProver[F[_]: Applicative]: Prover[F, Unit, Models.Contextual.HeightRange.Proof] =
-    (args: Unit, message: SignableBytes) =>
-      Models.Contextual.HeightRange
-        .Proof(
-          blake2b256Bind(Models.Contextual.HeightRange.token, message)
-        )
+  def heightProver[F[_]: Applicative]: Prover[F, Unit] =
+    (_: Unit, message: SignableBytes) =>
+      Proof()
+        .withHeightRange(Proof.HeightRange(blake2b256Bind(Tokens.HeightRange, message).some))
         .pure[F]
 
-  def tickProver[F[_]: Applicative]: Prover[F, Unit, Models.Contextual.TickRange.Proof] =
-    (args: Unit, message: SignableBytes) =>
-      Models.Contextual.TickRange
-        .Proof(
-          blake2b256Bind(Models.Contextual.TickRange.token, message)
-        )
+  def tickProver[F[_]: Applicative]: Prover[F, Unit] =
+    (_: Unit, message: SignableBytes) =>
+      Proof()
+        .withTickRange(Proof.TickRange(blake2b256Bind(Tokens.TickRange, message).some))
         .pure[F]
 
-  def exactMatchProver[F[_]: Applicative]: Prover[F, Unit, Models.Contextual.ExactMatch.Proof] =
-    (args: Unit, message: SignableBytes) =>
-      Models.Contextual.ExactMatch
-        .Proof(
-          blake2b256Bind(Models.Contextual.ExactMatch.token, message)
-        )
+  def exactMatchProver[F[_]: Applicative]: Prover[F, Unit] =
+    (_: Unit, message: SignableBytes) =>
+      Proof()
+        .withExactMatch(Proof.ExactMatch(blake2b256Bind(Tokens.ExactMatch, message).some))
         .pure[F]
 
-  def lessThanProver[F[_]: Applicative]: Prover[F, Unit, Models.Contextual.LessThan.Proof] =
-    (args: Unit, message: SignableBytes) =>
-      Models.Contextual.LessThan
-        .Proof(
-          blake2b256Bind(Models.Contextual.LessThan.token, message)
-        )
+  def lessThanProver[F[_]: Applicative]: Prover[F, Unit] =
+    (_: Unit, message: SignableBytes) =>
+      Proof()
+        .withLessThan(Proof.LessThan(blake2b256Bind(Tokens.LessThan, message).some))
         .pure[F]
 
-  def greaterThanProver[F[_]: Applicative]: Prover[F, Unit, Models.Contextual.GreaterThan.Proof] =
-    (args: Unit, message: SignableBytes) =>
-      Models.Contextual.GreaterThan
-        .Proof(
-          blake2b256Bind(Models.Contextual.GreaterThan.token, message)
-        )
+  def greaterThanProver[F[_]: Applicative]: Prover[F, Unit] =
+    (_: Unit, message: SignableBytes) =>
+      Proof()
+        .withGreaterThan(Proof.GreaterThan(blake2b256Bind(Tokens.GreaterThan, message).some))
         .pure[F]
 
-  def equalToProver[F[_]: Applicative]: Prover[F, Unit, Models.Contextual.EqualTo.Proof] =
-    (args: Unit, message: SignableBytes) =>
-      Models.Contextual.EqualTo
-        .Proof(
-          blake2b256Bind(Models.Contextual.EqualTo.token, message)
-        )
+  def equalToProver[F[_]: Applicative]: Prover[F, Unit] =
+    (_: Unit, message: SignableBytes) =>
+      Proof()
+        .withEqualTo(Proof.EqualTo(blake2b256Bind(Tokens.EqualTo, message).some))
         .pure[F]
 
-  def thresholdProver[F[_]: Applicative]: Prover[F, Set[Option[Proof]], Models.Compositional.Threshold.Proof] =
+  // TODO: Protobuf's `Proof` type already encapsulates "emptiness", so the Option may be unnecessary here
+  def thresholdProver[F[_]: Applicative]: Prover[F, Set[Option[Proof]]] =
     (challenges: Set[Option[Proof]], message: SignableBytes) =>
-      Models.Compositional.Threshold
-        .Proof(
-          challenges,
-          blake2b256Bind(Models.Compositional.Threshold.token, message)
+      Proof()
+        .withThreshold(
+          Proof.Threshold(
+            blake2b256Bind(Tokens.Threshold, message).some,
+            challenges.toSeq.map(_.getOrElse(Proof()))
+          )
         )
         .pure[F]
 
-  def notProver[F[_]: Applicative]: Prover[F, Proof, Models.Compositional.Not.Proof] =
+  def notProver[F[_]: Applicative]: Prover[F, Proof] =
     (proof: Proof, message: SignableBytes) =>
-      Models.Compositional.Not
-        .Proof(
-          proof,
-          blake2b256Bind(Models.Compositional.Not.token, message)
+      Proof()
+        .withNot(
+          Proof.Not(
+            blake2b256Bind(Tokens.Not, message).some,
+            proof.some
+          )
         )
         .pure[F]
 
-  def andProver[F[_]: Applicative]: Prover[F, (Proof, Proof), Models.Compositional.And.Proof] =
+  def andProver[F[_]: Applicative]: Prover[F, (Proof, Proof)] =
     (proofs: (Proof, Proof), message: SignableBytes) =>
-      Models.Compositional.And
-        .Proof(
-          proofs._1,
-          proofs._2,
-          blake2b256Bind(Models.Compositional.And.token, message)
+      Proof()
+        .withAnd(
+          Proof.And(
+            blake2b256Bind(Tokens.And, message).some,
+            proofs._1.some,
+            proofs._2.some
+          )
         )
         .pure[F]
 
-  def orProver[F[_]: Applicative]: Prover[F, (Proof, Proof), Models.Compositional.Or.Proof] =
+  def orProver[F[_]: Applicative]: Prover[F, (Proof, Proof)] =
     (proofs: (Proof, Proof), message: SignableBytes) =>
-      Models.Compositional.Or
-        .Proof(
-          proofs._1,
-          proofs._2,
-          blake2b256Bind(Models.Compositional.Or.token, message)
+      Proof()
+        .withOr(
+          Proof.Or(
+            blake2b256Bind(Tokens.Or, message).some,
+            proofs._1.some,
+            proofs._2.some
+          )
         )
         .pure[F]
 }

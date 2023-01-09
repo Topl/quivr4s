@@ -1,6 +1,7 @@
 package co.topl.brambl.wallet
 
-import co.topl.node.transaction.{Attestation, authorization}
+import co.topl.brambl.models.transaction.Attestation
+import co.topl.node.transaction.authorization
 
 sealed abstract class CredentiallerError
 

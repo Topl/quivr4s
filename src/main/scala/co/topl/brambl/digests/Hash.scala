@@ -1,6 +1,6 @@
 package co.topl.brambl.digests
 
-import co.topl.common.Models.{Digest, Preimage}
+import quivr.models._
 
 trait Hash {
   val routine: String

@@ -1,7 +1,7 @@
 package co.topl.brambl.nativeTransactor
 
-import co.topl.node.Address
-import co.topl.node.transaction.IoTransaction
+import co.topl.brambl.models.Address
+import co.topl.brambl.models.transaction.IoTransaction
 
 trait Builder {
   // Construct simple transaction

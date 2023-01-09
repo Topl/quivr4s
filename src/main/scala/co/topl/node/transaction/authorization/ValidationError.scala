@@ -1,6 +1,6 @@
 package co.topl.node.transaction.authorization
 
-import co.topl.quivr.{Proof, Proposition}
+import quivr.models.{Proof, Proposition}
 
 sealed abstract class ValidationError
 
