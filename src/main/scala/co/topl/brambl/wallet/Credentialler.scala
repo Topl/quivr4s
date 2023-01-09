@@ -2,7 +2,6 @@ package co.topl.brambl.wallet
 
 import cats.Id
 import cats.implicits._
-import co.topl.brambl.Models.Indices
 import co.topl.brambl.models.Datum
 import co.topl.brambl.models.transaction.Attestation
 import co.topl.brambl.models.transaction.IoTransaction
@@ -17,6 +16,7 @@ import co.topl.quivr.api.Verifier
 import quivr.models.Proof
 import quivr.models.Proposition
 import quivr.models.SignableBytes
+import co.topl.brambl.models.Indices
 
 case class Credentialler(store: Storage)(implicit ctx: Context) extends Credentials {
 
@@ -47,7 +47,8 @@ case class Credentialler(store: Storage)(implicit ctx: Context) extends Credenti
           .flatMap(r =>
             idx
               .flatMap(i => store.getKeyPair(i, r))
-              .map(keyPair => QuivrService.signatureProof(msg, keyPair.sk, r))
+              .flatMap(keyPair => keyPair.sk)
+              .map(sk => QuivrService.signatureProof(msg, sk, r))
           )
       case _: Proposition.Value.HeightRange => Some(QuivrService.heightProof(msg))
       case _: Proposition.Value.TickRange   => Some(QuivrService.tickProof(msg))
