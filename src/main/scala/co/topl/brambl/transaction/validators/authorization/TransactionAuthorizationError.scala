@@ -1,7 +1,7 @@
 package co.topl.brambl.transaction.validators.authorization
 
 import co.topl.brambl.transaction.validators.ValidationError
-import quivr.models.{Proof, Proposition}
+import co.topl.quivr.runtime.QuivrRuntimeError
 
 sealed abstract class TransactionAuthorizationError extends ValidationError
 
@@ -18,12 +18,12 @@ object TransactionAuthorizationErrors {
    * It _might_ become valid later (or perhaps it _was_ valid previously)
    * (i.e. height lock)
    */
-  case class Contextual(proposition: Proposition, proof: Proof) extends TransactionAuthorizationError
+  case class Contextual(error: QuivrRuntimeError) extends TransactionAuthorizationError
 
   /**
    * An Authorization error indicating that this transaction will never be valid.  This is usually the result of something
    * that could _probably_ be determined in a syntactic validation check, meaning no context is needed to perform the
    * authorization validation.  (i.e. invalid signature)
    */
-  case class Permanent(proposition: Proposition, proof: Proof) extends TransactionAuthorizationError
+  case class Permanent(error: QuivrRuntimeError) extends TransactionAuthorizationError
 }
