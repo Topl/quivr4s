@@ -1,8 +1,8 @@
 package co.topl.brambl
 
 import co.topl.brambl.Models.SigningKey
-import co.topl.brambl.digests.Hash
-import co.topl.brambl.signatures.Signing
+import co.topl.brambl.routines.digests.Hash
+import co.topl.brambl.routines.signatures.Signing
 import quivr.models._
 import co.topl.quivr.api.{Proposer, Prover}
 

@@ -2,9 +2,9 @@ package co.topl.quivr
 
 import cats.Id
 import cats.Monad
+import co.topl.brambl.routines.digests.Blake2b256Digest
 import co.topl.crypto.signatures.Curve25519
 import co.topl.quivr.runtime.QuivrRuntimeErrors
-import co.topl.brambl.digests.Blake2b256Digest
 import com.google.protobuf.ByteString
 import quivr.models._
 

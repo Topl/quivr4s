@@ -2,8 +2,6 @@ package co.topl.brambl.wallet
 
 import cats.implicits._
 import co.topl.brambl.Models.{Indices, KeyPair, SigningKey}
-import co.topl.brambl.digests.Blake2b256Digest
-import co.topl.brambl.signatures.{Curve25519Signature, Signing}
 import co.topl.brambl.QuivrService
 import co.topl.brambl.models.Address
 import co.topl.brambl.models.Datum
@@ -21,6 +19,8 @@ import quivr.models.Preimage
 import quivr.models.VerificationKey
 import co.topl.brambl.typeclasses.ContainsSignable.instances._
 import ContainsEvidence._
+import co.topl.brambl.routines.digests.Blake2b256Digest
+import co.topl.brambl.routines.signatures.{Curve25519Signature, Signing}
 import quivr.models.Int128
 
 // Wallet storage api. Will just return dummy values

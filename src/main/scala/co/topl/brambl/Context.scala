@@ -1,9 +1,11 @@
 package co.topl.brambl
 
-import co.topl.brambl.digests.{Blake2b256Digest, Hash}
 import co.topl.brambl.models.Datum
 import co.topl.brambl.models.transaction.IoTransaction
-import co.topl.brambl.signatures.{Curve25519Signature, Signing}
+import co.topl.brambl.routines.digests.validators.Blake2b256DigestInterpreter
+import co.topl.brambl.routines.digests.{Blake2b256Digest, Hash}
+import co.topl.brambl.routines.signatures.validators.Curve25519SignatureInterpreter
+import co.topl.brambl.routines.signatures.{Curve25519Signature, Signing}
 import co.topl.brambl.typeclasses.ContainsSignable.instances.ioTransactionSignable
 import co.topl.quivr.runtime.DynamicContext
 import co.topl.quivr.algebras.{DigestVerifier, SignatureVerifier}
@@ -14,11 +16,11 @@ import quivr.models.SignableBytes
 case class Context(tx: IoTransaction, curTick: Long, heightDatums: String => Option[Datum])
     extends DynamicContext[Option, String, Datum] {
 
-  override val hashingRoutines: Map[String, DigestVerifier[Option] with Hash] =
-    Map("blake2b256" -> Blake2b256Digest)
+  override val hashingRoutines: Map[String, DigestVerifier[Option]] =
+    Map("blake2b256" -> Blake2b256DigestInterpreter)
 
-  override val signingRoutines: Map[String, SignatureVerifier[Option] with Signing] =
-    Map("curve25519" -> Curve25519Signature)
+  override val signingRoutines: Map[String, SignatureVerifier[Option]] =
+    Map("curve25519" -> Curve25519SignatureInterpreter)
   override val interfaces = Map() // Arbitrary
 
   override def signableBytes: Option[SignableBytes] = Option(ioTransactionSignable.signableBytes(tx))
