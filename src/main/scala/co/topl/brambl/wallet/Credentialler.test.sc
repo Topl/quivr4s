@@ -8,7 +8,7 @@ import co.topl.brambl.wallet.{Credentialler, MockStorage}
 import co.topl.node.box.Locks
 import co.topl.node.{Address, Events, Identifiers}
 import co.topl.node.transaction.{Datums, IoTransaction}
-import co.topl.node.typeclasses.ContainsSignable.instances.ioTransactionSignable
+import co.topl.brambl.typeclasses.ContainsSignable.instances.ioTransactionSignable
 
 // A "Valid" context is one where the hardcoded Height and Tick propositions will be satisfied (value of 5).
 def getValidContext(tx: IoTransaction): Context = Context(tx, 5,

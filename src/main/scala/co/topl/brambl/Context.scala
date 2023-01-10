@@ -4,7 +4,7 @@ import co.topl.brambl.digests.{Blake2b256Digest, Hash}
 import co.topl.brambl.models.Datum
 import co.topl.brambl.models.transaction.IoTransaction
 import co.topl.brambl.signatures.{Curve25519Signature, Signing}
-import co.topl.node.typeclasses.ContainsSignable.instances.ioTransactionSignable
+import co.topl.brambl.typeclasses.ContainsSignable.instances.ioTransactionSignable
 import co.topl.quivr.runtime.DynamicContext
 import co.topl.quivr.algebras.{DigestVerifier, SignatureVerifier}
 import quivr.models.SignableBytes

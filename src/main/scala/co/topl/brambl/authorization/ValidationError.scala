@@ -1,4 +1,4 @@
-package co.topl.node.transaction.authorization
+package co.topl.brambl.authorization
 
 import quivr.models.{Proof, Proposition}
 

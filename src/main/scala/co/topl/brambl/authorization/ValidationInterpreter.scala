@@ -1,15 +1,12 @@
-package co.topl.node.transaction.authorization
+package co.topl.brambl.authorization
 
 import cats.Monad
 import cats.implicits._
-import co.topl.brambl.models.Datum
-import co.topl.brambl.models.Identifier
-import co.topl.brambl.models.transaction.Attestation
-import co.topl.brambl.models.transaction.IoTransaction
+import co.topl.brambl.models.{Datum, Identifier}
+import co.topl.brambl.models.transaction.{Attestation, IoTransaction}
 import co.topl.quivr.api.Verifier
 import co.topl.quivr.runtime.DynamicContext
-import quivr.models.Proof
-import quivr.models.Proposition
+import quivr.models.{Proof, Proposition}
 
 /**
  * Validates that each Input within a Transaction is properly "authorized".  "Authorized" simply means "does the given
