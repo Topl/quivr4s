@@ -1,7 +1,6 @@
 package co.topl.brambl.wallet
 
 import cats.implicits._
-import co.topl.brambl.Models.{Indices, KeyPair, SigningKey}
 import co.topl.brambl.QuivrService
 import co.topl.brambl.models.Address
 import co.topl.brambl.models.Datum
@@ -13,10 +12,13 @@ import co.topl.brambl.models.box.Lock
 import co.topl.brambl.models.box.Value
 import co.topl.brambl.models.transaction.IoTransaction
 import co.topl.brambl.models.transaction.Schedule
+import co.topl.brambl.models.Indices
 import co.topl.brambl.typeclasses.ContainsEvidence
 import com.google.protobuf.ByteString
 import quivr.models.Preimage
 import quivr.models.VerificationKey
+import quivr.models.SigningKey
+import quivr.models.KeyPair
 import co.topl.brambl.typeclasses.ContainsSignable.instances._
 import ContainsEvidence._
 import co.topl.brambl.routines.digests.Blake2b256Digest
@@ -125,8 +127,8 @@ object MockStorage extends Storage {
       QuivrService
         .signatureProposition(
           getKeyPair(idx, Curve25519Signature)
-            .getOrElse(KeyPair(SigningKey("fake sk".getBytes), VerificationKey(ByteString.copyFromUtf8("fake vk"))))
-            .vk,
+            .getOrElse(KeyPair(VerificationKey(ByteString.copyFromUtf8("fake vk")).some, SigningKey(ByteString.copyFromUtf8("fake sk")).some))
+            .vk.getOrElse(VerificationKey(ByteString.copyFromUtf8("backup vk"))),
           Curve25519Signature
         ),
       QuivrService.heightProposition(2, 8),

@@ -1,7 +1,6 @@
 package co.topl.brambl
 
 import cats.Id
-import co.topl.brambl.Models.SigningKey
 import co.topl.brambl.routines.digests.Hash
 import co.topl.brambl.routines.signatures.Signing
 import quivr.models._

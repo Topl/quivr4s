@@ -1,6 +1,5 @@
 package co.topl.brambl.routines.signatures
 
-import co.topl.brambl.Models.{KeyPair, SigningKey}
 import co.topl.brambl.routines.Routine
 import quivr.models._
 
