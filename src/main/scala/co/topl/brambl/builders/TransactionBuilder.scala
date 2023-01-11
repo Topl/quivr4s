@@ -10,97 +10,21 @@ trait TransactionBuilder {
   /**
    * Construct simple transaction
    *
-   * 3:a:A => 3:a:B
-   *
-   * Any combination of:
-   * By Address
-   * By Indices
-   * By KnownIdentifiers
-   *
-   * instead, will just be indices
-   *  can fetch indices by Address, indices, KnownIdentifiers
-   *  If an Address, index, or knownIdentifier is not associated to an index, can register it to a self-index
-   */
-//  def constructTransaction(inputAddress: Address, outputAddress: Address, datum: Option[IoTransactionDatum]): Option[IoTransaction]
-  def constructTransaction(
-                            inputIndices: Indices,
-                            outputIndices: Indices,
-                            datum: Option[IoTransactionDatum]
-                          ): Either[BuilderError, IoTransaction]
-
-  /**
-   * Construct simple transaction
-   *
-   * 3:a:A => 1:a:A, 2:a:B
-   *
-   * Like above will search by indices
-   * but can have change
-   *
-   * Put quantity into address at output indices. The remaining quantity will stay at the address in
-   *
-   *
-   * Will error out if amount is not enough
-   */
-  def constructTransaction2(
-                             inputIndices: Indices,
-                             outputIndices: Indices,
-                             quantity: Long,
-                             datum: Option[IoTransactionDatum]
-                           ): Either[BuilderError, IoTransaction]
-
-
-  /**
-   * Construct simple transaction
-   *
-   * 3:a:A => 1:a:A, 1:a:B, 1:a:C
-   *
-   * List of quantities need to match the list of outputIndices.
-   *
-   * Like above but need to move separate quantities in different addresses
-   */
-  def constructTransaction3(
-                             inputIndices: Indices,
-                             outputIndices: List[Indices],
-                             quantities: List[Long],
-                             datum: Option[IoTransactionDatum]
-                           ): Either[BuilderError, IoTransaction]
-
-  /**
-   * Construct simple transaction
-   *
-   * 3:a:A => 1:a:A, 1:a:B, 1:a:C
-   *
-   * Like above but allow for allow for input/output datums
-   *
-   * if the lists are not the same length, error
-   */
-  def constructTransaction4(
-                             inputIndices: List[Indices],
-                             inputDatums: List[Option[SpentOutputDatum]],
-                             outputIndices: List[Indices], // The output indices need to end up as a list of addresses
-                                                           // Addresses contain the identifier
-                                                           // The identifier will need to encode the lock
-                             outputDatums: List[Option[UnspentOutputDatum]],
-                             quantities: List[Long],
-                             datum: Option[IoTransactionDatum]
-                           ): Either[BuilderError, IoTransaction]
-
-  /**
-   * Construct simple transaction
-   *
    * 3:a:A => 1:a:A, 1:a:B, 1:a:C
    *
    * Like above but considers the locks of the outputs
    *
    * TODO: Create some kind of request object to encompass the parallel lists
    */
-  def constructTransaction5(
-                             inputIndices: List[Indices],
-                             inputDatums: List[Option[SpentOutputDatum]],
-                             outputIndices: List[Indices],
-                             outputDatums: List[Option[UnspentOutputDatum]],
-                             locks: List[Lock],
-                             quantities: List[Long],
-                             datum: Option[IoTransactionDatum]
+  def constructTransaction(
+                            inputIndices: List[Indices],
+                            inputDatums: List[Option[SpentOutputDatum]],
+                            outputIndices: List[Indices], // The output indices need to end up as a list of addresses
+                                                          // Addresses contain the identifier
+                                                          // The identifier will need to encode evidence of the lock
+                            outputDatums: List[Option[UnspentOutputDatum]],
+                            locks: List[Lock],
+                            quantities: List[Long],
+                            datum: Option[IoTransactionDatum]
                            ): Either[BuilderError, IoTransaction]
 }

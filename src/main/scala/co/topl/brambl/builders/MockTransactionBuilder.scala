@@ -1,21 +1,19 @@
 package co.topl.brambl.builders
 
 import cats.implicits._
-import co.topl.brambl.models.Address
-import co.topl.brambl.models.Datum
-import co.topl.brambl.models.Event
-import co.topl.brambl.models.KnownIdentifier
+import co.topl.brambl.models.{Address, Datum, Event, Indices, KnownIdentifier}
 import co.topl.brambl.models.box.Lock
 import co.topl.brambl.models.box.Value
 import co.topl.brambl.models.transaction.Attestation
 import co.topl.brambl.models.transaction.IoTransaction
-import co.topl.brambl.models.transaction.Schedule
 import co.topl.brambl.models.transaction.SpentTransactionOutput
 import co.topl.brambl.models.transaction.UnspentTransactionOutput
 import co.topl.brambl.wallet.Storage
 import com.google.protobuf.ByteString
 import quivr.models.Int128
 import quivr.models.Proof
+import co.topl.brambl.models.Datum.{IoTransaction => IoTransactionDatum, SpentOutput => SpentOutputDatum, UnspentOutput => UnspentOutputDatum}
+
 
 // Create un-proven transactions
 
@@ -82,28 +80,13 @@ case class MockTransactionBuilder(store: Storage) extends TransactionBuilder {
     UnspentTransactionOutput(address.some, value.some, datum.some)
   }
 
-  /**
-   * Construct an unproven transaction with 1 input 1 output.
-   * Both input and output are N of 2 attestation with a locked and digest operation
-   *
-   * @param threshold Threshold of the attestation
-   * @return The unproven transaction
-   */
-  override def constructTransaction(inputAddress: Address, outputAddress: Address): Option[IoTransaction] = {
-    val datum: Datum.IoTransaction = Datum.IoTransaction(
-      Event
-        .IoTransaction(
-          Schedule(0, 100, 9999).some, // Arbitrary timestamp
-          List(), // references32 does not seem necessary to credentialler
-          List(), // references 64 does not seem necessary to credentialler
-          None // metadata is trivial to credentialler
-        )
-        .some
-    )
-    store
-      .getKnownIdentifierByAddress(inputAddress)
-      .flatMap(constructTestInput)
-      .map(input => IoTransaction(List(input), List(constructTestOutput(outputAddress)), datum.some))
-
-  }
+  override def constructTransaction(
+                                     inputIndices: List[Indices],
+                                     inputDatums: List[Option[SpentOutputDatum]],
+                                     outputIndices: List[Indices],
+                                     outputDatums: List[Option[UnspentOutputDatum]],
+                                     locks: List[Lock],
+                                     quantities: List[Long],
+                                     datum: Option[IoTransactionDatum]
+                                   ): Either[BuilderError, IoTransaction] = ???
 }
