@@ -2,7 +2,11 @@ package co.topl.brambl.builders
 
 import co.topl.brambl.models.{Address, Indices}
 import co.topl.brambl.models.transaction.IoTransaction
-import co.topl.brambl.models.Datum.{IoTransaction => IoTransactionDatum}
+import co.topl.brambl.models.Datum.{
+  IoTransaction => IoTransactionDatum,
+  UnspentOutput => UnspentOutputDatum,
+  SpentOutput => SpentOutputDatum
+}
 
 trait TransactionBuilder {
   // Only considering single inputs for now so I don't have to think about box selection algorithm
@@ -51,7 +55,7 @@ trait TransactionBuilder {
   /**
    * Construct simple transaction
    *
-   * 1:a:A, 1:a:B, 1:a:C
+   * 3:a:A => 1:a:A, 1:a:B, 1:a:C
    *
    * List of quantities need to match the list of outputIndices.
    *
@@ -60,6 +64,24 @@ trait TransactionBuilder {
   def constructTransaction3(
                              inputIndices: Indices,
                              outputIndices: List[Indices],
+                             quantities: List[Long],
+                             datum: Option[IoTransactionDatum]
+                           ): Either[BuilderError, IoTransaction]
+
+  /**
+   * Construct simple transaction
+   *
+   * 3:a:A => 1:a:A, 1:a:B, 1:a:C
+   *
+   * Like above but allow for allow for input/output datums
+   *
+   * if the lists are not the same length, error
+   */
+  def constructTransaction4(
+                             inputIndices: List[Indices],
+                             inputDatums: List[Option[SpentOutputDatum]],
+                             outputIndices: List[Indices],
+                             outputDatums: List[Option[UnspentOutputDatum]],
                              quantities: List[Long],
                              datum: Option[IoTransactionDatum]
                            ): Either[BuilderError, IoTransaction]
