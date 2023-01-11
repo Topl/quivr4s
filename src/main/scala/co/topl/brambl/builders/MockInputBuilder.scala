@@ -1,9 +1,25 @@
 package co.topl.brambl.builders
 
+import cats.implicits.catsSyntaxOptionId
 import co.topl.brambl.builders.Models.InputBuildRequest
 import co.topl.brambl.models.transaction.SpentTransactionOutput
+import co.topl.brambl.wallet.MockStorage
 
 
 object MockInputBuilder extends InputBuilder {
-  override def constructUnprovenInput(data: InputBuildRequest): Either[BuilderError, SpentTransactionOutput] = ???
+  override def constructUnprovenInput(data: InputBuildRequest): Either[BuilderError, SpentTransactionOutput] = {
+    val id = MockStorage.getKnownIdentifierByIndices(data.idx)
+    val box = id.flatMap(MockStorage.getBoxByKnownIdentifier)
+    val attestation = box.flatMap(_.lock).map(MockAttestationBuilder.constructUnprovenAttestation)
+    val value = box.flatMap(_.value)
+    val datum = data.datum
+    val opts = List()
+    (id, attestation, value, datum) match {
+      case (Some(knownId), Some(Right(att)), Some(boxVal), Some(inDatum)) =>
+        Right(SpentTransactionOutput(knownId.some, att.some, boxVal.some, inDatum.some, opts))
+      case (_, Some(Left(err)), _, _) => Left(err)
+      case _ =>
+        Left(BuilderErrors.InputBuilderError("Could not construct input"))
+    }
+  }
 }
