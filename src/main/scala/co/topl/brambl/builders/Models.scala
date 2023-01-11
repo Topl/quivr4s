@@ -9,17 +9,17 @@ import co.topl.brambl.models.Datum.{
 
 // Temporary until they are added to PB
 object Models {
-  trait OutputBuildRequest {
-    def idx: Indices // The output indices need to end up as a list of addresses
-                     // Addresses contain the identifier
-                     // The identifier will need to encode evidence of the lock
-    def datum: Option[UnspentOutputDatum]
-    def lock: Lock
-    def value: Value
-  }
+  case class OutputBuildRequest(
+    idx: Indices, // The output indices need to end up as a list of addresses
+                  // Addresses contain the identifier
+                  // The identifier will need to encode evidence of the lock
+    datum: Option[UnspentOutputDatum],
+    lock: Lock,
+    value: Value
+  )
 
-  trait InputBuildRequest {
-    def idx: Indices
-    def datum: Option[SpentOutputDatum]
-  }
+  case class InputBuildRequest(
+    idx: Indices,
+    datum: Option[SpentOutputDatum]
+  )
 }
