@@ -19,7 +19,7 @@ libraryDependencies ++= Seq(
   "co.topl" %% "crypto" % "1.10.2",
   "org.typelevel" %% "simulacrum" % "1.0.1",
   "org.scalameta" %% "munit" % "0.7.29" % Test,
-  "com.github.Topl" % "protobuf-specs" % "d58fd6f"
+  "com.github.Topl" % "protobuf-specs" % "jitpack-tag-1"
 )
 
 // For Scala 2.13+
