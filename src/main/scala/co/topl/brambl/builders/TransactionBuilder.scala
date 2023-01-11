@@ -1,9 +1,9 @@
 package co.topl.brambl.builders
 
-import co.topl.brambl.models.{Address, Indices}
+import co.topl.brambl.models.Indices
 import co.topl.brambl.models.transaction.IoTransaction
 import co.topl.brambl.models.Datum.{IoTransaction => IoTransactionDatum, SpentOutput => SpentOutputDatum, UnspentOutput => UnspentOutputDatum}
-import co.topl.brambl.models.box.Lock
+import co.topl.brambl.models.box.{Lock, Value}
 
 trait TransactionBuilder {
   // Only considering single inputs for now so I don't have to think about box selection algorithm
@@ -24,7 +24,7 @@ trait TransactionBuilder {
                                                           // The identifier will need to encode evidence of the lock
                             outputDatums: List[Option[UnspentOutputDatum]],
                             locks: List[Lock],
-                            quantities: List[Long],
+                            outputValues: List[Value],
                             datum: Option[IoTransactionDatum]
-                           ): Either[BuilderError, IoTransaction]
+                           ): Either[List[BuilderError], IoTransaction]
 }
