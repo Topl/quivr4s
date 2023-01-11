@@ -1,15 +1,8 @@
 package co.topl.brambl.builders
 
-import co.topl.brambl.models.Indices
+import co.topl.brambl.builders.Models.OutputBuildRequest
 import co.topl.brambl.models.transaction.UnspentTransactionOutput
-import co.topl.brambl.models.Datum.{UnspentOutput => Datum}
-import co.topl.brambl.models.box.{Lock, Value}
 
 trait OutputBuilder {
-  def constructOutput(
-                       idx: Indices,
-                       datum: Option[Datum],
-                       lock: Lock,
-                       value: Value
-                     ): Either[BuilderError, UnspentTransactionOutput]
+  def constructOutput(data: OutputBuildRequest): Either[BuilderError, UnspentTransactionOutput]
 }
