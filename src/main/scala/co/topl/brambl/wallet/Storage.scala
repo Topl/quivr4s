@@ -9,7 +9,11 @@ import co.topl.brambl.models.Indices
 
 trait Storage {
   // Return the indices associated to a known identifier
-  def getIndicesByIdentifier(id: KnownIdentifier): Option[Indices]
+  // Simplifying assumption is Known identifier and indices are 1 to 1
+  def getIndicesByKnownIdentifier(id: KnownIdentifier): Option[Indices]
+  // Return the known identifier associated to indices
+  // Simplifying assumption is Known identifier and indices are 1 to 1
+  def getKnownIdentifierByIndices(idx: Indices): Option[KnownIdentifier]
   // Return the known identifier associated to an address
   // Simplifying assumption is known identifier and address are 1 to 1
   def getKnownIdentifierByAddress(address: Address): Option[KnownIdentifier]

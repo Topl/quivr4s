@@ -139,7 +139,8 @@ object MockStorage extends Storage {
 
   private def getSecret(idx: Indices): Array[Byte] = s"${idx.x},${idx.y},${idx.z}".getBytes
 
-  override def getIndicesByIdentifier(id: KnownIdentifier): Option[Indices] = idToIdx.get(id)
+  override def getIndicesByKnownIdentifier(id: KnownIdentifier): Option[Indices] = idToIdx.get(id)
+  override def getKnownIdentifierByIndices(idx: Indices): Option[KnownIdentifier] = ???
   override def getKnownIdentifierByAddress(address: Address): Option[KnownIdentifier] = addrToId.get(address)
 
   override def getBoxByKnownIdentifier(id: KnownIdentifier): Option[Box] = idToIdx

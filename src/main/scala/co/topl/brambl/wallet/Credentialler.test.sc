@@ -3,7 +3,6 @@
 * How the IoTransaction is created is irrelevant
 * */
 import co.topl.brambl.{Context, QuivrService}
-import co.topl.brambl.builders.MockTransactionBuilder
 import co.topl.brambl.wallet.{Credentialler, MockStorage}
 import co.topl.node.box.Locks
 import co.topl.node.{Address, Events, Identifiers}

@@ -16,7 +16,7 @@ trait TransactionBuilder {
    *
    * TODO: Create some kind of request object to encompass the parallel lists
    */
-  def constructTransaction(
+  def constructUnprovenTransaction(
                             inputIndices: List[Indices],
                             inputDatums: List[Option[SpentOutputDatum]],
                             outputIndices: List[Indices], // The output indices need to end up as a list of addresses
