@@ -5,11 +5,11 @@ import co.topl.brambl.builders.Models.OutputBuildRequest
 import co.topl.brambl.models.transaction.UnspentTransactionOutput
 
 /**
- * A trait that defines the functionality of a builder for IoTransaction outputs (UnspentTransactionOutput)
+ * Defines a builder for IoTransaction outputs [[UnspentTransactionOutput]]
  */
 trait OutputBuilder {
   /**
-   * Construct a IoTransaction output (UnspentTransactionOutput).
+   * Construct a IoTransaction output ([[UnspentTransactionOutput]]).
    *
    * @param data The data required to build an UnspentTransactionOutput
    *             The data is an object with the following fields:

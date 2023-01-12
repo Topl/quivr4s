@@ -9,7 +9,7 @@ import co.topl.brambl.wallet.MockStorage
 import quivr.models.Proof
 
 /**
- * A mock implementation of an InputBuilder
+ * A mock implementation of an [[InputBuilder]]
  */
 object MockInputBuilder extends InputBuilder {
   /**
@@ -31,8 +31,9 @@ object MockInputBuilder extends InputBuilder {
   }
 
   /**
-   * Construct an unproven IoTransaction input (SpentTransactionOutput).
-   * A SpentTransactionOutput spends an existing UnspentTransactionOutput.
+   * Construct an unproven IoTransaction input ([[SpentTransactionOutput]]).
+   * A SpentTransactionOutput spends an existing
+   * [[co.topl.brambl.models.transaction.UnspentTransactionOutput UnspentTransactionOutput]].
    *
    * @param data The data required to build a SpentTransactionOutput
    *             The data is an object with the following fields:
