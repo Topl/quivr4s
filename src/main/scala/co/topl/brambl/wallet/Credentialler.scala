@@ -10,9 +10,9 @@ import co.topl.brambl.routines.signatures.Curve25519Signature
 import co.topl.brambl.transaction.validators.ValidationError
 import co.topl.brambl.transaction.validators.authorization.{TransactionAuthorizationError, TransactionAuthorizationInterpreter}
 import co.topl.brambl.transaction.validators.syntax.{TransactionSyntaxError, TransactionSyntaxErrors}
-import co.topl.brambl.{Context, QuivrService}
+import co.topl.brambl.Context
 import co.topl.brambl.typeclasses.ContainsSignable.instances.ioTransactionSignable
-import co.topl.quivr.api.Verifier
+import co.topl.quivr.api.{Prover, Verifier}
 import quivr.models.Proof
 import quivr.models.Proposition
 import quivr.models.SignableBytes
@@ -38,9 +38,9 @@ case class Credentialler(store: Storage)(implicit ctx: Context) extends Credenti
       "curve25519" -> Curve25519Signature
     )
     proposition.value match {
-      case _: Proposition.Value.Locked => Some(QuivrService.lockedProof(msg))
+      case _: Proposition.Value.Locked => Prover.lockedProver[Id].prove((), msg).some
       case _: Proposition.Value.Digest =>
-        idx.flatMap(store.getPreimage(_).map(QuivrService.digestProof(msg, _)))
+        idx.flatMap(store.getPreimage(_).map(Prover.digestProver[Id].prove(_, msg)))
       case Proposition.Value.DigitalSignature(p) =>
         signingRoutines
           .get(p.routine)
@@ -48,10 +48,10 @@ case class Credentialler(store: Storage)(implicit ctx: Context) extends Credenti
             idx
               .flatMap(i => store.getKeyPair(i, r))
               .flatMap(keyPair => keyPair.sk)
-              .map(sk => QuivrService.signatureProof(msg, sk, r))
+              .map(sk => Prover.signatureProver[Id].prove(r.sign(sk, msg), msg))
           )
-      case _: Proposition.Value.HeightRange => Some(QuivrService.heightProof(msg))
-      case _: Proposition.Value.TickRange   => Some(QuivrService.tickProof(msg))
+      case _: Proposition.Value.HeightRange => Prover.heightProver[Id].prove((), msg).some
+      case _: Proposition.Value.TickRange   => Prover.tickProver[Id].prove((), msg).some
       case _                                => None
     }
   }
