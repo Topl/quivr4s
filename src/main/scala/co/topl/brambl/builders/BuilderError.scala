@@ -10,7 +10,7 @@ abstract class BuilderError(val message: String)
 
 object BuilderErrors {
   /**
-   * A Builder error indicating that a IoTransaction's input
+   * A Builder error indicating that an IoTransaction's input
    * ([[co.topl.brambl.models.transaction.SpentTransactionOutput SpentTransactionOutput]])
    * was unable to be successfully built.
    *
