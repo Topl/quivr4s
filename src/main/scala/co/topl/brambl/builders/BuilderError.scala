@@ -12,7 +12,7 @@ object BuilderErrors {
   /**
    * A Builder error indicating that an IoTransaction's input
    * ([[co.topl.brambl.models.transaction.SpentTransactionOutput SpentTransactionOutput]])
-   * was unable to be successfully built.
+   * was not successfully built.
    *
    * @param message The error message indicating why the build is unsuccessful
    */
