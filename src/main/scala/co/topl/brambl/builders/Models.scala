@@ -10,9 +10,6 @@ import co.topl.brambl.models.Datum.{
 // Temporary until they are added to PB
 object Models {
   case class OutputBuildRequest(
-    idx: Indices, // The output indices need to end up as a list of addresses
-                  // Addresses contain the identifier
-                  // The identifier will need to encode evidence of the lock
     datum: Option[UnspentOutputDatum],
     lock: Lock,
     value: Value

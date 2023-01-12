@@ -14,10 +14,10 @@ object MockInputBuilder extends InputBuilder {
     val value = box.flatMap(_.value)
     val datum = data.datum
     val opts = List()
-    (id, attestation, value, datum) match {
-      case (Some(knownId), Some(Right(att)), Some(boxVal), Some(inDatum)) =>
-        Right(SpentTransactionOutput(knownId.some, att.some, boxVal.some, inDatum.some, opts))
-      case (_, Some(Left(err)), _, _) => Left(err)
+    (id, attestation, value) match {
+      case (Some(knownId), Some(Right(att)), Some(boxVal)) =>
+        Right(SpentTransactionOutput(knownId.some, att.some, boxVal.some, datum, opts))
+      case (_, Some(Left(err)), _) => Left(err)
       case _ =>
         Left(BuilderErrors.InputBuilderError("Could not construct input"))
     }
