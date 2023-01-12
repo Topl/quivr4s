@@ -1,15 +1,24 @@
 package co.topl.brambl.builders
 
 import cats.implicits.catsSyntaxOptionId
+import co.topl.brambl.builders.BuilderErrors.InputBuilderError
 import co.topl.brambl.builders.Models.InputBuildRequest
 import co.topl.brambl.models.box.Lock
 import co.topl.brambl.models.transaction.{Attestation, SpentTransactionOutput}
 import co.topl.brambl.wallet.MockStorage
 import quivr.models.Proof
 
-
+/**
+ * A mock implementation of an InputBuilder
+ */
 object MockInputBuilder extends InputBuilder {
-  private def constructUnprovenAttestation(lock: Lock): Either[BuilderError, Attestation] = lock.value match {
+  /**
+   * Construct an unproven attestation for a given lock
+   *
+   * @param lock The lock for which we are building the attestation
+   * @return Either an InputBuilderError or the built unproven attestation
+   */
+  private def constructUnprovenAttestation(lock: Lock): Either[InputBuilderError, Attestation] = lock.value match {
     case Lock.Value.Predicate(p) => Right(
       Attestation().withPredicate(
         Attestation.Predicate(
@@ -20,7 +29,18 @@ object MockInputBuilder extends InputBuilder {
     )
     case _ => Left(BuilderErrors.InputBuilderError("Only considering Predicate locks for now"))
   }
-  override def constructUnprovenInput(data: InputBuildRequest): Either[BuilderError, SpentTransactionOutput] = {
+
+  /**
+   * Construct an unproven IoTransaction input (SpentTransactionOutput).
+   * A SpentTransactionOutput spends an existing UnspentTransactionOutput.
+   *
+   * @param data The data required to build a SpentTransactionOutput
+   *             The data is an object with the following fields:
+   *             idx: Indices - Indices associated to an existing IoTransaction output for which the built input is spending.
+   *             datum: Option[Datum.SpentOutput] - Additional data to include in the built SpentTransactionOutput
+   * @return Either a InputBuilderError or the built SpentTransactionOutput
+   */
+  override def constructUnprovenInput(data: InputBuildRequest): Either[InputBuilderError, SpentTransactionOutput] = {
     val id = MockStorage.getKnownIdentifierByIndices(data.idx)
     val box = id.flatMap(MockStorage.getBoxByKnownIdentifier)
     val attestation = box.flatMap(_.lock).map(constructUnprovenAttestation)
