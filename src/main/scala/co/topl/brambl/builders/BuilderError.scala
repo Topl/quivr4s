@@ -21,7 +21,7 @@ object BuilderErrors {
   /**
    * A Builder error indicating that a IoTransaction's output
    * ([[co.topl.brambl.models.transaction.UnspentTransactionOutput UnspentTransactionOutput]])
-   * was unable to be successfully built.
+   * was not successfully built.
    *
    * @param message The error message indicating why the build is unsuccessful
    */
