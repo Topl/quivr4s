@@ -5,7 +5,7 @@ import co.topl.brambl.builders.Models.InputBuildRequest
 import co.topl.brambl.models.transaction.SpentTransactionOutput
 
 /**
- * A trait that defines the functionality of a builder for IoTransaction inputs (SpentTransactionOutputs)
+ * A trait that defines the functionality of a builder for IoTransaction inputs (SpentTransactionOutput)
  */
 trait InputBuilder {
   /**
