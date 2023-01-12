@@ -30,17 +30,6 @@ object MockInputBuilder extends InputBuilder {
     case _ => Left(BuilderErrors.InputBuilderError("Only considering Predicate locks for now"))
   }
 
-  /**
-   * Construct an unproven IoTransaction input ([[SpentTransactionOutput]]).
-   * A SpentTransactionOutput spends an existing
-   * [[co.topl.brambl.models.transaction.UnspentTransactionOutput UnspentTransactionOutput]].
-   *
-   * @param data The data required to build a SpentTransactionOutput
-   *             The data is an object with the following fields:
-   *             idx: Indices - Indices associated to an existing IoTransaction output for which the built input is spending.
-   *             datum: Option[Datum.SpentOutput] - Additional data to include in the built SpentTransactionOutput
-   * @return Either a InputBuilderError or the built SpentTransactionOutput
-   */
   override def constructUnprovenInput(data: InputBuildRequest): Either[InputBuilderError, SpentTransactionOutput] = {
     val id = MockStorage.getKnownIdentifierByIndices(data.idx)
     val box = id.flatMap(MockStorage.getBoxByKnownIdentifier)
