@@ -10,7 +10,7 @@ import co.topl.brambl.models.Datum.{IoTransaction => IoTransactionDatum}
 trait TransactionBuilder {
   /**
    * Construct an unproven [[IoTransaction]]. The transaction fee is whatever is left over after the sum of the
-   * outputs is subtracted from the sum of the inputs. Consequently, any change needs to be explicitly added as an output.
+   * LVL outputs is subtracted from the sum of the LVL inputs. Consequently, any change needs to be explicitly added as an output.
    *
    * A [[co.topl.brambl.models.transaction.SpentTransactionOutput SpentTransactionOutput]] spends an existing
    * [[co.topl.brambl.models.transaction.UnspentTransactionOutput UnspentTransactionOutput]].
