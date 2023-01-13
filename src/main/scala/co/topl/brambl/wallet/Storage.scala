@@ -1,6 +1,5 @@
 package co.topl.brambl.wallet
 
-import co.topl.brambl.models.Address
 import co.topl.brambl.models.KnownIdentifier
 import co.topl.brambl.models.box.Box
 import co.topl.brambl.routines.signatures.Signing
@@ -22,7 +21,12 @@ trait Storage {
 
   /**
    * Return the box associated to a known identifier.
-   * Simplifying assumption is that Box and KnownIdentifier are 1 to 1
+   *
+   * A Box is created from a utxo. A KnownIdentifier combines an Identifier and an index. For the simple use-case,
+   * we are only considering the KnownIdentifiers that are already defined in our ecosystem; TransactionOutput32 and
+   * TransactionOutput64, both of which refer to a transaction output (i.e, utxo).
+   *
+   * Therefore, we can make the simplifying assumption that Box and KnownIdentifier are 1 to 1
    *
    * @param id The known identifier for which to retrieve the box
    * @return The box associated to the known identifier if it exists. Else None
