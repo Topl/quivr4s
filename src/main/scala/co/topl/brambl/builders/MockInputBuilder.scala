@@ -31,16 +31,16 @@ object MockInputBuilder extends InputBuilder {
   }
 
   override def constructUnprovenInput(data: InputBuildRequest): Either[InputBuilderError, SpentTransactionOutput] = {
-    val id = MockStorage.getKnownIdentifierByIndices(data.idx)
-    val box = id.flatMap(MockStorage.getBoxByKnownIdentifier)
+    val id = data.id
+    val box = MockStorage.getBoxByKnownIdentifier(id)
     val attestation = box.flatMap(_.lock).map(constructUnprovenAttestation)
     val value = box.flatMap(_.value)
     val datum = data.datum
     val opts = List()
-    (id, attestation, value) match {
-      case (Some(knownId), Some(Right(att)), Some(boxVal)) =>
-        Right(SpentTransactionOutput(knownId.some, att.some, boxVal.some, datum, opts))
-      case (_, Some(Left(err)), _) => Left(err)
+    (attestation, value) match {
+      case (Some(Right(att)), Some(boxVal)) =>
+        Right(SpentTransactionOutput(id.some, att.some, boxVal.some, datum, opts))
+      case (Some(Left(err)), _) => Left(err)
       case _ =>
         Left(BuilderErrors.InputBuilderError("Could not construct input"))
     }

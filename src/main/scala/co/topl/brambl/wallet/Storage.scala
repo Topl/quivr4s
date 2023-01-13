@@ -21,15 +21,6 @@ trait Storage {
   def getIndicesByKnownIdentifier(id: KnownIdentifier): Option[Indices]
 
   /**
-   * Return the known identifier associated to the given indices.
-   * Simplifying assumption is that KnownIdentifier and Indices are 1 to 1
-   *
-   * @param idx The indices for which to retrieve the known identifier
-   * @return The known identifier associated to the indices if it exists. Else None
-   */
-  def getKnownIdentifierByIndices(idx: Indices): Option[KnownIdentifier]
-
-  /**
    * Return the known identifier associated to the given address.
    * Simplifying assumption is that KnownIdentifier and Address are 1 to 1
    *

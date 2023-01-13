@@ -3,6 +3,7 @@
 * How the IoTransaction is created is irrelevant
 * */
 import co.topl.brambl.{Context, QuivrService}
+import co.topl.brambl.nativeTransactor.MockBuilder
 import co.topl.brambl.wallet.{Credentialler, MockStorage}
 import co.topl.node.box.Locks
 import co.topl.node.{Address, Events, Identifiers}
@@ -37,7 +38,7 @@ def runTest(unprovenTx: IoTransaction, expectedPass: Boolean, createCtx: IoTrans
   }
 }
 
-val builder = MockTransactionBuilder(MockStorage)
+val builder = MockBuilder(MockStorage)
 
 val outputAddress = Address(0, 0, Identifiers.boxLock32(
   Locks.Predicate(List(QuivrService.lockedProposition.get), 1)

@@ -15,7 +15,7 @@ trait InputBuilder {
    *
    * @param data The data required to build a SpentTransactionOutput
    *             The data is an object with the following fields:
-   *             idx: Indices - Indices associated to an existing IoTransaction output for which the built input is spending.
+   *             id: KnownIdentifier - Identifies an existing IoTransaction output for which the built input is spending.
    *             datum: Option[Datum.SpentOutput] - Additional data to include in the built SpentTransactionOutput
    * @return Either a InputBuilderError or the built SpentTransactionOutput
    */
