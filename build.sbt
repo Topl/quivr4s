@@ -19,7 +19,7 @@ libraryDependencies ++= Seq(
   "co.topl" %% "crypto" % "1.10.2",
   "org.typelevel" %% "simulacrum" % "1.0.1",
   "org.scalameta" %% "munit" % "0.7.29" % Test,
-  "com.github.Topl" % "protobuf-specs" % "40fb2c5"
+  "com.github.Topl" % "protobuf-specs" % "40fb2c5" // TODO: Replace with commit on main branch once PB PR merged
 )
 
 // For Scala 2.13+
