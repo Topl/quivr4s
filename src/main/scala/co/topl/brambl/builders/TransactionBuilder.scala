@@ -22,9 +22,9 @@ trait TransactionBuilder {
    * @param outputRequests A list of data required to build the outputs of this IoTransaction.
    *                       Each element represents a single output.
    * @param schedule The schedule for this IoTransaction
-   *                 If not provided, the built transaction will have a default schedule with min set to the current
-   *                 slot number, max set to the current slot number + 15000 (approximately 4 hours later),
-   *                 and timestamp set to the current time.
+   *                 If not provided, the built transaction will have a default schedule with min set to 0, max set to
+   *                 2147483647 and timestamp set to the current time.
+   * TODO: when the slot number conversion is working, default min will be set to the current slot number and max set to the current slot number + 14400 (approximately 4 hours later)
    * @param output32Refs A list of identifiers that refer to existing IoTransactions outputs using 32 byte evidences.
    *                     Defaults to an empty list
    * @param output64Refs A list of identifiers that refer to existing IoTransactions outputs using 64 byte evidences.

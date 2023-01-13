@@ -29,7 +29,8 @@ object MockTransactionBuilder extends TransactionBuilder {
       .partitionMap[BuilderError, UnspentTransactionOutput](identity)
     if(inputs._1.isEmpty && outputs._1.isEmpty) {
       val datum = Datum.IoTransaction(Event.IoTransaction(
-        if(schedule.isDefined) schedule else Schedule(0, 0, 0).some, // TODO: Replace with real schedule default
+        if(schedule.isDefined) schedule
+        else Schedule(0, 2147483647, System.currentTimeMillis).some, // TODO: Replace min and max with slot numbers
         output32Refs,
         output64Refs,
         if(metadata.isDefined) metadata else SmallData(ByteString.EMPTY).some
