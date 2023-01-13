@@ -1,8 +1,13 @@
 package co.topl.brambl.builders
 
+import cats.implicits.catsSyntaxOptionId
 import co.topl.brambl.builders.Models.{InputBuildRequest, OutputBuildRequest}
-import co.topl.brambl.models.Datum
+import co.topl.brambl.models.KnownIdentifier.{TransactionOutput32, TransactionOutput64}
+import co.topl.brambl.models.{Datum, Event}
 import co.topl.brambl.models.transaction.{IoTransaction, SpentTransactionOutput, UnspentTransactionOutput}
+import co.topl.brambl.models.transaction.Schedule
+import quivr.models.SmallData
+import com.google.protobuf.ByteString
 
 /**
  * A mock implementation of an [[TransactionBuilder]]
@@ -11,7 +16,10 @@ object MockTransactionBuilder extends TransactionBuilder {
   override def constructUnprovenTransaction(
                                              inputRequests: List[InputBuildRequest],
                                              outputRequests: List[OutputBuildRequest],
-                                             datum: Option[Datum.IoTransaction]
+                                             schedule: Option[Schedule] = None,
+                                             output32Refs: List[TransactionOutput32] = List(),
+                                             output64Refs: List[TransactionOutput64] = List(),
+                                             metadata: Option[SmallData] = None
                                            ): Either[List[BuilderError], IoTransaction] = {
     val inputs = inputRequests
       .map(MockInputBuilder.constructUnprovenInput)
@@ -20,8 +28,13 @@ object MockTransactionBuilder extends TransactionBuilder {
       .map(MockOutputBuilder.constructOutput)
       .partitionMap[BuilderError, UnspentTransactionOutput](identity)
     if(inputs._1.isEmpty && outputs._1.isEmpty) {
-      // TODO: Supply a default Datum if datum is not provided
-      Right(IoTransaction(inputs._2, outputs._2, datum))
+      val datum = Datum.IoTransaction(Event.IoTransaction(
+        if(schedule.isDefined) schedule else Schedule(0, 0, 0).some, // TODO: Replace with real schedule default
+        output32Refs,
+        output64Refs,
+        if(metadata.isDefined) metadata else SmallData(ByteString.EMPTY).some
+      ).some)
+      Right(IoTransaction(inputs._2, outputs._2, datum.some))
     } else
       Left(inputs._1 ++ outputs._1)
   }

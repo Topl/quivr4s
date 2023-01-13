@@ -13,9 +13,10 @@ trait OutputBuilder {
    *
    * @param data The data required to build an UnspentTransactionOutput
    *             The data is an object with the following fields:
-   *             datum: Option[Datum.UnspentOutput] - Additional data to include in the built UnspentTransactionOutput
    *             lock: Lock - The lock for the built UnspentTransactionOutput. It will be encoded in the address
    *             value: Value - The value for the built UnspentTransactionOutput
+   *             metadata: Option[SmallData] - Optional metadata to include in the built UnspentTransactionOutput
+   *                    If not provided, the built UnspentTransactionOutput's metadata will be empty data
    * @return Either a OutputBuilderError or the built UnspentTransactionOutput
    */
   def constructOutput(data: OutputBuildRequest): Either[OutputBuilderError, UnspentTransactionOutput]

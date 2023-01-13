@@ -16,7 +16,8 @@ trait InputBuilder {
    * @param data The data required to build a SpentTransactionOutput
    *             The data is an object with the following fields:
    *             id: KnownIdentifier - Identifies an existing IoTransaction output for which the built input is spending.
-   *             datum: Option[Datum.SpentOutput] - Additional data to include in the built SpentTransactionOutput
+   *             metadata: Option[SmallData] - Optional metadata to include in the built SpentTransactionOutput
+   *                    If not provided, the built SpentTransactionOutput's metadata will be empty data
    * @return Either a InputBuilderError or the built SpentTransactionOutput
    */
   def constructUnprovenInput(data: InputBuildRequest): Either[InputBuilderError, SpentTransactionOutput]

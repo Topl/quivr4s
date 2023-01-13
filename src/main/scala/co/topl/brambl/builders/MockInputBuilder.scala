@@ -3,10 +3,12 @@ package co.topl.brambl.builders
 import cats.implicits.catsSyntaxOptionId
 import co.topl.brambl.builders.BuilderErrors.InputBuilderError
 import co.topl.brambl.builders.Models.InputBuildRequest
+import co.topl.brambl.models.{Datum, Event}
 import co.topl.brambl.models.box.Lock
 import co.topl.brambl.models.transaction.{Attestation, SpentTransactionOutput}
 import co.topl.brambl.wallet.MockStorage
-import quivr.models.Proof
+import com.google.protobuf.ByteString
+import quivr.models.{Proof, SmallData}
 
 /**
  * A mock implementation of an [[InputBuilder]]
@@ -35,11 +37,13 @@ object MockInputBuilder extends InputBuilder {
     val box = MockStorage.getBoxByKnownIdentifier(id)
     val attestation = box.flatMap(_.lock).map(constructUnprovenAttestation)
     val value = box.flatMap(_.value)
-    val datum = data.datum
+    val datum = Datum.SpentOutput(Event.SpentTransactionOutput(
+      if(data.metadata.isDefined) data.metadata else SmallData(ByteString.EMPTY).some
+    ).some)
     val opts = List()
     (attestation, value) match {
       case (Some(Right(att)), Some(boxVal)) =>
-        Right(SpentTransactionOutput(id.some, att.some, boxVal.some, datum, opts))
+        Right(SpentTransactionOutput(id.some, att.some, boxVal.some, datum.some, opts))
       case (Some(Left(err)), _) => Left(err)
       case _ =>
         Left(BuilderErrors.InputBuilderError("Could not construct input"))
