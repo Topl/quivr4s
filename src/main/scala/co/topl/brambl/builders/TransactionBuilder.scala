@@ -1,8 +1,8 @@
 package co.topl.brambl.builders
 
 import co.topl.brambl.builders.Models.{InputBuildRequest, OutputBuildRequest}
+import co.topl.brambl.models.Datum
 import co.topl.brambl.models.transaction.IoTransaction
-import co.topl.brambl.models.Datum.{IoTransaction => IoTransactionDatum}
 
 /**
  * Defines a builder for [[IoTransaction]]s
@@ -21,12 +21,13 @@ trait TransactionBuilder {
    *                       Each element represents a single output.
    * @param datum Additional data to include in the built IoTransaction.
    *              If not provided, the [[co.topl.brambl.models.transaction.Schedule Schedule]]
-   *              within will be defaulted to some reasonable value.
+   *              within will be defaulted to a schedule whose min is the current slot,
+   *              max is the current slot + 15,000 (approximately 4 hours later), and timestamp is the current time.
    * @return Either a list of BuilderError or the built IoTransaction
    */
   def constructUnprovenTransaction(
                             inputRequests: List[InputBuildRequest],
                             outputRequests: List[OutputBuildRequest],
-                            datum: Option[IoTransactionDatum]
+                            datum: Option[Datum.IoTransaction]
                            ): Either[List[BuilderError], IoTransaction]
 }

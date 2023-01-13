@@ -1,7 +1,7 @@
 package co.topl.brambl.builders
 
 import co.topl.brambl.builders.Models.{InputBuildRequest, OutputBuildRequest}
-import co.topl.brambl.models.Datum.{IoTransaction => IoTransactionDatum}
+import co.topl.brambl.models.Datum
 import co.topl.brambl.models.transaction.{IoTransaction, SpentTransactionOutput, UnspentTransactionOutput}
 
 /**
@@ -11,7 +11,7 @@ object MockTransactionBuilder extends TransactionBuilder {
   override def constructUnprovenTransaction(
                                              inputRequests: List[InputBuildRequest],
                                              outputRequests: List[OutputBuildRequest],
-                                             datum: Option[IoTransactionDatum]
+                                             datum: Option[Datum.IoTransaction]
                                            ): Either[List[BuilderError], IoTransaction] = {
     val inputs = inputRequests
       .map(MockInputBuilder.constructUnprovenInput)
