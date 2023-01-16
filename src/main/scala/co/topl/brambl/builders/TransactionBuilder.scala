@@ -1,8 +1,8 @@
 package co.topl.brambl.builders
 
-import co.topl.brambl.builders.Models.{InputBuildRequest, OutputBuildRequest}
 import co.topl.brambl.models.KnownIdentifier.{TransactionOutput32, TransactionOutput64}
 import co.topl.brambl.models.transaction.IoTransaction
+import co.topl.brambl.models.builders.{InputBuildRequest, OutputBuildRequest}
 import co.topl.brambl.models.transaction.Schedule
 import quivr.models.SmallData
 

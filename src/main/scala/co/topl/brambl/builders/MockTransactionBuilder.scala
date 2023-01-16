@@ -1,8 +1,8 @@
 package co.topl.brambl.builders
 
 import cats.implicits.catsSyntaxOptionId
-import co.topl.brambl.builders.Models.{InputBuildRequest, OutputBuildRequest}
 import co.topl.brambl.models.KnownIdentifier.{TransactionOutput32, TransactionOutput64}
+import co.topl.brambl.models.builders.{InputBuildRequest, OutputBuildRequest}
 import co.topl.brambl.models.{Datum, Event}
 import co.topl.brambl.models.transaction.{IoTransaction, SpentTransactionOutput, UnspentTransactionOutput}
 import co.topl.brambl.models.transaction.Schedule

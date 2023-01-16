@@ -1,7 +1,7 @@
 package co.topl.brambl.builders
 
 import co.topl.brambl.builders.BuilderErrors.OutputBuilderError
-import co.topl.brambl.builders.Models.OutputBuildRequest
+import co.topl.brambl.models.builders.OutputBuildRequest
 import co.topl.brambl.models.transaction.UnspentTransactionOutput
 
 /**
