@@ -49,7 +49,7 @@ object MockInputBuilder extends InputBuilder {
         Right(SpentTransactionOutput(knownId.some, att.some, boxVal.some, datum.some, opts))
       case (_, Some(Left(err)), _) => Left(err)
       case _ =>
-        Left(BuilderErrors.InputBuilderError("Could not construct input"))
+        Left(BuilderErrors.InputBuilderError(s"Could not construct input. Id=${id}, Attestation=${attestation}, Value=${value}"))
     }
   }
 }

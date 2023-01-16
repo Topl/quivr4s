@@ -33,7 +33,7 @@ object MockOutputBuilder extends OutputBuilder {
         ).some)
         Right(UnspentTransactionOutput(address.some, value.some, datum.some))
       }
-      case _ => Left(BuilderErrors.OutputBuilderError("Could not construct output"))
+      case _ => Left(BuilderErrors.OutputBuilderError(s"Could not construct output. Lock=${data.lock}, Value=${data.value}"))
     }
   }
 }
