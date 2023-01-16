@@ -13,6 +13,9 @@ import com.google.protobuf.ByteString
  * A mock implementation of an [[TransactionBuilder]]
  */
 object MockTransactionBuilder extends TransactionBuilder {
+
+  private final val EmptyData = SmallData(ByteString.EMPTY)
+
   override def constructUnprovenTransaction(
                                              inputRequests: List[InputBuildRequest],
                                              outputRequests: List[OutputBuildRequest],
@@ -33,7 +36,7 @@ object MockTransactionBuilder extends TransactionBuilder {
         else Schedule(0, 2147483647, System.currentTimeMillis).some, // TODO: Replace min and max with slot numbers
         output32Refs,
         output64Refs,
-        if(metadata.isDefined) metadata else SmallData(ByteString.EMPTY).some
+        if(metadata.isDefined) metadata else EmptyData.some
       ).some)
       Right(IoTransaction(inputs._2, outputs._2, datum.some))
     } else

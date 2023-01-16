@@ -14,6 +14,9 @@ import quivr.models.{Proof, SmallData}
  * A mock implementation of an [[InputBuilder]]
  */
 object MockInputBuilder extends InputBuilder {
+
+  private final val EmptyData = SmallData(ByteString.EMPTY)
+
   /**
    * Construct an unproven attestation for a given lock
    *
@@ -38,7 +41,7 @@ object MockInputBuilder extends InputBuilder {
     val attestation = box.flatMap(_.lock).map(constructUnprovenAttestation)
     val value = box.flatMap(_.value)
     val datum = Datum.SpentOutput(Event.SpentTransactionOutput(
-      if(data.metadata.isDefined) data.metadata else SmallData(ByteString.EMPTY).some
+      if(data.metadata.isDefined) data.metadata else EmptyData.some
     ).some)
     val opts = List()
     (attestation, value) match {

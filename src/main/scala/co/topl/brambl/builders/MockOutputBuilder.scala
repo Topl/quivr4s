@@ -15,16 +15,19 @@ import quivr.models.SmallData
  */
 object MockOutputBuilder extends OutputBuilder {
 
-  val NETWORK = 0
-  val LEDGER = 0
+  private final val EmptyData = SmallData(ByteString.EMPTY)
+
+  // TODO: Replace with non-hardcoded values
+  val Network = 0
+  val Ledger = 0
 
   override def constructOutput(data: OutputBuildRequest): Either[OutputBuilderError, UnspentTransactionOutput] = {
-    val address = Address(NETWORK, LEDGER,
+    val address = Address(Network, Ledger,
       Identifier().withLock32(Identifier.Lock32(data.lock.sized32Evidence.some)).some
     )
     val value = data.value
     val datum = Datum.UnspentOutput(Event.UnspentTransactionOutput(
-      if(data.metadata.isDefined) data.metadata else SmallData(ByteString.EMPTY).some
+      if(data.metadata.isDefined) data.metadata else EmptyData.some
     ).some)
     Right(UnspentTransactionOutput(address.some, value.some, datum.some))
   }
