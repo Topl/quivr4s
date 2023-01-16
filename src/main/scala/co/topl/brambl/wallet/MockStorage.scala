@@ -106,14 +106,6 @@ object MockStorage extends Storage {
     KnownIdentifier().withTransactionOutput32(o32) -> v
   }
 
-  val addrToId: Map[Address, KnownIdentifier] = Map(
-    addr2a -> KnownIdentifier().withTransactionOutput32(dummyTxIdentifier2a),
-    addr2b -> KnownIdentifier().withTransactionOutput32(dummyTxIdentifier2b),
-    addr3  -> KnownIdentifier().withTransactionOutput32(dummyTxIdentifier3),
-    addr4  -> KnownIdentifier().withTransactionOutput32(dummyTxIdentifier4),
-    addr5  -> KnownIdentifier().withTransactionOutput32(dummyTxIdentifier5)
-  )
-
   // Hardcoding MockStorage to use Blake2b256Digest and Curve25519Signature
   private def buildPredicate(threshold: Int, idx: Indices): Lock.Predicate = Lock.Predicate(
     List(
@@ -139,8 +131,7 @@ object MockStorage extends Storage {
 
   private def getSecret(idx: Indices): Array[Byte] = s"${idx.x},${idx.y},${idx.z}".getBytes
 
-  override def getIndicesByIdentifier(id: KnownIdentifier): Option[Indices] = idToIdx.get(id)
-  override def getKnownIdentifierByAddress(address: Address): Option[KnownIdentifier] = addrToId.get(address)
+  override def getIndicesByKnownIdentifier(id: KnownIdentifier): Option[Indices] = idToIdx.get(id)
 
   override def getBoxByKnownIdentifier(id: KnownIdentifier): Option[Box] = idToIdx
     .get(id)

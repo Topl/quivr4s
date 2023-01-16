@@ -72,7 +72,7 @@ case class Credentialler(store: Storage)(implicit ctx: Context) extends Credenti
     input: SpentTransactionOutput,
     msg:   SignableBytes
   ): Either[TransactionSyntaxError, SpentTransactionOutput] = {
-    val idx: Option[Indices] = input.knownIdentifier.flatMap(store.getIndicesByIdentifier)
+    val idx: Option[Indices] = input.knownIdentifier.flatMap(store.getIndicesByKnownIdentifier)
     // TODO: None.get
     val inputAttestation = input.attestation.get
     val attestations: Either[TransactionSyntaxError, Attestation] =
