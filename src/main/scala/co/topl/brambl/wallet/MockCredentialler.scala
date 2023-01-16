@@ -18,7 +18,7 @@ import quivr.models.Proposition
 import quivr.models.SignableBytes
 import co.topl.brambl.models.Indices
 
-object MockCredentialler extends Credentialler {
+object MockCredentialler extends Credentials {
 
   /**
    * Return a Proof (if possible) that will satisfy a Proposition and signable bytes
