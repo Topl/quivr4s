@@ -65,11 +65,11 @@ object MockStorage extends Storage {
   private def transactionId(transaction: IoTransaction) =
     Identifier.IoTransaction32(ContainsEvidence[IoTransaction].sized32Evidence(transaction).some)
 
-  private val dummyTxIdentifier2a = KnownIdentifier.TransactionOutput32(0, 0, 0, transactionId(dummyTx2a).some)
-  private val dummyTxIdentifier2b = KnownIdentifier.TransactionOutput32(0, 0, 0, transactionId(dummyTx2b).some)
-  private val dummyTxIdentifier3 = KnownIdentifier.TransactionOutput32(0, 0, 0, transactionId(dummyTx3).some)
-  private val dummyTxIdentifier4 = KnownIdentifier.TransactionOutput32(0, 0, 0, transactionId(dummyTx5).some)
-  private val dummyTxIdentifier5 = KnownIdentifier.TransactionOutput32(0, 0, 0, transactionId(dummyTx4).some)
+  val dummyTxIdentifier2a = KnownIdentifier.TransactionOutput32(0, 0, 0, transactionId(dummyTx2a).some)
+  val dummyTxIdentifier2b = KnownIdentifier.TransactionOutput32(0, 0, 0, transactionId(dummyTx2b).some)
+  val dummyTxIdentifier3 = KnownIdentifier.TransactionOutput32(0, 0, 0, transactionId(dummyTx3).some)
+  val dummyTxIdentifier4 = KnownIdentifier.TransactionOutput32(0, 0, 0, transactionId(dummyTx5).some)
+  val dummyTxIdentifier5 = KnownIdentifier.TransactionOutput32(0, 0, 0, transactionId(dummyTx4).some)
 
   // Static mappings to provide the Wallet with data
 
@@ -80,21 +80,6 @@ object MockStorage extends Storage {
     Indices(1, 4, 0) -> buildPredicate(4, Indices(1, 4, 0)),
     Indices(1, 5, 0) -> buildPredicate(5, Indices(1, 5, 0))
   )
-
-  val addr2a: Address =
-    Address(0, 0, Identifier().withLock32(Identifier.Lock32(idxToLocks(Indices(1, 2, 0)).sized32Evidence.some)).some)
-
-  val addr2b: Address =
-    Address(0, 0, Identifier().withLock32(Identifier.Lock32(idxToLocks(Indices(0, 2, 1)).sized32Evidence.some)).some)
-
-  val addr3: Address =
-    Address(0, 0, Identifier().withLock32(Identifier.Lock32(idxToLocks(Indices(0, 3, 0)).sized32Evidence.some)).some)
-
-  val addr4: Address =
-    Address(0, 0, Identifier().withLock32(Identifier.Lock32(idxToLocks(Indices(1, 4, 0)).sized32Evidence.some)).some)
-
-  val addr5: Address =
-    Address(0, 0, Identifier().withLock32(Identifier.Lock32(idxToLocks(Indices(1, 5, 0)).sized32Evidence.some)).some)
 
   val idToIdx: Map[KnownIdentifier, Indices] = Map(
     dummyTxIdentifier2a -> Indices(1, 2, 0), // with data
