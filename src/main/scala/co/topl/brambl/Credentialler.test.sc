@@ -47,7 +47,7 @@ def runTest(builtTx: Either[List[BuilderError], IoTransaction], expectedPass: Bo
 }
 
 val outputRequest = OutputBuildRequest(
-  MockLockBuilder.constructMockLockTrivial.some,
+  MockLockBuilder.constructMockLock1of1Locked.some,
   Value().withToken(Value.Token(Int128(ByteString.copyFrom(BigInt(1).toByteArray)).some)).some
 )
 

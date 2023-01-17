@@ -92,6 +92,7 @@ object MockStorage extends Storage {
   }
 
   // Hardcoding MockStorage to use Blake2b256Digest and Curve25519Signature
+  // TODO: To be replaced a LockTemplateBuilder?
   private def buildPredicate(threshold: Int, idx: Indices): Lock.Predicate = Lock.Predicate(
     List(
       QuivrService.lockedProposition,
