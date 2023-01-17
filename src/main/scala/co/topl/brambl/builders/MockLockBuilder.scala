@@ -1,14 +1,8 @@
 package co.topl.brambl.builders
 
 import cats.Id
-import co.topl.brambl.QuivrService
 import co.topl.brambl.models.box.Lock
-import co.topl.brambl.routines.digests.Blake2b256Digest
-import co.topl.brambl.routines.signatures.Curve25519Signature
-import co.topl.brambl.wallet.MockStorage.{getKeyPair, getPreimage}
 import co.topl.quivr.api.Proposer
-import com.google.protobuf.ByteString
-import quivr.models.{KeyPair, Preimage, SigningKey, VerificationKey}
 
 /**
  * A mock implementation of an [[LockBuilder]]

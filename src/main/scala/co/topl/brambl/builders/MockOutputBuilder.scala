@@ -2,7 +2,6 @@ package co.topl.brambl.builders
 
 import cats.implicits.catsSyntaxOptionId
 import co.topl.brambl.builders.BuilderErrors.OutputBuilderError
-import co.topl.brambl.models.box.{Lock, Value}
 import co.topl.brambl.models.builders.OutputBuildRequest
 import co.topl.brambl.models.transaction.UnspentTransactionOutput
 import co.topl.brambl.models.{Address, Datum, Event, Identifier}
