@@ -1,7 +1,6 @@
 package co.topl.brambl.wallet
 
 import cats.implicits._
-import co.topl.brambl.QuivrService
 import co.topl.brambl.models.Address
 import co.topl.brambl.models.Datum
 import co.topl.brambl.models.Event
@@ -21,8 +20,10 @@ import quivr.models.SigningKey
 import quivr.models.KeyPair
 import co.topl.brambl.typeclasses.ContainsSignable.instances._
 import ContainsEvidence._
+import cats.Id
 import co.topl.brambl.routines.digests.Blake2b256Digest
 import co.topl.brambl.routines.signatures.{Curve25519Signature, Signing}
+import co.topl.quivr.api.Proposer
 import quivr.models.Int128
 
 // Wallet storage api. Will just return dummy values
@@ -65,11 +66,11 @@ object MockStorage extends Storage {
   private def transactionId(transaction: IoTransaction) =
     Identifier.IoTransaction32(ContainsEvidence[IoTransaction].sized32Evidence(transaction).some)
 
-  private val dummyTxIdentifier2a = KnownIdentifier.TransactionOutput32(0, 0, 0, transactionId(dummyTx2a).some)
-  private val dummyTxIdentifier2b = KnownIdentifier.TransactionOutput32(0, 0, 0, transactionId(dummyTx2b).some)
-  private val dummyTxIdentifier3 = KnownIdentifier.TransactionOutput32(0, 0, 0, transactionId(dummyTx3).some)
-  private val dummyTxIdentifier4 = KnownIdentifier.TransactionOutput32(0, 0, 0, transactionId(dummyTx5).some)
-  private val dummyTxIdentifier5 = KnownIdentifier.TransactionOutput32(0, 0, 0, transactionId(dummyTx4).some)
+  val dummyTxIdentifier2a: KnownIdentifier.TransactionOutput32 = KnownIdentifier.TransactionOutput32(0, 0, 0, transactionId(dummyTx2a).some)
+  val dummyTxIdentifier2b: KnownIdentifier.TransactionOutput32 = KnownIdentifier.TransactionOutput32(0, 0, 0, transactionId(dummyTx2b).some)
+  val dummyTxIdentifier3: KnownIdentifier.TransactionOutput32 = KnownIdentifier.TransactionOutput32(0, 0, 0, transactionId(dummyTx3).some)
+  val dummyTxIdentifier4: KnownIdentifier.TransactionOutput32 = KnownIdentifier.TransactionOutput32(0, 0, 0, transactionId(dummyTx5).some)
+  val dummyTxIdentifier5: KnownIdentifier.TransactionOutput32 = KnownIdentifier.TransactionOutput32(0, 0, 0, transactionId(dummyTx4).some)
 
   // Static mappings to provide the Wallet with data
 
@@ -80,21 +81,6 @@ object MockStorage extends Storage {
     Indices(1, 4, 0) -> buildPredicate(4, Indices(1, 4, 0)),
     Indices(1, 5, 0) -> buildPredicate(5, Indices(1, 5, 0))
   )
-
-  val addr2a: Address =
-    Address(0, 0, Identifier().withLock32(Identifier.Lock32(idxToLocks(Indices(1, 2, 0)).sized32Evidence.some)).some)
-
-  val addr2b: Address =
-    Address(0, 0, Identifier().withLock32(Identifier.Lock32(idxToLocks(Indices(0, 2, 1)).sized32Evidence.some)).some)
-
-  val addr3: Address =
-    Address(0, 0, Identifier().withLock32(Identifier.Lock32(idxToLocks(Indices(0, 3, 0)).sized32Evidence.some)).some)
-
-  val addr4: Address =
-    Address(0, 0, Identifier().withLock32(Identifier.Lock32(idxToLocks(Indices(1, 4, 0)).sized32Evidence.some)).some)
-
-  val addr5: Address =
-    Address(0, 0, Identifier().withLock32(Identifier.Lock32(idxToLocks(Indices(1, 5, 0)).sized32Evidence.some)).some)
 
   val idToIdx: Map[KnownIdentifier, Indices] = Map(
     dummyTxIdentifier2a -> Indices(1, 2, 0), // with data
@@ -107,24 +93,21 @@ object MockStorage extends Storage {
   }
 
   // Hardcoding MockStorage to use Blake2b256Digest and Curve25519Signature
+  // TODO: To be replaced a LockTemplateBuilder?
   private def buildPredicate(threshold: Int, idx: Indices): Lock.Predicate = Lock.Predicate(
     List(
-      QuivrService.lockedProposition,
-      QuivrService
-        .digestProposition(
-          getPreimage(idx)
-            .getOrElse(Preimage(ByteString.copyFromUtf8("unsolvable preimage"), ByteString.copyFromUtf8("salt"))),
-          Blake2b256Digest
-        ),
-      QuivrService
-        .signatureProposition(
-          getKeyPair(idx, Curve25519Signature)
-            .getOrElse(KeyPair(VerificationKey(ByteString.copyFromUtf8("fake vk")).some, SigningKey(ByteString.copyFromUtf8("fake sk")).some))
-            .vk.getOrElse(VerificationKey(ByteString.copyFromUtf8("backup vk"))),
-          Curve25519Signature
-        ),
-      QuivrService.heightProposition(2, 8),
-      QuivrService.tickProposition(2, 8)
+      Proposer.LockedProposer[Id].propose(None),
+      Proposer.digestProposer[Id].propose((Blake2b256Digest.routine, Blake2b256Digest.hash(
+        getPreimage(idx)
+          .getOrElse(Preimage(ByteString.copyFromUtf8("unsolvable preimage"), ByteString.copyFromUtf8("salt")))
+      ))),
+      Proposer.signatureProposer[Id].propose((Curve25519Signature.routine,
+        getKeyPair(idx, Curve25519Signature)
+          .flatMap(_.vk)
+          .getOrElse(VerificationKey(ByteString.copyFromUtf8("fake vk")))
+      )),
+      Proposer.heightProposer[Id].propose(("header", 2, 8)),
+      Proposer.tickProposer[Id].propose((2, 8))
     ),
     threshold // N of 5 predicate
   )

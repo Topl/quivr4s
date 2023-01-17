@@ -10,15 +10,15 @@ import co.topl.brambl.routines.signatures.Curve25519Signature
 import co.topl.brambl.transaction.validators.ValidationError
 import co.topl.brambl.transaction.validators.authorization.{TransactionAuthorizationError, TransactionAuthorizationInterpreter}
 import co.topl.brambl.transaction.validators.syntax.{TransactionSyntaxError, TransactionSyntaxErrors}
-import co.topl.brambl.{Context, QuivrService}
+import co.topl.brambl.Context
 import co.topl.brambl.typeclasses.ContainsSignable.instances.ioTransactionSignable
-import co.topl.quivr.api.Verifier
+import co.topl.quivr.api.{Prover, Verifier}
 import quivr.models.Proof
 import quivr.models.Proposition
 import quivr.models.SignableBytes
 import co.topl.brambl.models.Indices
 
-case class Credentialler(store: Storage)(implicit ctx: Context) extends Credentials {
+object MockCredentialler extends Credentials {
 
   /**
    * Return a Proof (if possible) that will satisfy a Proposition and signable bytes
@@ -38,20 +38,20 @@ case class Credentialler(store: Storage)(implicit ctx: Context) extends Credenti
       "curve25519" -> Curve25519Signature
     )
     proposition.value match {
-      case _: Proposition.Value.Locked => Some(QuivrService.lockedProof(msg))
+      case _: Proposition.Value.Locked => Prover.lockedProver[Id].prove((), msg).some
       case _: Proposition.Value.Digest =>
-        idx.flatMap(store.getPreimage(_).map(QuivrService.digestProof(msg, _)))
+        idx.flatMap(MockStorage.getPreimage(_).map(Prover.digestProver[Id].prove(_, msg)))
       case Proposition.Value.DigitalSignature(p) =>
         signingRoutines
           .get(p.routine)
           .flatMap(r =>
             idx
-              .flatMap(i => store.getKeyPair(i, r))
+              .flatMap(i => MockStorage.getKeyPair(i, r))
               .flatMap(keyPair => keyPair.sk)
-              .map(sk => QuivrService.signatureProof(msg, sk, r))
+              .map(sk => Prover.signatureProver[Id].prove(r.sign(sk, msg), msg))
           )
-      case _: Proposition.Value.HeightRange => Some(QuivrService.heightProof(msg))
-      case _: Proposition.Value.TickRange   => Some(QuivrService.tickProof(msg))
+      case _: Proposition.Value.HeightRange => Prover.heightProver[Id].prove((), msg).some
+      case _: Proposition.Value.TickRange   => Prover.tickProver[Id].prove((), msg).some
       case _                                => None
     }
   }
@@ -72,7 +72,7 @@ case class Credentialler(store: Storage)(implicit ctx: Context) extends Credenti
     input: SpentTransactionOutput,
     msg:   SignableBytes
   ): Either[TransactionSyntaxError, SpentTransactionOutput] = {
-    val idx: Option[Indices] = input.knownIdentifier.flatMap(store.getIndicesByKnownIdentifier)
+    val idx: Option[Indices] = input.knownIdentifier.flatMap(MockStorage.getIndicesByKnownIdentifier)
     // TODO: None.get
     val inputAttestation = input.attestation.get
     val attestations: Either[TransactionSyntaxError, Attestation] =
@@ -116,7 +116,7 @@ case class Credentialler(store: Storage)(implicit ctx: Context) extends Credenti
    * @param ctx Context to validate the transaction in
    * @return Iff transaction is authorized
    */
-  override def validate(tx: IoTransaction): List[TransactionAuthorizationError] = {
+  override def validate(tx: IoTransaction, ctx: Context): List[TransactionAuthorizationError] = {
     implicit val verifier: Verifier[Id, Datum] = Verifier.instances.verifierInstance
     TransactionAuthorizationInterpreter
       .make[Id]()
@@ -132,10 +132,10 @@ case class Credentialler(store: Storage)(implicit ctx: Context) extends Credenti
    * @param unprovenTx The unproven transaction to prove
    * @return The proven version of the input is successfully proven. Else a validation error
    */
-  override def proveAndValidate(unprovenTx: IoTransaction): Either[List[ValidationError], IoTransaction] =
+  override def proveAndValidate(unprovenTx: IoTransaction, ctx: Context): Either[List[ValidationError], IoTransaction] =
     prove(unprovenTx) match {
       case Right(provenTx) =>
-        validate(provenTx) match {
+        validate(provenTx, ctx) match {
           case Nil                         => Right(provenTx)
           case errs: List[ValidationError] => Left(errs)
         }
