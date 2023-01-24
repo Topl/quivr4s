@@ -2,6 +2,7 @@ package co.topl.quivr
 
 import cats.Id
 import cats.Monad
+import co.topl.brambl.models.Datum
 import co.topl.crypto.hash.blake2b256
 import co.topl.crypto.signatures.Curve25519
 import co.topl.quivr.runtime.QuivrRuntimeErrors
@@ -24,7 +25,7 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
   test("A locked proposition must return an LockedPropositionIsUnsatisfiable when evaluated") {
     val lockedProposition = LockedProposer.propose(None)
     val lockedProverProof = lockedProver.prove((), signableBytes)
-    val result = verifierInstance.evaluate(
+    val result = verifierInstance[Id, Datum].evaluate(
       lockedProposition,
       lockedProverProof,
       dynamicContext(lockedProposition, lockedProverProof)
@@ -42,7 +43,7 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
     val tickProposition = tickProposer.propose(900, 1000)
     val tickProverProof = tickProver.prove((), signableBytes)
     val result =
-      verifierInstance.evaluate(tickProposition, tickProverProof, dynamicContext(tickProposition, tickProverProof))
+      verifierInstance[Id, Datum].evaluate(tickProposition, tickProverProof, dynamicContext(tickProposition, tickProverProof))
     assertEquals(result.isRight, true)
   }
 
@@ -50,7 +51,7 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
     val tickProposition = tickProposer.propose(1, 10)
     val tickProverProof = tickProver.prove((), signableBytes)
     val result =
-      verifierInstance.evaluate(tickProposition, tickProverProof, dynamicContext(tickProposition, tickProverProof))
+      verifierInstance[Id, Datum].evaluate(tickProposition, tickProverProof, dynamicContext(tickProposition, tickProverProof))
     assertEquals(result.isLeft, true)
     assertEquals(
       result.left.toOption.collect { case QuivrRuntimeErrors.ValidationError.EvaluationAuthorizationFailed(_, _) =>
@@ -63,7 +64,7 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
   test("A height proposition must evaluate to true when height is in range") {
     val heightProposition = heightProposer.propose("height", 900, 1000)
     val heightProverProof = heightProver.prove((), signableBytes)
-    val result = verifierInstance.evaluate(
+    val result = verifierInstance[Id, Datum].evaluate(
       heightProposition,
       heightProverProof,
       dynamicContext(heightProposition, heightProverProof)
@@ -74,7 +75,7 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
   test("A height proposition must evaluate to false when height is not in range") {
     val heightProposition = heightProposer.propose("height", 1, 10)
     val heightProverProof = heightProver.prove((), signableBytes)
-    val result = verifierInstance.evaluate(
+    val result = verifierInstance[Id, Datum].evaluate(
       heightProposition,
       heightProverProof,
       dynamicContext(heightProposition, heightProverProof)
@@ -94,7 +95,7 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
     val signatureProposition = signatureProposer.propose("Curve25519", VerificationKey(ByteString.copyFrom(vkBytes)))
     val signature = Curve25519.sign(sk, signableBytes.value.toByteArray)
     val signatureProverProof = signatureProver.prove(Witness(ByteString.copyFrom(signature.value)), signableBytes)
-    val result = verifierInstance.evaluate(
+    val result = verifierInstance[Id, Datum].evaluate(
       signatureProposition,
       signatureProverProof,
       dynamicContext(signatureProposition, signatureProverProof)
@@ -109,7 +110,7 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
     val signatureProposition = signatureProposer.propose("Curve25519", VerificationKey(ByteString.copyFrom(vkBytes)))
     val signature = Curve25519.sign(sk, signableBytes.value.toByteArray)
     val signatureProverProof = signatureProver.prove(Witness(ByteString.copyFrom(signature.value)), signableBytes)
-    val result = verifierInstance.evaluate(
+    val result = verifierInstance[Id, Datum].evaluate(
       signatureProposition,
       signatureProverProof,
       dynamicContext(signatureProposition, signatureProverProof)
@@ -131,7 +132,7 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
     )))
     val digestProposition = digestProposer.propose(("blake2b256", myDigest))
     val digestProverProof = digestProver.prove(myPreimage, signableBytes)
-    val result = verifierInstance.evaluate(
+    val result = verifierInstance[Id, Datum].evaluate(
       digestProposition,
       digestProverProof,
       dynamicContext(digestProposition, digestProverProof)
@@ -148,7 +149,7 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
     val wrongPreImage = Preimage(ByteString.copyFromUtf8("I am a wrong preimage"), mySalt)
     val digestProposition = digestProposer.propose(("blake2b256", myDigest))
     val digestProverProof = digestProver.prove(wrongPreImage, signableBytes)
-    val result = verifierInstance.evaluate(
+    val result = verifierInstance[Id, Datum].evaluate(
       digestProposition,
       digestProverProof,
       dynamicContext(digestProposition, digestProverProof)
