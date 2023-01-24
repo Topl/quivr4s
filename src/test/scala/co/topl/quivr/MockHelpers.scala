@@ -13,7 +13,6 @@ import co.topl.quivr.runtime.QuivrRuntimeError
 import co.topl.quivr.runtime.QuivrRuntimeErrors
 import co.topl.brambl.models.Datum
 import co.topl.brambl.models.Event
-import co.topl.brambl.routines.digests.{Blake2b256Digest, Hash}
 import co.topl.crypto.hash.blake2b256
 import com.google.protobuf.ByteString
 import quivr.models._
@@ -25,11 +24,11 @@ trait MockHelpers {
   def dynamicContext(proposition: Proposition, proof: Proof) =
     new DynamicContext[Id, String, Datum] {
 
-      val mapOfDatums: Map[String, Datum] = Map("height" -> Datum().withHeader(Datum.Header(Event.Header(999).some)))
+      private val mapOfDatums: Map[String, Datum] = Map("height" -> Datum().withHeader(Datum.Header(Event.Header(999).some)))
 
-      val mapOfInterfaces: Map[String, ParsableDataInterface] = Map()
+      private val mapOfInterfaces: Map[String, ParsableDataInterface] = Map()
 
-      val mapOfSigningRoutines: Map[String, SignatureVerifier[Id]] = Map("Curve25519" -> new SignatureVerifier[Id] {
+      private val mapOfSigningRoutines: Map[String, SignatureVerifier[Id]] = Map("Curve25519" -> new SignatureVerifier[Id] {
 
         override def validate(
           t: SignatureVerification
@@ -45,24 +44,13 @@ trait MockHelpers {
 
       })
 
-      val mapOfHashingRoutines: Map[String, DigestVerifier[Id]] = Map(
-        Blake2b256Digest.routine -> new DigestVerifier[Id] with Hash {
-          override val routine: String = "blake2b256"
-
-          override def hash(preimage: Preimage): Digest =
-            Digest().withDigest32(
-              Digest.Digest32(
-                ByteString.copyFrom(blake2b256.hash(preimage.input.toByteArray ++ preimage.salt.toByteArray).value)
-              )
-            )
-
-          override def validate(v: DigestVerification): Either[QuivrRuntimeError, DigestVerification] = {
-            val test = blake2b256.hash(v.preimage.get.input.toByteArray ++ v.preimage.get.salt.toByteArray).value
-            if (v.digest.get.value.digest32.get.value.toByteArray.sameElements(test)) Right(v)
-            else Left(QuivrRuntimeErrors.ValidationError.LockedPropositionIsUnsatisfiable)
-          }
+      private val mapOfHashingRoutines: Map[String, DigestVerifier[Id]] = Map("blake2b256" -> new DigestVerifier[Id] {
+        override def validate(v: DigestVerification): Either[QuivrRuntimeError, DigestVerification] = {
+          val test = blake2b256.hash(v.preimage.get.input.toByteArray ++ v.preimage.get.salt.toByteArray).value
+          if (v.digest.get.value.digest32.get.value.toByteArray.sameElements(test)) Right(v)
+          else Left(QuivrRuntimeErrors.ValidationError.LockedPropositionIsUnsatisfiable)
         }
-      )
+      })
 
       override val datums = mapOfDatums.get _
 

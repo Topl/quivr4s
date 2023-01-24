@@ -2,7 +2,7 @@ package co.topl.quivr
 
 import cats.Id
 import cats.Monad
-import co.topl.brambl.routines.digests.Blake2b256Digest
+import co.topl.crypto.hash.blake2b256
 import co.topl.crypto.signatures.Curve25519
 import co.topl.quivr.runtime.QuivrRuntimeErrors
 import com.google.protobuf.ByteString
@@ -126,7 +126,9 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
   test("A digest proposition must evaluate to true when the digest is correct") {
     val mySalt = ByteString.copyFromUtf8("I am a digest")
     val myPreimage = Preimage(ByteString.copyFromUtf8("I am a preimage"), mySalt)
-    val myDigest = Blake2b256Digest.hash(myPreimage)
+    val myDigest = Digest().withDigest32(Digest.Digest32(ByteString.copyFrom(
+      blake2b256.hash(myPreimage.input.toByteArray ++ myPreimage.salt.toByteArray).value
+    )))
     val digestProposition = digestProposer.propose(("blake2b256", myDigest))
     val digestProverProof = digestProver.prove(myPreimage, signableBytes)
     val result = verifierInstance.evaluate(
@@ -140,7 +142,9 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
   test("A digest proposition must evaluate to false when the digest is incorrect") {
     val mySalt = ByteString.copyFromUtf8("I am a digest")
     val myPreimage = Preimage(ByteString.copyFromUtf8("I am a preimage"), mySalt)
-    val myDigest = Blake2b256Digest.hash(myPreimage)
+    val myDigest = Digest().withDigest32(Digest.Digest32(ByteString.copyFrom(
+      blake2b256.hash(myPreimage.input.toByteArray ++ myPreimage.salt.toByteArray).value
+    )))
     val wrongPreImage = Preimage(ByteString.copyFromUtf8("I am a wrong preimage"), mySalt)
     val digestProposition = digestProposer.propose(("blake2b256", myDigest))
     val digestProverProof = digestProver.prove(wrongPreImage, signableBytes)
