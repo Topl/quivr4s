@@ -21,10 +21,10 @@ trait MockHelpers {
 
   val signableBytes = SignableBytes(ByteString.copyFromUtf8("someSignableBytes"))
 
-  def dynamicContext(proposition: Proposition, proof: Proof) =
+  def dynamicContext(proposition: Proposition, proof: Proof): DynamicContext[Id, String, Datum] =
     new DynamicContext[Id, String, Datum] {
 
-      private val mapOfDatums: Map[String, Datum] = Map("height" -> Datum().withHeader(Datum.Header(Event.Header(999).some)))
+      private val mapOfDatums: Map[String, Datum] = Map("height" -> Datum().withHeader(Datum.Header(Event.Header(999))))
 
       private val mapOfInterfaces: Map[String, ParsableDataInterface] = Map()
 
@@ -68,7 +68,7 @@ trait MockHelpers {
         mapOfDatums
           .get(label)
           .flatMap(_.value match {
-            case Datum.Value.Header(Datum.Header(Some(Event.Header(height, _)), _)) => height.some
+            case Datum.Value.Header(Datum.Header(Event.Header(height, _), _)) => height.some
             case _                                                                  => None
           })
     }
