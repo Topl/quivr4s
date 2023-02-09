@@ -12,15 +12,15 @@ resolvers += "jitpack" at "https://jitpack.io"
 lazy val catsVersion = "2.9.0"
 
 libraryDependencies ++= Seq(
-  "org.typelevel" %% "cats-core" % catsVersion,
-  "org.typelevel" %% "cats-free" % catsVersion,
-  "org.typelevel" %% "cats-effect" % "3.4.1",
-  "org.scorexfoundation" %% "scrypto" % "2.2.1",
-  "co.topl" %% "crypto" % "1.10.2",
-  "org.typelevel" %% "simulacrum" % "1.0.1",
-  "org.scalameta" %% "munit" % "0.7.29" % Test,
-  // Reference https://github.com/Topl/protobuf-specs/pull/34
-  "com.github.Topl" % "protobuf-specs" % "53c5f3a"
+  "org.typelevel"        %% "cats-core"   % catsVersion,
+  "org.typelevel"        %% "cats-free"   % catsVersion,
+  "org.typelevel"        %% "cats-effect" % "3.4.1",
+  "org.scorexfoundation" %% "scrypto"     % "2.2.1",
+  "co.topl"              %% "crypto"      % "1.10.2",
+  "org.typelevel"        %% "simulacrum"  % "1.0.1",
+  "org.scalameta"        %% "munit"       % "0.7.29" % Test,
+  // Reference https://github.com/Topl/protobuf-specs/pull/32
+  "com.github.Topl" % "protobuf-specs" % "c920f90"
 )
 
 // For Scala 2.13+
