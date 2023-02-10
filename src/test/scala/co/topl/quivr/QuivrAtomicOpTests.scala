@@ -43,7 +43,11 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
     val tickProposition = tickProposer.propose(900, 1000)
     val tickProverProof = tickProver.prove((), signableBytes)
     val result =
-      verifierInstance[Id, Datum].evaluate(tickProposition, tickProverProof, dynamicContext(tickProposition, tickProverProof))
+      verifierInstance[Id, Datum].evaluate(
+        tickProposition,
+        tickProverProof,
+        dynamicContext(tickProposition, tickProverProof)
+      )
     assertEquals(result.isRight, true)
   }
 
@@ -51,7 +55,11 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
     val tickProposition = tickProposer.propose(1, 10)
     val tickProverProof = tickProver.prove((), signableBytes)
     val result =
-      verifierInstance[Id, Datum].evaluate(tickProposition, tickProverProof, dynamicContext(tickProposition, tickProverProof))
+      verifierInstance[Id, Datum].evaluate(
+        tickProposition,
+        tickProverProof,
+        dynamicContext(tickProposition, tickProverProof)
+      )
     assertEquals(result.isLeft, true)
     assertEquals(
       result.left.toOption.collect { case QuivrRuntimeErrors.ValidationError.EvaluationAuthorizationFailed(_, _) =>
@@ -127,9 +135,13 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
   test("A digest proposition must evaluate to true when the digest is correct") {
     val mySalt = ByteString.copyFromUtf8("I am a digest")
     val myPreimage = Preimage(ByteString.copyFromUtf8("I am a preimage"), mySalt)
-    val myDigest = Digest().withDigest32(Digest.Digest32(ByteString.copyFrom(
-      blake2b256.hash(myPreimage.input.toByteArray ++ myPreimage.salt.toByteArray).value
-    )))
+    val myDigest = Digest().withDigest32(
+      Digest.Digest32(
+        ByteString.copyFrom(
+          blake2b256.hash(myPreimage.input.toByteArray ++ myPreimage.salt.toByteArray).value
+        )
+      )
+    )
     val digestProposition = digestProposer.propose(("blake2b256", myDigest))
     val digestProverProof = digestProver.prove(myPreimage, signableBytes)
     val result = verifierInstance[Id, Datum].evaluate(
@@ -143,9 +155,13 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
   test("A digest proposition must evaluate to false when the digest is incorrect") {
     val mySalt = ByteString.copyFromUtf8("I am a digest")
     val myPreimage = Preimage(ByteString.copyFromUtf8("I am a preimage"), mySalt)
-    val myDigest = Digest().withDigest32(Digest.Digest32(ByteString.copyFrom(
-      blake2b256.hash(myPreimage.input.toByteArray ++ myPreimage.salt.toByteArray).value
-    )))
+    val myDigest = Digest().withDigest32(
+      Digest.Digest32(
+        ByteString.copyFrom(
+          blake2b256.hash(myPreimage.input.toByteArray ++ myPreimage.salt.toByteArray).value
+        )
+      )
+    )
     val wrongPreImage = Preimage(ByteString.copyFromUtf8("I am a wrong preimage"), mySalt)
     val digestProposition = digestProposer.propose(("blake2b256", myDigest))
     val digestProverProof = digestProver.prove(wrongPreImage, signableBytes)
