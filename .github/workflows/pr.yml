@@ -1,0 +1,15 @@
+name: commonSc_PR
+
+on:
+  pull_request:
+    branches: [main, release-*, rc-*]
+
+jobs:
+  sbt-build:
+    uses: ./.github/workflows/_sbt_build.yml
+    with:
+      target-os: >-
+        ["ubuntu-latest"]
+      java-versions: >-
+        ["11"]
+      preserve-cache-between-runs: true
