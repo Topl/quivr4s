@@ -57,7 +57,7 @@ Making Changes
 3. Make sure you have added the necessary tests for your changes.
 4. Run all the tests to assure nothing else was accidentally broken.
 5. Run `sbt clean preparePR` to check linting, formatting, and that all tests pass
-6. Submit a [new pull request](https://github.com/Topl/BramblSc/pulls?q=is%3Apr+is%3Aopen+sort%3Aupdated-desc) in the
+6. Submit a [new pull request](https://github.com/Topl/quivr4s/pulls?q=is%3Apr+is%3Aopen+sort%3Aupdated-desc) in the
    proper format:
 
 ```
