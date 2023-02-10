@@ -31,3 +31,8 @@ scalacOptions += "-Ywarn-unused"
 semanticdbEnabled := true
 
 semanticdbVersion := scalafixSemanticdb.revision
+
+addCommandAlias("checkPR", s"; scalafixAll --check; scalafmtCheckAll; +test")
+addCommandAlias("preparePR", s"; scalafixAll; scalafmtAll; +test")
+addCommandAlias("checkPRTestQuick", s"; scalafixAll --check; scalafmtCheckAll; testQuick")
+
