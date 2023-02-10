@@ -11,8 +11,7 @@ object Dependencies {
     "org.scorexfoundation" %% "scrypto"     % "2.2.1",
     "co.topl"              %% "crypto"      % "1.10.2",
     "org.typelevel"        %% "simulacrum"  % "1.0.1",
-    // Reference https://github.com/Topl/protobuf-specs/pull/34
-    "com.github.Topl" % "protobuf-specs" % "53c5f3a"
+    "com.github.Topl" % "protobuf-specs" % "c920f90"
   )
 
   val testsDependencies = Seq(
