@@ -32,18 +32,6 @@ an [Issue](https://github.com/Topl/quivr4s/issues)
     * Clearly describe the issue including steps to reproduce when it is a bug.
     * Make sure you fill in the earliest version that you know has the issue.
 
-Improving and updating the [Wiki](https://github.com/Topl/BramblSc/wiki) is always welcomed. It is probably the easiest
-way to be involved with open-source development. Everyone will love you forever for doing this.
-
-* Make sure you have a GitHub account
-* `git clone https://github.com/Topl/BramblSc.wiki.git`
-* Create a new repository on your github account. Let's call it "BramblSc-Wiki".
-* Remove the original "origin" remote and add your github repo as new "origin" `git remote rm origin`
-  and `git remote add origin git@github.com:<YOUR_USERNAME>/BramblSc-Wiki.git`
-* Make your proposed changes locally, then push them to your github account: `git push -u origin main` (`-u origin main`
-  only required the first time; afterwards just do `git push`)
-* Submit a ticket to our Github issue tracker requesting maintainers to review your changes and merge them in. Please be
-  sure to include a link to your repo and describe what you've changed.
 
 Making Changes
 --------------
