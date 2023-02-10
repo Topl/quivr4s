@@ -28,23 +28,26 @@ trait MockHelpers {
 
       private val mapOfInterfaces: Map[String, ParsableDataInterface] = Map()
 
-      private val mapOfSigningRoutines: Map[String, SignatureVerifier[Id]] = Map("Curve25519" -> new SignatureVerifier[Id] {
+      private val mapOfSigningRoutines: Map[String, SignatureVerifier[Id]] = Map(
+        "Curve25519" -> new SignatureVerifier[Id] {
 
-        override def validate(
-          t: SignatureVerification
-        ): Id[Either[QuivrRuntimeError, SignatureVerification]] =
-          Curve25519.verify(
-            Signature(t.signature.get.value.toByteArray),
-            t.message.get.value.toByteArray,
-            PublicKey(t.verificationKey.get.value.toByteArray)
-          ) match {
-            case true  => Right(t)
-            case false => Left(QuivrRuntimeErrors.ValidationError.MessageAuthorizationFailed(proof))
-          }
+          override def validate(
+            t: SignatureVerification
+          ): Id[Either[QuivrRuntimeError, SignatureVerification]] =
+            Curve25519.verify(
+              Signature(t.signature.get.value.toByteArray),
+              t.message.get.value.toByteArray,
+              PublicKey(t.verificationKey.get.value.toByteArray)
+            ) match {
+              case true  => Right(t)
+              case false => Left(QuivrRuntimeErrors.ValidationError.MessageAuthorizationFailed(proof))
+            }
 
-      })
+        }
+      )
 
       private val mapOfHashingRoutines: Map[String, DigestVerifier[Id]] = Map("blake2b256" -> new DigestVerifier[Id] {
+
         override def validate(v: DigestVerification): Either[QuivrRuntimeError, DigestVerification] = {
           val test = blake2b256.hash(v.preimage.get.input.toByteArray ++ v.preimage.get.salt.toByteArray).value
           if (v.digest.get.value.digest32.get.value.toByteArray.sameElements(test)) Right(v)
@@ -69,7 +72,7 @@ trait MockHelpers {
           .get(label)
           .flatMap(_.value match {
             case Datum.Value.Header(Datum.Header(Event.Header(height, _), _)) => height.some
-            case _                                                                  => None
+            case _                                                            => None
           })
     }
 }

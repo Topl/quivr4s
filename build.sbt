@@ -45,3 +45,7 @@ lazy val quivr4s = project
       Dependencies.sourcesDependencies ++
       Dependencies.testsDependencies
   )
+
+addCommandAlias("checkPR", s"; scalafixAll --check; scalafmtCheckAll; +test")
+addCommandAlias("preparePR", s"; scalafixAll; scalafmtAll; +test")
+addCommandAlias("checkPRTestQuick", s"; scalafixAll --check; scalafmtCheckAll; testQuick")
