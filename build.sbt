@@ -1,33 +1,47 @@
-name := "quivr4s"
-
-organization := "co.topl"
-
-version := "0.1"
-
-scalaVersion := "2.13.9"
-
-resolvers += "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/"
-resolvers += "jitpack" at "https://jitpack.io"
-
-lazy val catsVersion = "2.9.0"
-
-libraryDependencies ++= Seq(
-  "org.typelevel" %% "cats-core" % catsVersion,
-  "org.typelevel" %% "cats-free" % catsVersion,
-  "org.typelevel" %% "cats-effect" % "3.4.1",
-  "org.scorexfoundation" %% "scrypto" % "2.2.1",
-  "co.topl" %% "crypto" % "1.10.2",
-  "org.typelevel" %% "simulacrum" % "1.0.1",
-  "org.scalameta" %% "munit" % "0.7.29" % Test,
-  // Reference https://github.com/Topl/protobuf-specs/pull/34
-  "com.github.Topl" % "protobuf-specs" % "53c5f3a"
+inThisBuild(
+  List(
+    organization := "co.topl",
+    version := "0.1",
+    licenses := Seq("MPL2.0" -> url("https://www.mozilla.org/en-US/MPL/2.0/")),
+    scalaVersion := "2.13.9"
+  )
 )
 
-// For Scala 2.13+
-scalacOptions += "-Ymacro-annotations"
+lazy val commonScalacOptions = Seq(
+  "-Ymacro-annotations",
+  "-Ywarn-unused"
+)
 
-scalacOptions += "-Ywarn-unused"
+lazy val commonSettings = Seq(
+  scalacOptions ++= commonScalacOptions,
+  semanticdbEnabled := true, // enable SemanticDB for Scalafix
+  semanticdbVersion := scalafixSemanticdb.revision,
+  resolvers ++= Seq(
+    "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/",
+    "jitpack" at "https://jitpack.io"
+  )
+)
 
-semanticdbEnabled := true
+lazy val publishSettings = Seq(
+  homepage := Some(url("https://github.com/Topl/quivr4s")),
+  Test / publishArtifact := true,
+  pomIncludeRepository := { _ => false },
+  pomExtra :=
+    <developers>
+      <developer>
+        <id>scasplte2</id>
+        <name>James Aman</name>
+      </developer>
+    </developers>
+)
 
-semanticdbVersion := scalafixSemanticdb.revision
+lazy val quivr4s = project
+  .in(file("."))
+  .settings(
+    moduleName := "quivr4s",
+    commonSettings,
+    publishSettings,
+    libraryDependencies ++=
+      Dependencies.sourcesDependencies ++
+      Dependencies.testsDependencies
+  )
