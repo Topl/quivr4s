@@ -25,7 +25,7 @@ questions or that your question rather belongs in one place than another.
 Getting Started
 ---------------
 If you have played around with the client and found some issues that crashes the client, be sure to submit
-an [Issue](https://github.com/Topl/BramblSc/issues)
+an [Issue](https://github.com/Topl/quivr4s/issues)
 
 * Make sure you have a GitHub account
 * Submit a ticket for your issue, assuming one does not already exist.
