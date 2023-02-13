@@ -12,7 +12,7 @@ object Dependencies {
     "co.topl"              %% "crypto"      % "1.10.2",
     "org.typelevel"        %% "simulacrum"  % "1.0.1",
     // Reference https://github.com/Topl/protobuf-specs/pull/34
-    "com.github.Topl" % "protobuf-specs" % "53c5f3a"
+    "com.github.Topl" % "protobuf-specs" % "53c5f3a" // scala-steward:off
   )
 
   val testsDependencies = Seq(
