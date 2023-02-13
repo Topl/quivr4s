@@ -179,4 +179,51 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
     )
   }
 
+  test("Proposition and Proof with mismatched types fails validation") {
+    val proposition = heightProposer.propose("height", 900, 1000)
+    val proof = tickProver.prove((), signableBytes)
+    val result = verifierInstance[Id, Datum].evaluate(
+      proposition,
+      proof,
+      dynamicContext(proposition, proof)
+    )
+    assert(result.isLeft)
+    assert(
+      result.left.toOption.collect { case QuivrRuntimeErrors.ValidationError.EvaluationAuthorizationFailed(_, _) =>
+        true
+      }.isDefined
+    )
+  }
+
+  test("Empty Proof fails validation") {
+    val proposition = heightProposer.propose("height", 900, 1000)
+    val proof = Proof()
+    val result = verifierInstance[Id, Datum].evaluate(
+      proposition,
+      proof,
+      dynamicContext(proposition, proof)
+    )
+    assert(result.isLeft)
+    assert(
+      result.left.toOption.collect { case QuivrRuntimeErrors.ValidationError.EvaluationAuthorizationFailed(_, _) =>
+        true
+      }.isDefined
+    )
+  }
+
+  test("Empty Proposition fails validation") {
+    val proposition = Proposition()
+    val proof = tickProver.prove((), signableBytes)
+    val result = verifierInstance[Id, Datum].evaluate(
+      proposition,
+      proof,
+      dynamicContext(proposition, proof)
+    )
+    assert(result.isLeft)
+    assert(
+      result.left.toOption.collect { case QuivrRuntimeErrors.ValidationError.EvaluationAuthorizationFailed(_, _) =>
+        true
+      }.isDefined
+    )
+  }
 }
