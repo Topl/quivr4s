@@ -359,6 +359,8 @@ object Verifier {
               andVerifier(c, r, context)
             case (Proposition.Value.Or(c), Proof.Value.Or(r)) =>
               orVerifier(c, r, context)
+            // Proposition and Proof are not of the same type or either are Empty => Authorization fails
+            case _ => Either.left[QuivrRuntimeError, Boolean](EvaluationAuthorizationFailed(proposition, proof)).pure[F]
           }
       }
   }
