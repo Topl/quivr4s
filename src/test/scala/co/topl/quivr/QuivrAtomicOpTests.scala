@@ -187,12 +187,11 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
       proof,
       dynamicContext(proposition, proof)
     )
-    assertEquals(result.isLeft, true)
-    assertEquals(
+    assert(result.isLeft)
+    assert(
       result.left.toOption.collect { case QuivrRuntimeErrors.ValidationError.EvaluationAuthorizationFailed(_, _) =>
         true
-      }.isDefined,
-      true
+      }.isDefined
     )
   }
 
@@ -204,12 +203,11 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
       proof,
       dynamicContext(proposition, proof)
     )
-    assertEquals(result.isLeft, true)
-    assertEquals(
+    assert(result.isLeft)
+    assert(
       result.left.toOption.collect { case QuivrRuntimeErrors.ValidationError.EvaluationAuthorizationFailed(_, _) =>
         true
-      }.isDefined,
-      true
+      }.isDefined
     )
   }
 
@@ -221,12 +219,11 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
       proof,
       dynamicContext(proposition, proof)
     )
-    assertEquals(result.isLeft, true)
-    assertEquals(
+    assert(result.isLeft)
+    assert(
       result.left.toOption.collect { case QuivrRuntimeErrors.ValidationError.EvaluationAuthorizationFailed(_, _) =>
         true
-      }.isDefined,
-      true
+      }.isDefined
     )
   }
 }
