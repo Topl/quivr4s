@@ -3,7 +3,7 @@ inThisBuild(
     organization := "co.topl",
     version := "0.1",
     licenses := Seq("MPL2.0" -> url("https://www.mozilla.org/en-US/MPL/2.0/")),
-    scalaVersion := "2.13.9"
+    scalaVersion := "2.13.10"
   )
 )
 
