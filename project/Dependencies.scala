@@ -5,13 +5,13 @@ object Dependencies {
   lazy val catsVersion = "2.9.0"
 
   val sourcesDependencies = Seq(
-    "org.typelevel"        %% "cats-core"   % catsVersion,
-    "org.typelevel"        %% "cats-free"   % catsVersion,
-    "org.typelevel"        %% "cats-effect" % "3.4.1",
-    "org.scorexfoundation" %% "scrypto"     % "2.2.1",
-    "co.topl"              %% "crypto"      % "1.10.2",
-    "org.typelevel"        %% "simulacrum"  % "1.0.1",
-    "com.github.Topl" % "protobuf-specs" % "28aa03e" // scala-steward:off
+    "org.typelevel"        %% "cats-core"      % catsVersion,
+    "org.typelevel"        %% "cats-free"      % catsVersion,
+    "org.typelevel"        %% "cats-effect"    % "3.4.7",
+    "org.scorexfoundation" %% "scrypto"        % "2.2.1",
+    "co.topl"              %% "crypto"         % "1.10.2",
+    "org.typelevel"        %% "simulacrum"     % "1.0.1",
+    "com.github.Topl"       % "protobuf-specs" % "c6f0253" // scala-steward:off
   )
 
   val testsDependencies = Seq(

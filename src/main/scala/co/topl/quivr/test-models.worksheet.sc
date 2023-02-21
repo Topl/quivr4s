@@ -16,6 +16,7 @@ val ctx = Quivr.EvaluationContext(
 val img_0 = "g".getBytes()
 val pi_0 = hashF(img_0)
 val C_0 = Models.Primitive.Digest.Proposition(pi_0.value)
+
 val R_0 = Models.Primitive.Digest.Proof(
   img_0,
   Quivr.Prover.bind(Models.Primitive.Digest.token, txBytes)
