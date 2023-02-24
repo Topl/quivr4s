@@ -63,8 +63,8 @@ object Verifier {
    * @return The result of verification. If successful, Right(true). Else Left(QuivrRuntimeError)
    */
   private def collectResult(proposition: Proposition, proof: Proof)(
-    msgResult:                           Either[QuivrRuntimeError, Boolean],
-    evalResult:                          Either[QuivrRuntimeError, _]
+    msgResult:  Either[QuivrRuntimeError, Boolean],
+    evalResult: Either[QuivrRuntimeError, _]
   ): Either[QuivrRuntimeError, Boolean] = (msgResult, evalResult) match {
     case (Right(true), Right(_)) => Right[QuivrRuntimeError, Boolean](true)
     case _                       => Left[QuivrRuntimeError, Boolean](EvaluationAuthorizationFailed(proposition, proof))
@@ -231,9 +231,9 @@ object Verifier {
     } yield res
 
     private def thresholdVerifier[F[_]: Monad, Datum](
-      proposition:       Proposition.Threshold,
-      proof:             Proof.Threshold,
-      context:           DynamicContext[F, String, Datum]
+      proposition: Proposition.Threshold,
+      proof:       Proof.Threshold,
+      context:     DynamicContext[F, String, Datum]
     )(implicit verifier: Verifier[F, Datum]): F[Either[QuivrRuntimeError, Boolean]] =
       for {
         wrappedProposition <- Proposition().withThreshold(proposition).pure[F]
@@ -270,9 +270,9 @@ object Verifier {
       } yield res
 
     private def notVerifier[F[_]: Monad, Datum](
-      proposition:       Proposition.Not,
-      proof:             Proof.Not,
-      context:           DynamicContext[F, String, Datum]
+      proposition: Proposition.Not,
+      proof:       Proof.Not,
+      context:     DynamicContext[F, String, Datum]
     )(implicit verifier: Verifier[F, Datum]): F[Either[QuivrRuntimeError, Boolean]] = for {
       wrappedProposition <- Proposition().withNot(proposition).pure[F]
       wrappedProof       <- Proof().withNot(proof).pure[F]
@@ -285,9 +285,9 @@ object Verifier {
     }
 
     private def andVerifier[F[_]: Monad, Datum](
-      proposition:       Proposition.And,
-      proof:             Proof.And,
-      context:           DynamicContext[F, String, Datum]
+      proposition: Proposition.And,
+      proof:       Proof.And,
+      context:     DynamicContext[F, String, Datum]
     )(implicit verifier: Verifier[F, Datum]): F[Either[QuivrRuntimeError, Boolean]] = for {
       wrappedProposition <- Proposition().withAnd(proposition).pure[F]
       wrappedProof       <- Proof().withAnd(proof).pure[F]
@@ -304,9 +304,9 @@ object Verifier {
     } yield res
 
     private def orVerifier[F[_]: Monad, Datum](
-      proposition:       Proposition.Or,
-      proof:             Proof.Or,
-      context:           DynamicContext[F, String, Datum]
+      proposition: Proposition.Or,
+      proof:       Proof.Or,
+      context:     DynamicContext[F, String, Datum]
     )(implicit verifier: Verifier[F, Datum]): F[Either[QuivrRuntimeError, Boolean]] = for {
       wrappedProposition <- Proposition().withOr(proposition).pure[F]
       wrappedProof       <- Proof().withOr(proof).pure[F]
