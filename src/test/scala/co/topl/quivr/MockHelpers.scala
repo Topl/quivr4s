@@ -35,9 +35,9 @@ trait MockHelpers {
             t: SignatureVerification
           ): Id[Either[QuivrRuntimeError, SignatureVerification]] =
             Curve25519.verify(
-              Signature(t.signature.get.value.toByteArray),
-              t.message.get.value.toByteArray,
-              PublicKey(t.verificationKey.get.value.toByteArray)
+              Signature(t.signature.value.toByteArray),
+              t.message.value.toByteArray,
+              PublicKey(t.verificationKey.value.toByteArray)
             ) match {
               case true  => Right(t)
               case false => Left(QuivrRuntimeErrors.ValidationError.MessageAuthorizationFailed(proof))
@@ -49,8 +49,8 @@ trait MockHelpers {
       private val mapOfHashingRoutines: Map[String, DigestVerifier[Id]] = Map("blake2b256" -> new DigestVerifier[Id] {
 
         override def validate(v: DigestVerification): Either[QuivrRuntimeError, DigestVerification] = {
-          val test = blake2b256.hash(v.preimage.get.input.toByteArray ++ v.preimage.get.salt.toByteArray).value
-          if (v.digest.get.value.digest32.get.value.toByteArray.sameElements(test)) Right(v)
+          val test = blake2b256.hash(v.preimage.input.toByteArray ++ v.preimage.salt.toByteArray).value
+          if (v.digest.value.digest32.get.value.toByteArray.sameElements(test)) Right(v)
           else Left(QuivrRuntimeErrors.ValidationError.LockedPropositionIsUnsatisfiable)
         }
       })

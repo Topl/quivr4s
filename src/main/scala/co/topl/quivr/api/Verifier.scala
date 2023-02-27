@@ -116,7 +116,7 @@ object Verifier {
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
       wrappedProposition <- Proposition().withDigest(proposition).pure[F]
       wrappedProof       <- Proof().withDigest(proof).pure[F]
-      msgResult <- Verifier.evaluateBlake2b256Bind(Tokens.Digest, wrappedProof, proof.transactionBind.get, context)
+      msgResult          <- Verifier.evaluateBlake2b256Bind(Tokens.Digest, wrappedProof, proof.transactionBind, context)
       verification = DigestVerification(proposition.digest, proof.preimage)
       evalResult <- context.digestVerify(proposition.routine)(verification).value
       res = collectResult(wrappedProposition, wrappedProof)(msgResult, evalResult)
@@ -132,14 +132,14 @@ object Verifier {
       msgResult <- Verifier.evaluateBlake2b256Bind(
         Tokens.DigitalSignature,
         wrappedProof,
-        proof.transactionBind.get,
+        proof.transactionBind,
         context
       )
       signedMessage <- context.signableBytes
       verification = SignatureVerification(
         proposition.verificationKey,
         proof.witness,
-        Message(signedMessage.value).some
+        Message(signedMessage.value)
       )
       evalResult <- context.signatureVerify(proposition.routine)(verification).value
       res = collectResult(wrappedProposition, wrappedProof)(msgResult, evalResult)
@@ -152,7 +152,7 @@ object Verifier {
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
       wrappedProposition <- Proposition().withHeightRange(proposition).pure[F]
       wrappedProof       <- Proof().withHeightRange(proof).pure[F]
-      msgResult <- Verifier.evaluateBlake2b256Bind(Tokens.HeightRange, wrappedProof, proof.transactionBind.get, context)
+      msgResult <- Verifier.evaluateBlake2b256Bind(Tokens.HeightRange, wrappedProof, proof.transactionBind, context)
       chainHeight <- OptionT(context.heightOf(proposition.chain)).fold[Either[QuivrRuntimeError, Long]](
         Left(EvaluationAuthorizationFailed(wrappedProposition, wrappedProof))
       )(Right(_))
@@ -173,7 +173,7 @@ object Verifier {
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
       wrappedProposition <- Proposition().withTickRange(proposition).pure[F]
       wrappedProof       <- Proof().withTickRange(proof).pure[F]
-      msgResult <- Verifier.evaluateBlake2b256Bind(Tokens.TickRange, wrappedProof, proof.transactionBind.get, context)
+      msgResult <- Verifier.evaluateBlake2b256Bind(Tokens.TickRange, wrappedProof, proof.transactionBind, context)
       evalResult <- context.currentTick.map(t =>
         if (proposition.min <= t && t <= proposition.max)
           Right(true)
@@ -189,7 +189,7 @@ object Verifier {
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
       wrappedProposition <- Proposition().withExactMatch(proposition).pure[F]
       wrappedProof       <- Proof().withExactMatch(proof).pure[F]
-      msgResult  <- Verifier.evaluateBlake2b256Bind(Tokens.ExactMatch, wrappedProof, proof.transactionBind.get, context)
+      msgResult  <- Verifier.evaluateBlake2b256Bind(Tokens.ExactMatch, wrappedProof, proof.transactionBind, context)
       evalResult <- context.exactMatch(proposition.location, proposition.compareTo.toByteArray).value
       res = collectResult(wrappedProposition, wrappedProof)(msgResult, evalResult)
     } yield res
@@ -201,8 +201,8 @@ object Verifier {
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
       wrappedProposition <- Proposition().withLessThan(proposition).pure[F]
       wrappedProof       <- Proof().withLessThan(proof).pure[F]
-      msgResult  <- Verifier.evaluateBlake2b256Bind(Tokens.LessThan, wrappedProof, proof.transactionBind.get, context)
-      evalResult <- context.lessThan(proposition.location, BigInt(proposition.compareTo.get.value.toByteArray)).value
+      msgResult  <- Verifier.evaluateBlake2b256Bind(Tokens.LessThan, wrappedProof, proof.transactionBind, context)
+      evalResult <- context.lessThan(proposition.location, BigInt(proposition.compareTo.value.toByteArray)).value
       res = collectResult(wrappedProposition, wrappedProof)(msgResult, evalResult)
     } yield res
 
@@ -213,8 +213,8 @@ object Verifier {
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
       wrappedProposition <- Proposition().withGreaterThan(proposition).pure[F]
       wrappedProof       <- Proof().withGreaterThan(proof).pure[F]
-      msgResult <- Verifier.evaluateBlake2b256Bind(Tokens.GreaterThan, wrappedProof, proof.transactionBind.get, context)
-      evalResult <- context.greaterThan(proposition.location, BigInt(proposition.compareTo.get.value.toByteArray)).value
+      msgResult  <- Verifier.evaluateBlake2b256Bind(Tokens.GreaterThan, wrappedProof, proof.transactionBind, context)
+      evalResult <- context.greaterThan(proposition.location, BigInt(proposition.compareTo.value.toByteArray)).value
       res = collectResult(wrappedProposition, wrappedProof)(msgResult, evalResult)
     } yield res
 
@@ -225,8 +225,8 @@ object Verifier {
     ): F[Either[QuivrRuntimeError, Boolean]] = for {
       wrappedProposition <- Proposition().withEqualTo(proposition).pure[F]
       wrappedProof       <- Proof().withEqualTo(proof).pure[F]
-      msgResult  <- Verifier.evaluateBlake2b256Bind(Tokens.LessThan, wrappedProof, proof.transactionBind.get, context)
-      evalResult <- context.equalTo(proposition.location, BigInt(proposition.compareTo.get.value.toByteArray)).value
+      msgResult  <- Verifier.evaluateBlake2b256Bind(Tokens.LessThan, wrappedProof, proof.transactionBind, context)
+      evalResult <- context.equalTo(proposition.location, BigInt(proposition.compareTo.value.toByteArray)).value
       res = collectResult(wrappedProposition, wrappedProof)(msgResult, evalResult)
     } yield res
 
@@ -238,7 +238,7 @@ object Verifier {
       for {
         wrappedProposition <- Proposition().withThreshold(proposition).pure[F]
         wrappedProof       <- Proof().withThreshold(proof).pure[F]
-        msgResult <- Verifier.evaluateBlake2b256Bind(Tokens.Threshold, wrappedProof, proof.transactionBind.get, context)
+        msgResult <- Verifier.evaluateBlake2b256Bind(Tokens.Threshold, wrappedProof, proof.transactionBind, context)
         evalResult <-
           if (proposition.threshold === 0) Right(true).pure[F]
           else if (proposition.threshold >= proposition.challenges.size)
@@ -276,8 +276,8 @@ object Verifier {
     )(implicit verifier: Verifier[F, Datum]): F[Either[QuivrRuntimeError, Boolean]] = for {
       wrappedProposition <- Proposition().withNot(proposition).pure[F]
       wrappedProof       <- Proof().withNot(proof).pure[F]
-      msgResult  <- Verifier.evaluateBlake2b256Bind(Tokens.Not, wrappedProof, proof.transactionBind.get, context)
-      evalResult <- verifier.evaluate(proposition.proposition.get, proof.proof.get, context)
+      msgResult          <- Verifier.evaluateBlake2b256Bind(Tokens.Not, wrappedProof, proof.transactionBind, context)
+      evalResult         <- verifier.evaluate(proposition.proposition, proof.proof, context)
       res = collectResult(wrappedProposition, wrappedProof)(msgResult, evalResult)
     } yield res match {
       case Right(true) => Left(EvaluationAuthorizationFailed(wrappedProposition, wrappedProof))
@@ -291,9 +291,9 @@ object Verifier {
     )(implicit verifier: Verifier[F, Datum]): F[Either[QuivrRuntimeError, Boolean]] = for {
       wrappedProposition <- Proposition().withAnd(proposition).pure[F]
       wrappedProof       <- Proof().withAnd(proof).pure[F]
-      msgResult <- Verifier.evaluateBlake2b256Bind(Tokens.And, wrappedProof, proof.transactionBind.get, context)
-      aResult   <- verifier.evaluate(proposition.left.get, proof.left.get, context)
-      bResult   <- verifier.evaluate(proposition.right.get, proof.right.get, context)
+      msgResult          <- Verifier.evaluateBlake2b256Bind(Tokens.And, wrappedProof, proof.transactionBind, context)
+      aResult            <- verifier.evaluate(proposition.left, proof.left, context)
+      bResult            <- verifier.evaluate(proposition.right, proof.right, context)
       res = (msgResult, aResult, bResult) match {
 
         case (Right(true), Right(_), Right(_)) => Right[QuivrRuntimeError, Boolean](true)
@@ -310,9 +310,9 @@ object Verifier {
     )(implicit verifier: Verifier[F, Datum]): F[Either[QuivrRuntimeError, Boolean]] = for {
       wrappedProposition <- Proposition().withOr(proposition).pure[F]
       wrappedProof       <- Proof().withOr(proof).pure[F]
-      msgResult          <- Verifier.evaluateBlake2b256Bind(Tokens.Or, wrappedProof, proof.transactionBind.get, context)
-      aResult            <- verifier.evaluate(proposition.left.get, proof.left.get, context)
-      bResult            <- verifier.evaluate(proposition.right.get, proof.right.get, context)
+      msgResult          <- Verifier.evaluateBlake2b256Bind(Tokens.Or, wrappedProof, proof.transactionBind, context)
+      aResult            <- verifier.evaluate(proposition.left, proof.left, context)
+      bResult            <- verifier.evaluate(proposition.right, proof.right, context)
       res = (msgResult, aResult, bResult) match {
         case (Right(true), Right(_), _) => Right[QuivrRuntimeError, Boolean](true)
         case (Right(true), _, Right(_)) => Right[QuivrRuntimeError, Boolean](true)

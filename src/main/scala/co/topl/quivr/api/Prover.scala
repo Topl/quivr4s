@@ -44,51 +44,51 @@ object Prover {
   def digestProver[F[_]: Applicative]: Prover[F, Preimage] =
     (preimage: Preimage, message: SignableBytes) =>
       Proof()
-        .withDigest(Proof.Digest(blake2b256Bind(Tokens.Digest, message).some, preimage.some))
+        .withDigest(Proof.Digest(blake2b256Bind(Tokens.Digest, message), preimage))
         .pure[F]
 
   def signatureProver[F[_]: Applicative]: Prover[F, Witness] =
     (witness: Witness, message: SignableBytes) =>
       Proof()
         .withDigitalSignature(
-          Proof.DigitalSignature(blake2b256Bind(Tokens.DigitalSignature, message).some, witness.some)
+          Proof.DigitalSignature(blake2b256Bind(Tokens.DigitalSignature, message), witness)
         )
         .pure[F]
 
   def heightProver[F[_]: Applicative]: Prover[F, Unit] =
     (_: Unit, message: SignableBytes) =>
       Proof()
-        .withHeightRange(Proof.HeightRange(blake2b256Bind(Tokens.HeightRange, message).some))
+        .withHeightRange(Proof.HeightRange(blake2b256Bind(Tokens.HeightRange, message)))
         .pure[F]
 
   def tickProver[F[_]: Applicative]: Prover[F, Unit] =
     (_: Unit, message: SignableBytes) =>
       Proof()
-        .withTickRange(Proof.TickRange(blake2b256Bind(Tokens.TickRange, message).some))
+        .withTickRange(Proof.TickRange(blake2b256Bind(Tokens.TickRange, message)))
         .pure[F]
 
   def exactMatchProver[F[_]: Applicative]: Prover[F, Unit] =
     (_: Unit, message: SignableBytes) =>
       Proof()
-        .withExactMatch(Proof.ExactMatch(blake2b256Bind(Tokens.ExactMatch, message).some))
+        .withExactMatch(Proof.ExactMatch(blake2b256Bind(Tokens.ExactMatch, message)))
         .pure[F]
 
   def lessThanProver[F[_]: Applicative]: Prover[F, Unit] =
     (_: Unit, message: SignableBytes) =>
       Proof()
-        .withLessThan(Proof.LessThan(blake2b256Bind(Tokens.LessThan, message).some))
+        .withLessThan(Proof.LessThan(blake2b256Bind(Tokens.LessThan, message)))
         .pure[F]
 
   def greaterThanProver[F[_]: Applicative]: Prover[F, Unit] =
     (_: Unit, message: SignableBytes) =>
       Proof()
-        .withGreaterThan(Proof.GreaterThan(blake2b256Bind(Tokens.GreaterThan, message).some))
+        .withGreaterThan(Proof.GreaterThan(blake2b256Bind(Tokens.GreaterThan, message)))
         .pure[F]
 
   def equalToProver[F[_]: Applicative]: Prover[F, Unit] =
     (_: Unit, message: SignableBytes) =>
       Proof()
-        .withEqualTo(Proof.EqualTo(blake2b256Bind(Tokens.EqualTo, message).some))
+        .withEqualTo(Proof.EqualTo(blake2b256Bind(Tokens.EqualTo, message)))
         .pure[F]
 
   // TODO: Protobuf's `Proof` type already encapsulates "emptiness", so the Option may be unnecessary here
@@ -97,7 +97,7 @@ object Prover {
       Proof()
         .withThreshold(
           Proof.Threshold(
-            blake2b256Bind(Tokens.Threshold, message).some,
+            blake2b256Bind(Tokens.Threshold, message),
             challenges.toSeq.map(_.getOrElse(Proof()))
           )
         )
@@ -108,8 +108,8 @@ object Prover {
       Proof()
         .withNot(
           Proof.Not(
-            blake2b256Bind(Tokens.Not, message).some,
-            proof.some
+            blake2b256Bind(Tokens.Not, message),
+            proof
           )
         )
         .pure[F]
@@ -119,9 +119,9 @@ object Prover {
       Proof()
         .withAnd(
           Proof.And(
-            blake2b256Bind(Tokens.And, message).some,
-            proofs._1.some,
-            proofs._2.some
+            blake2b256Bind(Tokens.And, message),
+            proofs._1,
+            proofs._2
           )
         )
         .pure[F]
@@ -131,9 +131,9 @@ object Prover {
       Proof()
         .withOr(
           Proof.Or(
-            blake2b256Bind(Tokens.Or, message).some,
-            proofs._1.some,
-            proofs._2.some
+            blake2b256Bind(Tokens.Or, message),
+            proofs._1,
+            proofs._2
           )
         )
         .pure[F]

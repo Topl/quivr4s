@@ -11,7 +11,7 @@ object Dependencies {
     "org.scorexfoundation" %% "scrypto"        % "2.2.1",
     "co.topl"              %% "crypto"         % "1.10.2",
     "org.typelevel"        %% "simulacrum"     % "1.0.1",
-    "com.github.Topl"       % "protobuf-specs" % "c920f90" // scala-steward:off
+    "com.github.Topl"       % "protobuf-specs" % "7d2ba5c" // scala-steward:off
   )
 
   val testsDependencies = Seq(
