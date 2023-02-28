@@ -33,7 +33,7 @@ object SimpleExpr {
 
   implicit val simpleExprAlg: Algebra[SimpleExpr] = new Algebra[SimpleExpr] {
     override def b(boolean: Boolean): SimpleExpr.Bool = SimpleExpr.Bool(boolean)
-    override def i(int: Int): SimpleExpr.Num = SimpleExpr.Num(int)
+    override def i(int:     Int): SimpleExpr.Num = SimpleExpr.Num(int)
 
     override def or(left: SimpleExpr[Boolean], right: SimpleExpr[Boolean]): SimpleExpr[Boolean] =
       SimpleExpr.Bool(left.value || right.value)

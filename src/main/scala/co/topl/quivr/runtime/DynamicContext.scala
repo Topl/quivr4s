@@ -27,21 +27,21 @@ trait DynamicContext[F[_], K, Datum] {
   def heightOf(label: K): F[Option[Long]]
 
   def digestVerify(routine: K)(verification: DigestVerification)(implicit
-    monad:                  Monad[F]
+    monad: Monad[F]
   ): EitherT[F, QuivrRuntimeError, DigestVerification] = for {
     verifier <- EitherT.fromOption[F](hashingRoutines.get(routine), ContextError.FailedToFindDigestVerifier)
     res      <- EitherT(verifier.validate(verification))
   } yield res
 
   def signatureVerify(routine: K)(verification: SignatureVerification)(implicit
-    monad:                     Monad[F]
+    monad: Monad[F]
   ): EitherT[F, QuivrRuntimeError, SignatureVerification] = for {
     verifier <- EitherT.fromOption[F](signingRoutines.get(routine), ContextError.FailedToFindSignatureVerifier)
     res      <- EitherT(verifier.validate(verification))
   } yield res
 
   def useInterface[E, T](label: K)(f: Data => Either[QuivrRuntimeError, T])(ff: T => Boolean)(implicit
-    monad:                      Monad[F]
+    monad: Monad[F]
   ): EitherT[F, QuivrRuntimeError, T] =
     EitherT.fromEither[F](
       interfaces.get(label) match {
@@ -56,23 +56,23 @@ trait DynamicContext[F[_], K, Datum] {
   //  def MustInclude() = ???
 
   def exactMatch(label: K, compareTo: Array[Byte])(implicit
-    monad:              Monad[F]
+    monad: Monad[F]
   ): EitherT[F, QuivrRuntimeError, Array[Byte]] =
     useInterface(label)(d => Right(d.value))(b => b.toByteArray sameElements compareTo)(monad)
       .map(_.toByteArray)
 
   def lessThan(label: K, compareTo: BigInt)(implicit
-    monad:            Monad[F]
+    monad: Monad[F]
   ): EitherT[F, QuivrRuntimeError, BigInt] =
     useInterface(label)(d => Right(BigInt(d.value.toByteArray)))(n => n < compareTo)
 
   def greaterThan(label: K, compareTo: BigInt)(implicit
-    monad:               Monad[F]
+    monad: Monad[F]
   ): EitherT[F, QuivrRuntimeError, BigInt] =
     useInterface(label)(d => Right(BigInt(d.value.toByteArray)))(n => n > compareTo)
 
   def equalTo(label: K, compareTo: BigInt)(implicit
-    monad:           Monad[F]
+    monad: Monad[F]
   ): EitherT[F, QuivrRuntimeError, BigInt] =
     useInterface(label)(d => Right(BigInt(d.value.toByteArray)))(n => n == compareTo)
 

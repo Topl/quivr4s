@@ -7,7 +7,7 @@ import quivr.models.Digest.{Digest32, Digest64}
 trait ModelGenerators {
 
   def genSizedStrictByteString(n: Int)(
-    byteGen:                      Gen[Byte] = Gen.choose[Byte](0, 32)
+    byteGen: Gen[Byte] = Gen.choose[Byte](0, 32)
   ): Gen[ByteString] =
     Gen
       .containerOfN[Array, Byte](n, byteGen)
