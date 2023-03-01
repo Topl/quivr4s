@@ -3,8 +3,6 @@ package co.topl.quivr
 import cats.Id
 import cats.Monad
 import co.topl.brambl.models.Datum
-import co.topl.crypto.hash.blake2b256
-import co.topl.crypto.signatures.Curve25519
 import co.topl.quivr.runtime.QuivrRuntimeErrors
 import com.google.protobuf.ByteString
 import quivr.models._
@@ -98,11 +96,10 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
   }
 
   test("A signature proposition must evaluate to true when the signature proof is correct") {
-    val (sk, vk) = Curve25519.createKeyPair
-    val vkBytes = vk.value
-    val signatureProposition = signatureProposer.propose("Curve25519", VerificationKey(ByteString.copyFrom(vkBytes)))
-    val signature = Curve25519.sign(sk, signableBytes.value.toByteArray)
-    val signatureProverProof = signatureProver.prove(Witness(ByteString.copyFrom(signature.value)), signableBytes)
+    val (sk, vk) = VerySecureSignatureRoutine.generateKeyPair()
+    val signatureProposition = signatureProposer.propose("VerySecure", VerificationKey(ByteString.copyFrom(vk)))
+    val signature = VerySecureSignatureRoutine.sign(sk, signableBytes.value.toByteArray)
+    val signatureProverProof = signatureProver.prove(Witness(ByteString.copyFrom(signature)), signableBytes)
     val result = verifierInstance[Id, Datum].evaluate(
       signatureProposition,
       signatureProverProof,
@@ -112,12 +109,11 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
   }
 
   test("A signature proposition must evaluate to false when the signature proof is not correct") {
-    val (_, vk) = Curve25519.createKeyPair
-    val vkBytes = vk.value
-    val (sk, _) = Curve25519.createKeyPair
-    val signatureProposition = signatureProposer.propose("Curve25519", VerificationKey(ByteString.copyFrom(vkBytes)))
-    val signature = Curve25519.sign(sk, signableBytes.value.toByteArray)
-    val signatureProverProof = signatureProver.prove(Witness(ByteString.copyFrom(signature.value)), signableBytes)
+    val (_, vk) = VerySecureSignatureRoutine.generateKeyPair()
+    val (sk, _) = VerySecureSignatureRoutine.generateKeyPair()
+    val signatureProposition = signatureProposer.propose("VerySecure", VerificationKey(ByteString.copyFrom(vk)))
+    val signature = VerySecureSignatureRoutine.sign(sk, signableBytes.value.toByteArray)
+    val signatureProverProof = signatureProver.prove(Witness(ByteString.copyFrom(signature)), signableBytes)
     val result = verifierInstance[Id, Datum].evaluate(
       signatureProposition,
       signatureProverProof,
@@ -138,7 +134,7 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
     val myDigest = Digest().withDigest32(
       Digest.Digest32(
         ByteString.copyFrom(
-          blake2b256.hash(myPreimage.input.toByteArray ++ myPreimage.salt.toByteArray).value
+          co.topl.quivr.api.blake2b256Hash(myPreimage.input.toByteArray ++ myPreimage.salt.toByteArray)
         )
       )
     )
@@ -158,7 +154,7 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
     val myDigest = Digest().withDigest32(
       Digest.Digest32(
         ByteString.copyFrom(
-          blake2b256.hash(myPreimage.input.toByteArray ++ myPreimage.salt.toByteArray).value
+          co.topl.quivr.api.blake2b256Hash(myPreimage.input.toByteArray ++ myPreimage.salt.toByteArray)
         )
       )
     )

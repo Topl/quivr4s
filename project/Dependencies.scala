@@ -9,7 +9,7 @@ object Dependencies {
     "org.typelevel"        %% "cats-free"      % catsVersion,
     "org.typelevel"        %% "cats-effect"    % "3.4.8",
     "org.scorexfoundation" %% "scrypto"        % "2.2.1",
-    "co.topl"              %% "crypto"         % "1.10.2",
+    "org.bouncycastle"      % "bcprov-jdk18on" % "1.72",
     "org.typelevel"        %% "simulacrum"     % "1.0.1",
     "com.github.Topl"       % "protobuf-specs" % "7d2ba5c" // scala-steward:off
   )
