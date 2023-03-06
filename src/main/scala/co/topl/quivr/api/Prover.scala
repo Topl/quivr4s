@@ -2,7 +2,6 @@ package co.topl.quivr.api
 
 import cats.Applicative
 import cats.implicits._
-import co.topl.crypto.hash.blake2b256
 import co.topl.quivr.Tokens
 import com.google.protobuf.ByteString
 import quivr.models._
@@ -34,7 +33,10 @@ object Prover {
   private def blake2b256Bind(tag: String, message: SignableBytes): TxBind =
     TxBind(
       ByteString.copyFrom(
-        blake2b256.hash(tag.getBytes(StandardCharsets.UTF_8) ++ message.value.toByteArray).value
+        blake2b256Hash(
+          tag.getBytes(StandardCharsets.UTF_8) ++
+          message.value.toByteArray
+        )
       )
     )
 

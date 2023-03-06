@@ -3,7 +3,6 @@ package co.topl.quivr.api
 import cats._
 import cats.data.OptionT
 import cats.implicits._
-import co.topl.crypto.hash.blake2b256
 import co.topl.quivr._
 import co.topl.quivr.runtime.QuivrRuntimeErrors.ValidationError.{
   EvaluationAuthorizationFailed,
@@ -43,8 +42,8 @@ object Verifier {
     proofTxBind: TxBind,
     context:     DynamicContext[F, A, _]
   ): F[Either[QuivrRuntimeError, Boolean]] = for {
-    sb             <- context.signableBytes
-    verifierTxBind <- blake2b256.hash(tag.getBytes(StandardCharsets.UTF_8) ++ sb.value.toByteArray).value.pure[F]
+    sb <- context.signableBytes
+    verifierTxBind = blake2b256Hash(tag.getBytes(StandardCharsets.UTF_8) ++ sb.value.toByteArray)
     res = Either.cond(
       verifierTxBind sameElements proofTxBind.value.toByteArray,
       true,
