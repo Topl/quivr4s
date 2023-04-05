@@ -97,7 +97,7 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
 
   test("A signature proposition must evaluate to true when the signature proof is correct") {
     val (sk, vk) = VerySecureSignatureRoutine.generateKeyPair()
-    val signatureProposition = signatureProposer.propose("VerySecure", VerificationKey(ByteString.copyFrom(vk)))
+    val signatureProposition = signatureProposer.propose(("VerySecure", VerificationKey(VerificationKey.Value.Ed25519(VerificationKey.Ed25519VerificationKey(ByteString.copyFrom(vk))))))
     val signature = VerySecureSignatureRoutine.sign(sk, signableBytes.value.toByteArray)
     val signatureProverProof = signatureProver.prove(Witness(ByteString.copyFrom(signature)), signableBytes)
     val result = verifierInstance[Id, Datum].evaluate(
@@ -111,7 +111,7 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
   test("A signature proposition must evaluate to false when the signature proof is not correct") {
     val (_, vk) = VerySecureSignatureRoutine.generateKeyPair()
     val (sk, _) = VerySecureSignatureRoutine.generateKeyPair()
-    val signatureProposition = signatureProposer.propose("VerySecure", VerificationKey(ByteString.copyFrom(vk)))
+    val signatureProposition = signatureProposer.propose("VerySecure", VerificationKey(VerificationKey.Value.Ed25519(VerificationKey.Ed25519VerificationKey(ByteString.copyFrom(vk)))))
     val signature = VerySecureSignatureRoutine.sign(sk, signableBytes.value.toByteArray)
     val signatureProverProof = signatureProver.prove(Witness(ByteString.copyFrom(signature)), signableBytes)
     val result = verifierInstance[Id, Datum].evaluate(

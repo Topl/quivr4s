@@ -33,7 +33,7 @@ trait MockHelpers {
             VerySecureSignatureRoutine.verify(
               t.signature.value.toByteArray,
               t.message.value.toByteArray,
-              t.verificationKey.value.toByteArray
+              t.verificationKey.value.ed25519.get.value.toByteArray
             ) match {
               case true  => Right(t)
               case false => Left(QuivrRuntimeErrors.ValidationError.MessageAuthorizationFailed(proof))
