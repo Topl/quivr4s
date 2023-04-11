@@ -3,6 +3,7 @@ package co.topl.quivr
 import cats.Id
 import cats.Monad
 import quivr.models._
+import quivr.models.VerificationKey._
 import co.topl.quivr.runtime.QuivrRuntimeErrors
 import com.google.protobuf.ByteString
 
@@ -22,8 +23,14 @@ class QuivrCompositeOpsTests extends munit.FunSuite with MockHelpers {
   test("An and proposition must evaluate to true when both the verification of both proofs is true") {
     val (sk1, vk1) = VerySecureSignatureRoutine.generateKeyPair()
     val (sk2, vk2) = VerySecureSignatureRoutine.generateKeyPair()
-    val signatureProposition1 = signatureProposer.propose("VerySecure", VerificationKey(ByteString.copyFrom(vk1)))
-    val signatureProposition2 = signatureProposer.propose("VerySecure", VerificationKey(ByteString.copyFrom(vk2)))
+    val signatureProposition1 = signatureProposer.propose(
+      "VerySecure",
+      VerificationKey(Vk.Ed25519(Ed25519Vk(ByteString.copyFrom(vk1))))
+    )
+    val signatureProposition2 = signatureProposer.propose(
+      "VerySecure",
+      VerificationKey(Vk.Ed25519(Ed25519Vk(ByteString.copyFrom(vk2))))
+    )
     val andProposition = andProposer.propose(signatureProposition1, signatureProposition2)
     val signature1 = VerySecureSignatureRoutine.sign(sk1, signableBytes.value.toByteArray)
     val signature2 = VerySecureSignatureRoutine.sign(sk2, signableBytes.value.toByteArray)
@@ -39,8 +46,14 @@ class QuivrCompositeOpsTests extends munit.FunSuite with MockHelpers {
     val (sk1, vk1) = VerySecureSignatureRoutine.generateKeyPair()
     val (_, vk2) = VerySecureSignatureRoutine.generateKeyPair()
     val (sk2, _) = VerySecureSignatureRoutine.generateKeyPair()
-    val signatureProposition1 = signatureProposer.propose("VerySecure", VerificationKey(ByteString.copyFrom(vk1)))
-    val signatureProposition2 = signatureProposer.propose("VerySecure", VerificationKey(ByteString.copyFrom(vk2)))
+    val signatureProposition1 = signatureProposer.propose(
+      "VerySecure",
+      VerificationKey(Vk.Ed25519(Ed25519Vk(ByteString.copyFrom(vk1))))
+    )
+    val signatureProposition2 = signatureProposer.propose(
+      "VerySecure",
+      VerificationKey(Vk.Ed25519(Ed25519Vk(ByteString.copyFrom(vk2))))
+    )
     val andProposition = andProposer.propose(signatureProposition1, signatureProposition2)
     val signature1 = VerySecureSignatureRoutine.sign(sk1, signableBytes.value.toByteArray)
     val signature2 = VerySecureSignatureRoutine.sign(sk2, signableBytes.value.toByteArray)
@@ -62,8 +75,14 @@ class QuivrCompositeOpsTests extends munit.FunSuite with MockHelpers {
     val (sk1, vk1) = VerySecureSignatureRoutine.generateKeyPair()
     val (_, vk2) = VerySecureSignatureRoutine.generateKeyPair()
     val (sk2, _) = VerySecureSignatureRoutine.generateKeyPair()
-    val signatureProposition1 = signatureProposer.propose("VerySecure", VerificationKey(ByteString.copyFrom(vk1)))
-    val signatureProposition2 = signatureProposer.propose("VerySecure", VerificationKey(ByteString.copyFrom(vk2)))
+    val signatureProposition1 = signatureProposer.propose(
+      "VerySecure",
+      VerificationKey(Vk.Ed25519(Ed25519Vk(ByteString.copyFrom(vk1))))
+    )
+    val signatureProposition2 = signatureProposer.propose(
+      "VerySecure",
+      VerificationKey(Vk.Ed25519(Ed25519Vk(ByteString.copyFrom(vk2))))
+    )
     val orProposition = orProposer.propose(signatureProposition1, signatureProposition2)
     val signature1 = VerySecureSignatureRoutine.sign(sk1, signableBytes.value.toByteArray)
     val signature2 = VerySecureSignatureRoutine.sign(sk2, signableBytes.value.toByteArray)
@@ -79,8 +98,14 @@ class QuivrCompositeOpsTests extends munit.FunSuite with MockHelpers {
     val (sk1, _) = VerySecureSignatureRoutine.generateKeyPair()
     val (_, vk2) = VerySecureSignatureRoutine.generateKeyPair()
     val (sk2, _) = VerySecureSignatureRoutine.generateKeyPair()
-    val signatureProposition1 = signatureProposer.propose("VerySecure", VerificationKey(ByteString.copyFrom(vk1)))
-    val signatureProposition2 = signatureProposer.propose("VerySecure", VerificationKey(ByteString.copyFrom(vk2)))
+    val signatureProposition1 = signatureProposer.propose(
+      "VerySecure",
+      VerificationKey(Vk.Ed25519(Ed25519Vk(ByteString.copyFrom(vk1))))
+    )
+    val signatureProposition2 = signatureProposer.propose(
+      "VerySecure",
+      VerificationKey(Vk.Ed25519(Ed25519Vk(ByteString.copyFrom(vk2))))
+    )
     val orProposition = orProposer.propose(signatureProposition1, signatureProposition2)
     val signature1 = VerySecureSignatureRoutine.sign(sk1, signableBytes.value.toByteArray)
     val signature2 = VerySecureSignatureRoutine.sign(sk2, signableBytes.value.toByteArray)
@@ -128,9 +153,18 @@ class QuivrCompositeOpsTests extends munit.FunSuite with MockHelpers {
     val (_, vk2) = VerySecureSignatureRoutine.generateKeyPair()
     val (sk2, _) = VerySecureSignatureRoutine.generateKeyPair()
     val (sk3, vk3) = VerySecureSignatureRoutine.generateKeyPair()
-    val signatureProposition1 = signatureProposer.propose("VerySecure", VerificationKey(ByteString.copyFrom(vk1)))
-    val signatureProposition2 = signatureProposer.propose("VerySecure", VerificationKey(ByteString.copyFrom(vk2)))
-    val signatureProposition3 = signatureProposer.propose("VerySecure", VerificationKey(ByteString.copyFrom(vk3)))
+    val signatureProposition1 = signatureProposer.propose(
+      "VerySecure",
+      VerificationKey(Vk.Ed25519(Ed25519Vk(ByteString.copyFrom(vk1))))
+    )
+    val signatureProposition2 = signatureProposer.propose(
+      "VerySecure",
+      VerificationKey(Vk.Ed25519(Ed25519Vk(ByteString.copyFrom(vk2))))
+    )
+    val signatureProposition3 = signatureProposer.propose(
+      "VerySecure",
+      VerificationKey(Vk.Ed25519(Ed25519Vk(ByteString.copyFrom(vk3))))
+    )
     val thresholdProposition =
       thresholdProposer.propose((Set(signatureProposition1, signatureProposition2, signatureProposition3), 2))
     val signature1 = VerySecureSignatureRoutine.sign(sk1, signableBytes.value.toByteArray)
@@ -158,11 +192,26 @@ class QuivrCompositeOpsTests extends munit.FunSuite with MockHelpers {
     val (sk3, vk3) = VerySecureSignatureRoutine.generateKeyPair()
     val (_, vk4) = VerySecureSignatureRoutine.generateKeyPair()
     val (_, vk5) = VerySecureSignatureRoutine.generateKeyPair()
-    val signatureProposition1 = signatureProposer.propose("VerySecure", VerificationKey(ByteString.copyFrom(vk1)))
-    val signatureProposition2 = signatureProposer.propose("VerySecure", VerificationKey(ByteString.copyFrom(vk2)))
-    val signatureProposition3 = signatureProposer.propose("VerySecure", VerificationKey(ByteString.copyFrom(vk3)))
-    val signatureProposition4 = signatureProposer.propose("VerySecure", VerificationKey(ByteString.copyFrom(vk4)))
-    val signatureProposition5 = signatureProposer.propose("VerySecure", VerificationKey(ByteString.copyFrom(vk5)))
+    val signatureProposition1 = signatureProposer.propose(
+      "VerySecure",
+      VerificationKey(Vk.Ed25519(Ed25519Vk(ByteString.copyFrom(vk1))))
+    )
+    val signatureProposition2 = signatureProposer.propose(
+      "VerySecure",
+      VerificationKey(Vk.Ed25519(Ed25519Vk(ByteString.copyFrom(vk2))))
+    )
+    val signatureProposition3 = signatureProposer.propose(
+      "VerySecure",
+      VerificationKey(Vk.Ed25519(Ed25519Vk(ByteString.copyFrom(vk3))))
+    )
+    val signatureProposition4 = signatureProposer.propose(
+      "VerySecure",
+      VerificationKey(Vk.Ed25519(Ed25519Vk(ByteString.copyFrom(vk4))))
+    )
+    val signatureProposition5 = signatureProposer.propose(
+      "VerySecure",
+      VerificationKey(Vk.Ed25519(Ed25519Vk(ByteString.copyFrom(vk5))))
+    )
     val thresholdProposition = thresholdProposer.propose(
       (
         Set(
