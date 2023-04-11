@@ -6,6 +6,7 @@ import co.topl.brambl.models.Datum
 import co.topl.quivr.runtime.QuivrRuntimeErrors
 import com.google.protobuf.ByteString
 import quivr.models._
+import quivr.models.VerificationKey._
 
 /**
  * Set of tests for the Quivr Atomic Operations.
@@ -100,7 +101,7 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
     val signatureProposition = signatureProposer.propose(
       (
         "VerySecure",
-        VerificationKey(VerificationKey.Value.Ed25519(VerificationKey.Ed25519VerificationKey(ByteString.copyFrom(vk))))
+        VerificationKey(Vk.Ed25519(Ed25519Vk(ByteString.copyFrom(vk))))
       )
     )
     val signature = VerySecureSignatureRoutine.sign(sk, signableBytes.value.toByteArray)
@@ -118,7 +119,7 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
     val (sk, _) = VerySecureSignatureRoutine.generateKeyPair()
     val signatureProposition = signatureProposer.propose(
       "VerySecure",
-      VerificationKey(VerificationKey.Value.Ed25519(VerificationKey.Ed25519VerificationKey(ByteString.copyFrom(vk))))
+      VerificationKey(Vk.Ed25519(Ed25519Vk(ByteString.copyFrom(vk))))
     )
     val signature = VerySecureSignatureRoutine.sign(sk, signableBytes.value.toByteArray)
     val signatureProverProof = signatureProver.prove(Witness(ByteString.copyFrom(signature)), signableBytes)
