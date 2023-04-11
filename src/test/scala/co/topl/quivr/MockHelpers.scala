@@ -27,18 +27,24 @@ trait MockHelpers {
       private val mapOfSigningRoutines: Map[String, SignatureVerifier[Id]] = Map(
         "VerySecure" -> new SignatureVerifier[Id] {
 
+          /**
+           * Validate a signature
+           *
+           * This mock implementation only supports Ed25519 SignatureVerification (does not support ExtendedEd25519 Keys).
+           * If an unsupported key type is passed in, it will return a UserProvidedInterfaceFailure.
+           */
           override def validate(
             t: SignatureVerification
-          ): Id[Either[QuivrRuntimeError, SignatureVerification]] =
-            VerySecureSignatureRoutine.verify(
-              t.signature.value.toByteArray,
-              t.message.value.toByteArray,
-              t.verificationKey.vk.ed25519.get.value.toByteArray
-            ) match {
-              case true  => Right(t)
-              case false => Left(QuivrRuntimeErrors.ValidationError.MessageAuthorizationFailed(proof))
-            }
-
+          ): Id[Either[QuivrRuntimeError, SignatureVerification]] = t.verificationKey.vk match {
+            case VerificationKey.Vk.Ed25519(vk) =>
+              if (
+                VerySecureSignatureRoutine
+                  .verify(t.signature.value.toByteArray, t.message.value.toByteArray, vk.value.toByteArray)
+              )
+                Right(t)
+              else Left(QuivrRuntimeErrors.ValidationError.MessageAuthorizationFailed(proof))
+            case _ => Left(QuivrRuntimeErrors.ValidationError.UserProvidedInterfaceFailure)
+          }
         }
       )
 
