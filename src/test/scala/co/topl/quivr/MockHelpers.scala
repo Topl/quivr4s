@@ -52,7 +52,7 @@ trait MockHelpers {
 
         override def validate(v: DigestVerification): Either[QuivrRuntimeError, DigestVerification] = {
           val test = co.topl.quivr.api.blake2b256Hash(v.preimage.input.toByteArray ++ v.preimage.salt.toByteArray)
-          if (v.digest.value.digest32.get.value.toByteArray.sameElements(test)) Right(v)
+          if (v.digest.value.toByteArray.sameElements(test)) Right(v)
           else Left(QuivrRuntimeErrors.ValidationError.LockedPropositionIsUnsatisfiable)
         }
       })

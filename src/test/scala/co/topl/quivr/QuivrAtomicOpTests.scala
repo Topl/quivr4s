@@ -5,8 +5,8 @@ import cats.Monad
 import co.topl.brambl.models.Datum
 import co.topl.quivr.runtime.QuivrRuntimeErrors
 import com.google.protobuf.ByteString
-import quivr.models._
 import quivr.models.VerificationKey._
+import quivr.models._
 
 /**
  * Set of tests for the Quivr Atomic Operations.
@@ -14,9 +14,7 @@ import quivr.models.VerificationKey._
 class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
 
   import co.topl.quivr.api.Proposer._
-
   import co.topl.quivr.api.Prover._
-
   import co.topl.quivr.api.Verifier.instances._
 
   implicit val applicativeId: Monad[Id] = cats.catsInstancesForId
@@ -140,11 +138,9 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
   test("A digest proposition must evaluate to true when the digest is correct") {
     val mySalt = ByteString.copyFromUtf8("I am a digest")
     val myPreimage = Preimage(ByteString.copyFromUtf8("I am a preimage"), mySalt)
-    val myDigest = Digest().withDigest32(
-      Digest.Digest32(
-        ByteString.copyFrom(
-          co.topl.quivr.api.blake2b256Hash(myPreimage.input.toByteArray ++ myPreimage.salt.toByteArray)
-        )
+    val myDigest = Digest(
+      ByteString.copyFrom(
+        co.topl.quivr.api.blake2b256Hash(myPreimage.input.toByteArray ++ myPreimage.salt.toByteArray)
       )
     )
     val digestProposition = digestProposer.propose(("blake2b256", myDigest))
@@ -160,11 +156,9 @@ class QuivrAtomicOpTests extends munit.FunSuite with MockHelpers {
   test("A digest proposition must evaluate to false when the digest is incorrect") {
     val mySalt = ByteString.copyFromUtf8("I am a digest")
     val myPreimage = Preimage(ByteString.copyFromUtf8("I am a preimage"), mySalt)
-    val myDigest = Digest().withDigest32(
-      Digest.Digest32(
-        ByteString.copyFrom(
-          co.topl.quivr.api.blake2b256Hash(myPreimage.input.toByteArray ++ myPreimage.salt.toByteArray)
-        )
+    val myDigest = Digest(
+      ByteString.copyFrom(
+        co.topl.quivr.api.blake2b256Hash(myPreimage.input.toByteArray ++ myPreimage.salt.toByteArray)
       )
     )
     val wrongPreImage = Preimage(ByteString.copyFromUtf8("I am a wrong preimage"), mySalt)
