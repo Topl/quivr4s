@@ -2,7 +2,7 @@ package co.topl.quivr.generators
 
 import com.google.protobuf.ByteString
 import org.scalacheck.{Arbitrary, Gen}
-import quivr.models.Digest.{Digest32, Digest64}
+import quivr.models.Digest
 
 trait ModelGenerators {
 
@@ -13,18 +13,11 @@ trait ModelGenerators {
       .containerOfN[Array, Byte](n, byteGen)
       .map(ByteString.copyFrom)
 
-  val arbitraryDigest32: Arbitrary[Digest32] =
+  val arbitraryDigest: Arbitrary[Digest] =
     Arbitrary(
       for {
         bs <- genSizedStrictByteString(32)()
-      } yield Digest32(bs)
-    )
-
-  val arbitraryDigest64: Arbitrary[Digest64] =
-    Arbitrary(
-      for {
-        bs <- genSizedStrictByteString(64)()
-      } yield Digest64(bs)
+      } yield Digest(bs)
     )
 
 }
