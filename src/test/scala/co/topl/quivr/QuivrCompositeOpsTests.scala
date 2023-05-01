@@ -174,7 +174,7 @@ class QuivrCompositeOpsTests extends munit.FunSuite with MockHelpers {
     val signatureProverProof2 = signatureProver.prove(Witness(ByteString.copyFrom(signature2)), signableBytes)
     val signatureProverProof3 = signatureProver.prove(Witness(ByteString.copyFrom(signature3)), signableBytes)
     val thresholdProverProof = thresholdProver.prove(
-      Set(Some(signatureProverProof1), Some(signatureProverProof2), Some(signatureProverProof3)),
+      Set(signatureProverProof1, signatureProverProof2, signatureProverProof3),
       signableBytes
     )
     val result = verifierInstance.evaluate(
@@ -231,7 +231,7 @@ class QuivrCompositeOpsTests extends munit.FunSuite with MockHelpers {
     val signatureProverProof2 = signatureProver.prove(Witness(ByteString.copyFrom(signature2)), signableBytes)
     val signatureProverProof3 = signatureProver.prove(Witness(ByteString.copyFrom(signature3)), signableBytes)
     val thresholdProverProof = thresholdProver.prove(
-      Set(Some(signatureProverProof1), Some(signatureProverProof2), Some(signatureProverProof3)),
+      Set(signatureProverProof1, signatureProverProof2, signatureProverProof3),
       signableBytes
     )
     val result = verifierInstance.evaluate(

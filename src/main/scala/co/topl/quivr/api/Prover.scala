@@ -93,14 +93,13 @@ object Prover {
         .withEqualTo(Proof.EqualTo(blake2b256Bind(Tokens.EqualTo, message)))
         .pure[F]
 
-  // TODO: Protobuf's `Proof` type already encapsulates "emptiness", so the Option may be unnecessary here
-  def thresholdProver[F[_]: Applicative]: Prover[F, Set[Option[Proof]]] =
-    (challenges: Set[Option[Proof]], message: SignableBytes) =>
+  def thresholdProver[F[_]: Applicative]: Prover[F, Set[Proof]] =
+    (challenges: Set[Proof], message: SignableBytes) =>
       Proof()
         .withThreshold(
           Proof.Threshold(
             blake2b256Bind(Tokens.Threshold, message),
-            challenges.toSeq.map(_.getOrElse(Proof()))
+            challenges.toSeq
           )
         )
         .pure[F]
