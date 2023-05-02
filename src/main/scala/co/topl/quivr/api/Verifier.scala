@@ -240,7 +240,7 @@ object Verifier {
         msgResult <- Verifier.evaluateBlake2b256Bind(Tokens.Threshold, wrappedProof, proof.transactionBind, context)
         evalResult <-
           if (proposition.threshold === 0) Right(true).pure[F]
-          else if (proposition.threshold >= proposition.challenges.size)
+          else if (proposition.threshold > proposition.challenges.size)
             Left(EvaluationAuthorizationFailed(wrappedProposition, wrappedProof)).pure[F]
           else if (proof.responses.isEmpty)
             Left(EvaluationAuthorizationFailed(wrappedProposition, wrappedProof)).pure[F]
