@@ -1,12 +1,9 @@
 name: Maven Central Release
-#on:
-#  push:
-#    branches: [main]
-#    tags: ["*"]
 
 on:
   push:
-    branches: [ TSDK-495 ]
+    branches: [main]
+    tags: ["*"]
 
 jobs:
   maven_release:
