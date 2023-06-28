@@ -10,7 +10,7 @@ object Dependencies {
     "org.typelevel"                  %% "cats-effect"    % "3.4.8",
     "org.bouncycastle"                % "bcprov-jdk18on" % "1.72",
     "org.typelevel"                  %% "simulacrum"     % "1.0.1",
-    "com.github.Topl.protobuf-specs" %% "protobuf-fs2"   % "8bb8a3b" // scala-steward:off
+    "co.topl" %% "protobuf-fs2" % "2.0.0-alpha1",
   )
 
   val testsDependencies = Seq(
