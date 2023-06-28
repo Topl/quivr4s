@@ -1,7 +1,6 @@
 inThisBuild(
   List(
     organization := "co.topl",
-    version := "0.1",
     licenses := Seq("MPL2.0" -> url("https://www.mozilla.org/en-US/MPL/2.0/")),
     scalaVersion := "2.13.10"
   )
@@ -18,12 +17,15 @@ lazy val commonSettings = Seq(
   semanticdbVersion := scalafixSemanticdb.revision,
   resolvers ++= Seq(
     "Sonatype Releases" at "https://oss.sonatype.org/content/repositories/releases/",
+    "Sonatype Releases s01" at "https://s01.oss.sonatype.org/content/repositories/releases/",
     "jitpack" at "https://jitpack.io"
   )
 )
 
 lazy val publishSettings = Seq(
   homepage := Some(url("https://github.com/Topl/quivr4s")),
+  ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org",
+  sonatypeRepository := "https://s01.oss.sonatype.org/service/local",
   Test / publishArtifact := true,
   pomIncludeRepository := { _ => false },
   pomExtra :=
